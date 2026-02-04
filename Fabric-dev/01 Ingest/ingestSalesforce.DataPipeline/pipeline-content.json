@@ -1,0 +1,449 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SalesforceServiceCloudSource",
+            "query": {
+              "value": "SELECT  @{pipeline().parameters.ColumnNames} \nFROM    @{pipeline().parameters.KanataApiName}\nWHERE   @{pipeline().parameters.WatermarkColumnName} > @{formatDateTime(pipeline().parameters.CurrentWatermark,'yyyy-MM-ddTHH:mm:ssZ')}",
+              "type": "Expression"
+            },
+            "additionalColumns": [
+              {
+                "name": "_crda_ExecutionDateTime",
+                "value": {
+                  "value": "@utcNow()",
+                  "type": "Expression"
+                }
+              },
+              {
+                "name": "_crda_SourceFileName",
+                "value": {
+                  "value": "@concat(variables('FolderPath'),'/', variables('FileName'))",
+                  "type": "Expression"
+                }
+              }
+            ],
+            "includeDeletedObjects": true,
+            "partitionOption": "None",
+            "datasetSettings": {
+              "type": "SalesforceServiceCloudObject",
+              "schema": [],
+              "externalReferences": {
+                "connection": "@pipeline().libraryVariables.vl_SrcSalesforceKantata_Salesforce_ConnectionId"
+              },
+              "annotations": []
+            }
+          },
+          "sink": {
+            "type": "LakehouseTableSink",
+            "tableActionOption": "Append",
+            "applyVOrder": true,
+            "partitionOption": "None",
+            "datasetSettings": {
+              "type": "LakehouseTable",
+              "typeProperties": {
+                "schema": {
+                  "value": "@pipeline().parameters.SchemaName",
+                  "type": "Expression"
+                },
+                "table": {
+                  "value": "@pipeline().parameters.TableName",
+                  "type": "Expression"
+                }
+              },
+              "schema": [],
+              "linkedService": {
+                "name": "lh_BronzeLayer",
+                "properties": {
+                  "type": "Lakehouse",
+                  "typeProperties": {
+                    "artifactId": "9e22841c-13b0-87c1-4fc4-f0acc6eb7c0f",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000",
+                    "rootFolder": "Tables"
+                  },
+                  "annotations": []
+                }
+              },
+              "annotations": []
+            }
+          },
+          "translator": {
+            "type": "TabularTranslator",
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            }
+          },
+          "enableStaging": false
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 5,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "IngestSalesforce",
+        "dependsOn": [
+          {
+            "activity": "SetFileName",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "SetFolderPath",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "Set TimeNow",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "SetFolderPathChangeEvent",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "FileName",
+          "value": {
+            "value": "@concat(replace(replace(substring(utcnow(),8,11),':',''),'T','-'), '.parquet')",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "SetFileName",
+        "dependsOn": []
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "FolderPath",
+          "value": {
+            "value": "@{concat(pipeline().parameters.DataLakeSourceFolder,'/',\n    replace(substring(utcNow(),0,7),'-',\n    '/'))}",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "SetFolderPath",
+        "dependsOn": []
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "TimeNow",
+          "value": {
+            "value": "@formatDateTime(utcNow(),'yyyy-MM-dd HH:mm:ss')",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Set TimeNow",
+        "dependsOn": []
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "LakehouseTableSource",
+            "sqlReaderQuery": {
+              "value": "SELECT\n    [@{pipeline().parameters.WatermarkColumnName}] = \n    COALESCE(MAX(@{pipeline().parameters.WatermarkColumnName}), '@{pipeline().parameters.CurrentWatermark}' )\nFROM [lh_BronzeLayer].[@{pipeline().parameters.SchemaName}].[@{pipeline().parameters.TableName}]",
+              "type": "Expression"
+            },
+            "queryTimeout": "00:02:00",
+            "partitionOption": "None"
+          },
+          "datasetSettings": {
+            "type": "LakehouseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "lh_BronzeLayer",
+              "properties": {
+                "type": "Lakehouse",
+                "typeProperties": {
+                  "artifactId": "9e22841c-13b0-87c1-4fc4-f0acc6eb7c0f",
+                  "workspaceId": "00000000-0000-0000-0000-000000000000",
+                  "rootFolder": "Tables"
+                },
+                "externalReferences": {
+                  "connection": "1be520da-b501-45e2-94f4-548d7afc445a"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": false
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 5,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "ReadWatermark",
+        "dependsOn": [
+          {
+            "activity": "IngestSalesforce",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "IngestSalesforceChangeEvent",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "CopySource"
+          },
+          "datasetSettings": {
+            "type": "DatasetBase"
+          }
+        },
+        "policy": {
+          "timeout": "0.00:01:00",
+          "retry": 5,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "LogWatermark",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "ReadWatermark",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SalesforceServiceCloudSource",
+            "additionalColumns": [
+              {
+                "name": "_crda_ExecutionDateTime",
+                "value": {
+                  "value": "@utcNow()",
+                  "type": "Expression"
+                }
+              },
+              {
+                "name": "_crda_SourceFileName",
+                "value": {
+                  "value": "@concat(variables('FolderPathChangeEvent'),'/', variables('FileName'))",
+                  "type": "Expression"
+                }
+              }
+            ],
+            "includeDeletedObjects": false,
+            "partitionOption": "AutoDetect",
+            "datasetSettings": {
+              "type": "SalesforceServiceCloudObject",
+              "typeProperties": {
+                "objectApiName": "KimbleOne__BusinessUnit__ChangeEvent"
+              },
+              "schema": [],
+              "externalReferences": {
+                "connection": "2e69bb8a-e2ba-4295-a398-ceeaefeb1c70"
+              },
+              "annotations": []
+            }
+          },
+          "sink": {
+            "type": "LakehouseTableSink",
+            "tableActionOption": "Append",
+            "applyVOrder": false,
+            "partitionOption": "None",
+            "datasetSettings": {
+              "type": "LakehouseTable",
+              "typeProperties": {
+                "schema": {
+                  "value": "@pipeline().parameters.SchemaName",
+                  "type": "Expression"
+                },
+                "table": {
+                  "value": "@concat(pipeline().parameters.TableName, 'ChangeEvent')",
+                  "type": "Expression"
+                }
+              },
+              "schema": [],
+              "connectionSettings": {
+                "name": "lh_BronzeLayer",
+                "properties": {
+                  "type": "Lakehouse",
+                  "typeProperties": {
+                    "artifactId": "c6eb7c0f-f0ac-4fc4-87c1-13b09e22841c",
+                    "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419",
+                    "rootFolder": "Tables"
+                  },
+                  "externalReferences": {
+                    "connection": "1be520da-b501-45e2-94f4-548d7afc445a"
+                  },
+                  "annotations": []
+                }
+              },
+              "annotations": []
+            }
+          },
+          "translator": {
+            "type": "TabularTranslator",
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            }
+          },
+          "enableStaging": false
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "IngestSalesforceChangeEvent",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Set TimeNow",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "SetFolderPath",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "SetFileName",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "SetFolderPathChangeEvent",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "FolderPathChangeEvent",
+          "value": {
+            "value": "@{concat(pipeline().parameters.DataLakeSourceFolder,'/ChangeEvent/',\n    replace(substring(utcNow(),0,7),'-',\n    '/'))}",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "SetFolderPathChangeEvent",
+        "dependsOn": []
+      }
+    ],
+    "parameters": {
+      "DataLakeSourceFolder": {
+        "type": "string",
+        "defaultValue": "Kantata/BusinessUnit"
+      },
+      "SchemaName": {
+        "type": "string",
+        "defaultValue": "Kantata"
+      },
+      "TableName": {
+        "type": "string",
+        "defaultValue": "BusinessUnit"
+      },
+      "ColumnNames": {
+        "type": "string",
+        "defaultValue": "Budget_Code__c, CreatedById, CreatedDate, CurrencyIsoCode, Id, isActive__c, isDefault__c, IsDeleted, KimbleOne__AllowanceScheme__c, KimbleOne__BusinessUnit__c, KimbleOne__BusinessUnitGroup__c, KimbleOne__Calendar__c, KimbleOne__CreditNoteFooter__c, KimbleOne__ExpenseItemExchangeRateTolerancePct__c, KimbleOne__ExpenseItemSubmissionDays__c, KimbleOne__ExpensesTaxCodeRule__c, KimbleOne__InternalAccount__c, KimbleOne__InvoiceFooter__c, KimbleOne__InvoicePaymentTermDays__c, KimbleOne__InvoiceTaxCodeNumber__c, KimbleOne__InvoicingAddress__c, KimbleOne__InvoicingBusinessUnitName__c, KimbleOne__InvoicingCity__c, KimbleOne__InvoicingCountry__c, KimbleOne__InvoicingCurrencyIsoCode__c, KimbleOne__InvoicingName__c, KimbleOne__InvoicingPostalCode__c, KimbleOne__InvoicingState__c, KimbleOne__InvoicingStreet__c, KimbleOne__InvoicingStreetName__c, KimbleOne__IsActive__c, KimbleOne__IsOperatingEntity__c, KimbleOne__IsPrimaryOrganisationalEntity__c, KimbleOne__IsSecondaryOrganisationalEntity__c, KimbleOne__IsTradingEntity__c, KimbleOne__LogoDocumentName__c, KimbleOne__TaxCode__c, KimbleOne__TaxCodeReference__c, KimbleOne__TimePattern__c, KimbleOne__TimePatternRule__c, KimbleOne__TimePatternVariant__c, LastModifiedById, LastModifiedDate, LastReferencedDate, LastViewedDate, Name, OwnerId, Sage200CostCentreCode__c, Sage200DepartmentCode__c, SageDepartmentCode__c, SystemModstamp"
+      },
+      "KanataApiName": {
+        "type": "string",
+        "defaultValue": "KimbleOne__BusinessUnit__c"
+      },
+      "WatermarkColumnName": {
+        "type": "string",
+        "defaultValue": "SystemModstamp"
+      },
+      "CurrentWatermark": {
+        "type": "string",
+        "defaultValue": "2020-01-01T00:00:00Z"
+      }
+    },
+    "libraryVariables": {
+      "vl_SrcSalesforceKantata_Salesforce_ConnectionId": {
+        "type": "String",
+        "variableName": "Salesforce_ConnectionId",
+        "libraryName": "vl_SrcSalesforceKantata"
+      },
+      "vl_SrcSalesforceKantata_SalesforceOAuthURL": {
+        "type": "String",
+        "variableName": "SalesforceOAuthURL",
+        "libraryName": "vl_SrcSalesforceKantata"
+      },
+      "vl_SrcSalesforceKantata_SalesforceOAuthClientId": {
+        "type": "String",
+        "variableName": "SalesforceOAuthClientId",
+        "libraryName": "vl_SrcSalesforceKantata"
+      }
+    },
+    "variables": {
+      "FileName": {
+        "type": "String"
+      },
+      "FolderPath": {
+        "type": "String"
+      },
+      "TimeNow": {
+        "type": "String"
+      },
+      "FolderPathChangeEvent": {
+        "type": "String"
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/variableLibrary/definition/valueSet/1.0.0/schema.json",
+  "name": "Test",
+  "variableOverrides": [
+    {
+      "name": "SalesforceUrl",
+      "value": "https://login.salesforce.com"
+    },
+    {
+      "name": "Environment",
+      "value": "test"
+    },
+    {
+      "name": "SalesforceOAuthURL",
+      "value": "https://dmw.my.salesforce.com/"
+    }
+  ]
+}

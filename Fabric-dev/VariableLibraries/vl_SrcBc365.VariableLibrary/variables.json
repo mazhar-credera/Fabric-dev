@@ -1,0 +1,29 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/variableLibrary/definition/variables/1.0.0/schema.json",
+  "variables": [
+    {
+      "name": "Bc365Url",
+      "note": "",
+      "type": "String",
+      "value": "https://api.businesscentral.dynamics.com/v2.0/62ddbf61-ad82-4b79-9855-cc2a5fdb684c/<env>/ODataV4/"
+    },
+    {
+      "name": "Bc365UkEnvironment",
+      "note": "",
+      "type": "String",
+      "value": "Sandbox"
+    },
+    {
+      "name": "Bc365User",
+      "note": "",
+      "type": "String",
+      "value": "integration.user@crederauk.onmicrosoft.com"
+    },
+    {
+      "name": "Bc365ServicePrincipalId",
+      "note": "",
+      "type": "String",
+      "value": "c24d151b-ade4-4a3f-aa16-bb8450f72d0c"
+    }
+  ]
+}

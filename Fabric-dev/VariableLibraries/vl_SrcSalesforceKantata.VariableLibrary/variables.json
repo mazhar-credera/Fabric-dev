@@ -1,0 +1,35 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/variableLibrary/definition/variables/1.0.0/schema.json",
+  "variables": [
+    {
+      "name": "SalesforceUrl",
+      "note": "",
+      "type": "String",
+      "value": "https://test.salesforce.com"
+    },
+    {
+      "name": "Environment",
+      "note": "",
+      "type": "String",
+      "value": "dev"
+    },
+    {
+      "name": "SalesforceOAuthClientId",
+      "note": "",
+      "type": "String",
+      "value": "3MVG9f_NjrvdVIAzyvAp_fwYW_iEDGr4C6t7ywTZWazHUBLbT1LGx0rqMK9gRC_LwA1ynhjuBESYHgCytZuWV"
+    },
+    {
+      "name": "SalesforceOAuthURL",
+      "note": "",
+      "type": "String",
+      "value": "https://dmw--sandbox1.sandbox.my.salesforce.com/"
+    },
+    {
+      "name": "Salesforce_ConnectionId",
+      "note": "",
+      "type": "String",
+      "value": "2e69bb8a-e2ba-4295-a398-ceeaefeb1c70"
+    }
+  ]
+}
