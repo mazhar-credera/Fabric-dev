@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_BronzeKantataDeltaAppend",
+    "description": "Handles schema drift"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "bf761730-b30f-86ea-4261-7e8ff45bcfa7"
+  }
+}
