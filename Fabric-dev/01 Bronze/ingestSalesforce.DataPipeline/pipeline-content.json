@@ -7,12 +7,12 @@
           "source": {
             "type": "SalesforceServiceCloudSource",
             "query": {
-              "value": "SELECT  @{pipeline().parameters.ColumnNames} \nFROM    @{pipeline().parameters.KanataApiName}\nWHERE   @{pipeline().parameters.WatermarkColumnName} > @{formatDateTime(pipeline().parameters.CurrentWatermark,'yyyy-MM-ddTHH:mm:ssZ')}",
+              "value": "SELECT  @{pipeline().parameters.KantataSelectColumns}\nFROM    @{pipeline().parameters.ApiEndPoint}\nWHERE   @{pipeline().parameters.WatermarkColumnName} > @{formatDateTime(pipeline().parameters.CurrentWatermark,'yyyy-MM-ddTHH:mm:ssZ')}",
               "type": "Expression"
             },
             "additionalColumns": [
               {
-                "name": "_crda_ExecutionDateTime",
+                "name": "_crda_SourceExecutionDateTime",
                 "value": {
                   "value": "@utcNow()",
                   "type": "Expression"
@@ -22,6 +22,13 @@
                 "name": "_crda_SourceFileName",
                 "value": {
                   "value": "@concat(variables('FolderPath'),'/', variables('FileName'))",
+                  "type": "Expression"
+                }
+              },
+              {
+                "name": "_crda_SourceExecutionId",
+                "value": {
+                  "value": "@string(pipeline().parameters.ExecutionId)",
                   "type": "Expression"
                 }
               }
@@ -38,21 +45,29 @@
             }
           },
           "sink": {
-            "type": "LakehouseTableSink",
-            "tableActionOption": "Append",
-            "applyVOrder": true,
-            "partitionOption": "None",
+            "type": "ParquetSink",
+            "formatSettings": {
+              "type": "ParquetWriteSettings",
+              "enableVertiParquet": true
+            },
+            "storeSettings": {
+              "type": "LakehouseWriteSettings"
+            },
             "datasetSettings": {
-              "type": "LakehouseTable",
+              "type": "Parquet",
               "typeProperties": {
-                "schema": {
-                  "value": "@pipeline().parameters.SchemaName",
-                  "type": "Expression"
+                "location": {
+                  "type": "LakehouseLocation",
+                  "folderPath": {
+                    "value": "@variables('FolderPath')",
+                    "type": "Expression"
+                  },
+                  "fileName": {
+                    "value": "@variables('FileName')",
+                    "type": "Expression"
+                  }
                 },
-                "table": {
-                  "value": "@pipeline().parameters.TableName",
-                  "type": "Expression"
-                }
+                "compressionCodec": "snappy"
               },
               "schema": [],
               "linkedService": {
@@ -62,7 +77,7 @@
                   "typeProperties": {
                     "artifactId": "9e22841c-13b0-87c1-4fc4-f0acc6eb7c0f",
                     "workspaceId": "00000000-0000-0000-0000-000000000000",
-                    "rootFolder": "Tables"
+                    "rootFolder": "Files"
                   },
                   "annotations": []
                 }
@@ -106,12 +121,6 @@
             "dependencyConditions": [
               "Succeeded"
             ]
-          },
-          {
-            "activity": "SetFolderPathChangeEvent",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
           }
         ]
       },
@@ -136,7 +145,7 @@
         "typeProperties": {
           "variableName": "FolderPath",
           "value": {
-            "value": "@{concat(pipeline().parameters.DataLakeSourceFolder,'/',\n    replace(substring(utcNow(),0,7),'-',\n    '/'))}",
+            "value": "@{concat(pipeline().parameters.DeltaLakeSourceFolder,'/',\n    replace(substring(utcNow(),0,7),'-',\n    '/'))}",
             "type": "Expression"
           }
         },
@@ -207,13 +216,7 @@
         "name": "ReadWatermark",
         "dependsOn": [
           {
-            "activity": "IngestSalesforce",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
-          },
-          {
-            "activity": "IngestSalesforceChangeEvent",
+            "activity": "nb_BronzeKantataDeltaAppend",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -250,85 +253,40 @@
         ]
       },
       {
-        "type": "Copy",
+        "type": "TridentNotebook",
         "typeProperties": {
-          "source": {
-            "type": "SalesforceServiceCloudSource",
-            "additionalColumns": [
-              {
-                "name": "_crda_ExecutionDateTime",
-                "value": {
-                  "value": "@utcNow()",
-                  "type": "Expression"
-                }
+          "notebookId": "bf761730-b30f-86ea-4261-7e8ff45bcfa7",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "pTargetSchema": {
+              "value": {
+                "value": "@pipeline().parameters.SchemaName",
+                "type": "Expression"
               },
-              {
-                "name": "_crda_SourceFileName",
-                "value": {
-                  "value": "@concat(variables('FolderPathChangeEvent'),'/', variables('FileName'))",
-                  "type": "Expression"
-                }
-              }
-            ],
-            "includeDeletedObjects": false,
-            "partitionOption": "AutoDetect",
-            "datasetSettings": {
-              "type": "SalesforceServiceCloudObject",
-              "typeProperties": {
-                "objectApiName": "KimbleOne__BusinessUnit__ChangeEvent"
+              "type": "string"
+            },
+            "pTargetTable": {
+              "value": {
+                "value": "@pipeline().parameters.TableName",
+                "type": "Expression"
               },
-              "schema": [],
-              "externalReferences": {
-                "connection": "2e69bb8a-e2ba-4295-a398-ceeaefeb1c70"
+              "type": "string"
+            },
+            "pParquetFile": {
+              "value": {
+                "value": "@variables('FileName')",
+                "type": "Expression"
               },
-              "annotations": []
+              "type": "string"
+            },
+            "pDeltaLakeFolder": {
+              "value": {
+                "value": "@variables('FolderPath')",
+                "type": "Expression"
+              },
+              "type": "string"
             }
-          },
-          "sink": {
-            "type": "LakehouseTableSink",
-            "tableActionOption": "Append",
-            "applyVOrder": false,
-            "partitionOption": "None",
-            "datasetSettings": {
-              "type": "LakehouseTable",
-              "typeProperties": {
-                "schema": {
-                  "value": "@pipeline().parameters.SchemaName",
-                  "type": "Expression"
-                },
-                "table": {
-                  "value": "@concat(pipeline().parameters.TableName, 'ChangeEvent')",
-                  "type": "Expression"
-                }
-              },
-              "schema": [],
-              "connectionSettings": {
-                "name": "lh_BronzeLayer",
-                "properties": {
-                  "type": "Lakehouse",
-                  "typeProperties": {
-                    "artifactId": "c6eb7c0f-f0ac-4fc4-87c1-13b09e22841c",
-                    "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419",
-                    "rootFolder": "Tables"
-                  },
-                  "externalReferences": {
-                    "connection": "1be520da-b501-45e2-94f4-548d7afc445a"
-                  },
-                  "annotations": []
-                }
-              },
-              "annotations": []
-            }
-          },
-          "translator": {
-            "type": "TabularTranslator",
-            "typeConversion": true,
-            "typeConversionSettings": {
-              "allowDataTruncation": true,
-              "treatBooleanAsNumber": false
-            }
-          },
-          "enableStaging": false
+          }
         },
         "policy": {
           "timeout": "0.00:30:00",
@@ -337,57 +295,21 @@
           "secureInput": false,
           "secureOutput": false
         },
-        "name": "IngestSalesforceChangeEvent",
-        "state": "Inactive",
-        "onInactiveMarkAs": "Succeeded",
+        "name": "nb_BronzeKantataDeltaAppend",
         "dependsOn": [
           {
-            "activity": "Set TimeNow",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
-          },
-          {
-            "activity": "SetFolderPath",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
-          },
-          {
-            "activity": "SetFileName",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
-          },
-          {
-            "activity": "SetFolderPathChangeEvent",
+            "activity": "IngestSalesforce",
             "dependencyConditions": [
               "Succeeded"
             ]
           }
         ]
-      },
-      {
-        "type": "SetVariable",
-        "typeProperties": {
-          "variableName": "FolderPathChangeEvent",
-          "value": {
-            "value": "@{concat(pipeline().parameters.DataLakeSourceFolder,'/ChangeEvent/',\n    replace(substring(utcNow(),0,7),'-',\n    '/'))}",
-            "type": "Expression"
-          }
-        },
-        "policy": {
-          "secureInput": false,
-          "secureOutput": false
-        },
-        "name": "SetFolderPathChangeEvent",
-        "dependsOn": []
       }
     ],
     "parameters": {
-      "DataLakeSourceFolder": {
+      "DeltaLakeSourceFolder": {
         "type": "string",
-        "defaultValue": "Kantata/BusinessUnit"
+        "defaultValue": "raw/Kantata/BusinessUnit"
       },
       "SchemaName": {
         "type": "string",
@@ -397,11 +319,11 @@
         "type": "string",
         "defaultValue": "BusinessUnit"
       },
-      "ColumnNames": {
+      "KantataSelectColumns": {
         "type": "string",
-        "defaultValue": "Budget_Code__c, CreatedById, CreatedDate, CurrencyIsoCode, Id, isActive__c, isDefault__c, IsDeleted, KimbleOne__AllowanceScheme__c, KimbleOne__BusinessUnit__c, KimbleOne__BusinessUnitGroup__c, KimbleOne__Calendar__c, KimbleOne__CreditNoteFooter__c, KimbleOne__ExpenseItemExchangeRateTolerancePct__c, KimbleOne__ExpenseItemSubmissionDays__c, KimbleOne__ExpensesTaxCodeRule__c, KimbleOne__InternalAccount__c, KimbleOne__InvoiceFooter__c, KimbleOne__InvoicePaymentTermDays__c, KimbleOne__InvoiceTaxCodeNumber__c, KimbleOne__InvoicingAddress__c, KimbleOne__InvoicingBusinessUnitName__c, KimbleOne__InvoicingCity__c, KimbleOne__InvoicingCountry__c, KimbleOne__InvoicingCurrencyIsoCode__c, KimbleOne__InvoicingName__c, KimbleOne__InvoicingPostalCode__c, KimbleOne__InvoicingState__c, KimbleOne__InvoicingStreet__c, KimbleOne__InvoicingStreetName__c, KimbleOne__IsActive__c, KimbleOne__IsOperatingEntity__c, KimbleOne__IsPrimaryOrganisationalEntity__c, KimbleOne__IsSecondaryOrganisationalEntity__c, KimbleOne__IsTradingEntity__c, KimbleOne__LogoDocumentName__c, KimbleOne__TaxCode__c, KimbleOne__TaxCodeReference__c, KimbleOne__TimePattern__c, KimbleOne__TimePatternRule__c, KimbleOne__TimePatternVariant__c, LastModifiedById, LastModifiedDate, LastReferencedDate, LastViewedDate, Name, OwnerId, Sage200CostCentreCode__c, Sage200DepartmentCode__c, SageDepartmentCode__c, SystemModstamp"
+        "defaultValue": "Budget_Code__c,CreatedById,CreatedDate,CurrencyIsoCode,Id,isActive__c,isDefault__c,IsDeleted,KimbleOne__AllowanceScheme__c,KimbleOne__BusinessUnit__c,KimbleOne__BusinessUnitGroup__c,KimbleOne__Calendar__c,KimbleOne__CreditNoteFooter__c,KimbleOne__ExpenseItemExchangeRateTolerancePct__c,KimbleOne__ExpenseItemSubmissionDays__c,KimbleOne__ExpensesTaxCodeRule__c,KimbleOne__InternalAccount__c,KimbleOne__InvoiceFooter__c,KimbleOne__InvoicePaymentTermDays__c,KimbleOne__InvoiceTaxCodeNumber__c,KimbleOne__InvoicingAddress__c,KimbleOne__InvoicingBusinessUnitName__c,KimbleOne__InvoicingCity__c,KimbleOne__InvoicingCountry__c,KimbleOne__InvoicingCurrencyIsoCode__c,KimbleOne__InvoicingName__c,KimbleOne__InvoicingPostalCode__c,KimbleOne__InvoicingState__c,KimbleOne__InvoicingStreet__c,KimbleOne__InvoicingStreetName__c,KimbleOne__IsActive__c,KimbleOne__IsOperatingEntity__c,KimbleOne__IsPrimaryOrganisationalEntity__c,KimbleOne__IsSecondaryOrganisationalEntity__c,KimbleOne__IsTradingEntity__c,KimbleOne__LogoDocumentName__c,KimbleOne__TaxCode__c,KimbleOne__TaxCodeReference__c,KimbleOne__TimePattern__c,KimbleOne__TimePatternRule__c,KimbleOne__TimePatternVariant__c,LastModifiedById,LastModifiedDate,LastReferencedDate,LastViewedDate,Name,OwnerId,Sage200CostCentreCode__c,Sage200DepartmentCode__c,SageDepartmentCode__c,SystemModstamp"
       },
-      "KanataApiName": {
+      "ApiEndPoint": {
         "type": "string",
         "defaultValue": "KimbleOne__BusinessUnit__c"
       },
@@ -412,6 +334,10 @@
       "CurrentWatermark": {
         "type": "string",
         "defaultValue": "2020-01-01T00:00:00Z"
+      },
+      "ExecutionId": {
+        "type": "int",
+        "defaultValue": -1
       }
     },
     "libraryVariables": {
@@ -439,9 +365,6 @@
         "type": "String"
       },
       "TimeNow": {
-        "type": "String"
-      },
-      "FolderPathChangeEvent": {
         "type": "String"
       }
     }
