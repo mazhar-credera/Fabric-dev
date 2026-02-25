@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "DataPipeline",
+    "displayName": "GetKantataColumnMetaData"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "712f4db8-1138-aff7-4505-3421100a42e8"
+  }
+}
