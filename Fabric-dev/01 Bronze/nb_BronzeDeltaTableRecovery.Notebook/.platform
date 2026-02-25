@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "nb_BronzeDeltaTableRecovery",
+    "description": "ADHOC\n# Run this manually if the delta table is accidentally dropped.\n# Rebuilds the target delta table from ALL parquet files found\n# under the staging root for this entity."
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "c601b0a0-947b-bcef-4550-9ce6b235d983"
+  }
+}
