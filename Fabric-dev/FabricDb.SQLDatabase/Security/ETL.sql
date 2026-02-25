@@ -1,0 +1,6 @@
+CREATE SCHEMA [ETL]
+    AUTHORIZATION [dbo];
+
+
+GO
+

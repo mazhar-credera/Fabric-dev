@@ -1,0 +1,15 @@
+[
+  {
+    "name": "scKantata",
+    "path": "/Tables",
+    "target": {
+      "type": "OneLake",
+      "oneLake": {
+        "path": "Tables/Kantata",
+        "itemId": "9e22841c-13b0-87c1-4fc4-f0acc6eb7c0f",
+        "workspaceId": "00000000-0000-0000-0000-000000000000",
+        "artifactType": "Lakehouse"
+      }
+    }
+  }
+]
