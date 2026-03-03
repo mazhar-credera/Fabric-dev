@@ -9,6 +9,7 @@ CREATE TABLE [ETL].[KantataColumnMetaData] (
     [Scale]                 INT           NOT NULL,
     [RelationshipName]      VARCHAR (255) NULL,
     [_crda_CreatedDateTime] DATETIME2 (7) CONSTRAINT [DF__ETL_KantataColumnMetaData___crda_CreatedDateTime] DEFAULT (getutcdate()) NOT NULL,
+    [StagingProjection]     AS            (concat('Kantata_',replace(replace(replace([TableApiName],'KimbleOne__',''),'__c',''),'_',''))),
     CONSTRAINT [PK__ETL_KantataColumnMetaData] PRIMARY KEY CLUSTERED ([TableApiName] ASC, [ColumnName] ASC)
 );
 

@@ -85,71 +85,89 @@ def add_missing_columns(df_new, existing_schema):
 # ============================================================
 # MAIN
 # ============================================================
+should_exit_early = False
+try:
+    print("=" * 60)
+    print("Schema-drift-safe delta append")
+    print(f"  Source : {PARQUET_PATH}")
+    print(f"  Target : {pTargetSchema}.{pTargetTable}")
+    print("=" * 60)
 
-print("=" * 60)
-print("Schema-drift-safe delta append")
-print(f"  Source : {PARQUET_PATH}")
-print(f"  Target : {pTargetSchema}.{pTargetTable}")
-print("=" * 60)
+    # --- 1. Read incoming parquet ---
+    print("\n[1/5] Reading source parquet...")
+    df_new = spark.read.parquet(PARQUET_PATH)
+    print(f"  Rows   : {df_new.count()}")
+    print(f"  Columns: {df_new.schema.fieldNames()}")
 
-# --- 1. Read incoming parquet ---
-print("\n[1/5] Reading source parquet...")
-df_new = spark.read.parquet(PARQUET_PATH)
-print(f"  Rows   : {df_new.count()}")
-print(f"  Columns: {df_new.schema.fieldNames()}")
+    if not df_new.isEmpty():
 
-# --- 2. Check whether target Delta table already exists ---
-print("\n[2/5] Checking target delta table...")
+        # --- 2. Check whether target Delta table already exists ---
+        print("\n[2/5] Checking target delta table...")
 
-if DeltaTable.isDeltaTable(spark, TARGET_PATH):
-    print("  Target table EXISTS — performing schema comparison")
-    existing_schema = spark.read.format("delta").load(TARGET_PATH).schema
-    target_cols     = set(existing_schema.fieldNames())
-    source_cols     = set(df_new.schema.fieldNames())
+        if DeltaTable.isDeltaTable(spark, TARGET_PATH):
+            print("  Target table EXISTS — performing schema comparison")
+            existing_schema = spark.read.format("delta").load(TARGET_PATH).schema
+            target_cols     = set(existing_schema.fieldNames())
+            source_cols     = set(df_new.schema.fieldNames())
 
-    new_cols     = source_cols - target_cols
-    dropped_cols = target_cols - source_cols
+            new_cols     = source_cols - target_cols
+            dropped_cols = target_cols - source_cols
 
-    # --- 3. Report drift ---
-    print(f"\n[3/5] Schema drift summary:")
-    print(f"  New columns in source (will be added to target) : {new_cols     if new_cols     else 'None'}")
-    print(f"  Columns dropped from source (nulls written)     : {dropped_cols if dropped_cols else 'None'}")
+            # --- 3. Report drift ---
+            print(f"\n[3/5] Schema drift summary:")
+            print(f"  New columns in source (will be added to target) : {new_cols     if new_cols     else 'None'}")
+            print(f"  Columns dropped from source (nulls written)     : {dropped_cols if dropped_cols else 'None'}")
 
-    # --- 4. Align types and pad missing columns ---
-    print("\n[4/5] Aligning schema...")
-    df_new = align_types(df_new, existing_schema)
-    df_new = add_missing_columns(df_new, existing_schema)
+            # --- 4. Align types and pad missing columns ---
+            print("\n[4/5] Aligning schema...")
+            df_new = align_types(df_new, existing_schema)
+            df_new = add_missing_columns(df_new, existing_schema)
 
-else:
-    print("Target table does NOT exist — will be created on first write")
-    print("[3/5] Skipping schema comparison (first load)")
-    print("[4/5] Skipping type alignment (first load)")
+        else:
+            print("Target table does NOT exist — will be created on first write")
+            print("[3/5] Skipping schema comparison (first load)")
+            print("[4/5] Skipping type alignment (first load)")
 
-# --- 5. Ensure schema exists then append ---
-print("\n[5/5] Appending to delta table...")
+        # --- 5. Ensure schema exists then append ---
+        print("\n[5/5] Appending to delta table...")
 
-spark.sql(f"CREATE SCHEMA IF NOT EXISTS {pTargetSchema}")
+        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {pTargetSchema}")
 
-(
-    df_new.write
-    .format("delta")
-    .mode("append")
-    .option("mergeSchema", "true")
-    .save(TARGET_PATH)
-)
+        (
+            df_new.write
+            .format("delta")
+            .mode("append")
+            .option("mergeSchema", "true")
+            .save(TARGET_PATH)
+        )
 
-# Register the table in the metastore preserving case, if it doesn't exist yet
-spark.sql(f"""
-    CREATE TABLE IF NOT EXISTS {pTargetSchema}.`{pTargetTable}`
-    USING DELTA
-    LOCATION '{TARGET_PATH}'
-""")
+        # Register the table in the metastore preserving case, if it doesn't exist yet
+        spark.sql(f"""
+            CREATE TABLE IF NOT EXISTS {pTargetSchema}.`{pTargetTable}`
+            USING DELTA
+            LOCATION '{TARGET_PATH}'
+        """)
 
-print("\n" + "=" * 60)
-print("Append complete.")
-print(f"  Target table : {pTargetSchema}.{pTargetTable}")
-print(f"  Rows written : {df_new.count()}")
-print("=" * 60)
+        print("\n" + "=" * 60)
+        print("Append complete.")
+        print(f"  Target table : {pTargetSchema}.{pTargetTable}")
+        print(f"  Rows written : {df_new.count()}")
+        print("=" * 60)
+
+        # ------------------------------------------------------------
+        # 10. Exit SUCCESS
+        # ------------------------------------------------------------
+        mssparkutils.notebook.exit("SUCCESS")
+
+    else:
+        print("No new data found. Preparing to exit.")
+        should_exit_early = True
+
+except Exception as e:
+    mssparkutils.notebook.exit(f"FAILURE: {str(e)}")
+
+if should_exit_early:
+    mssparkutils.notebook.exit("SUCCESS")
 
 # METADATA ********************
 

@@ -1,6 +1,6 @@
 [
   {
-    "name": "scKantata",
+    "name": "BronzeKantata",
     "path": "/Tables",
     "target": {
       "type": "OneLake",

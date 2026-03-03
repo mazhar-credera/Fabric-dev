@@ -23,7 +23,7 @@
 # CELL ********************
 
 # MAGIC %%sql
-# MAGIC drop table Kantata.businessunit
+# MAGIC drop table if exists Kantata.BusinessUnit
 
 
 # METADATA ********************
@@ -35,20 +35,20 @@
 
 # CELL ********************
 
-parquet_path = "Files/Kantata/ForecastStatus"
+parquet_path = "Files/raw/Kantata/BusinessUnit"
 
 # First, list the files to confirm what you're deleting
 print("Files to be deleted:")
-notebookutils.fs.ls("Files/Kantata/ForecastStatus")
+notebookutils.fs.ls("Files/raw/Kantata/BusinessUnit")
 
 # Delete (choose the appropriate level)
-notebookutils.fs.rm("Files/Kantata/ForecastStatus", recurse=True)
+notebookutils.fs.rm("Files/raw/Kantata/BusinessUnit", recurse=True)
 
 print("Deletion complete!")
 
 # Verify it's gone
 try:
-    notebookutils.fs.ls("Files/Kantata/ForecastStatus")
+    notebookutils.fs.ls("Files/raw/Kantata/BusinessUnit")
 except:
     print("Folder successfully deleted")
 

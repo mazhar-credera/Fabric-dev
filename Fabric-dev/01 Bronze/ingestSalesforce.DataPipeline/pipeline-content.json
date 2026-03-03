@@ -7,12 +7,12 @@
           "source": {
             "type": "SalesforceServiceCloudSource",
             "query": {
-              "value": "SELECT  @{pipeline().parameters.KantataSelectColumns}\nFROM    @{pipeline().parameters.ApiEndPoint}\nWHERE   @{pipeline().parameters.WatermarkColumnName} > @{formatDateTime(pipeline().parameters.CurrentWatermark,'yyyy-MM-ddTHH:mm:ssZ')}",
+              "value": "SELECT  @{activity('FN_GetProcessMetadata').output.firstRow.KantataSelectColumns}\nFROM    @{activity('FN_GetProcessMetadata').output.firstRow.ApiEndPoint}\nWHERE   @{activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName} > @{formatDateTime(activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue,'yyyy-MM-ddTHH:mm:ssZ')}",
               "type": "Expression"
             },
             "additionalColumns": [
               {
-                "name": "_crda_SourceExecutionDateTime",
+                "name": "_crda_BronzeLoadDateTime",
                 "value": {
                   "value": "@utcNow()",
                   "type": "Expression"
@@ -51,7 +51,7 @@
               "enableVertiParquet": true
             },
             "storeSettings": {
-              "type": "LakehouseWriteSettings"
+              "type": "AzureBlobStorageWriteSettings"
             },
             "datasetSettings": {
               "type": "Parquet",
@@ -138,14 +138,21 @@
           "secureOutput": false
         },
         "name": "SetFileName",
-        "dependsOn": []
+        "dependsOn": [
+          {
+            "activity": "FN_GetProcessMetadata",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
       },
       {
         "type": "SetVariable",
         "typeProperties": {
           "variableName": "FolderPath",
           "value": {
-            "value": "@{concat(pipeline().parameters.DeltaLakeSourceFolder,'/',\n    replace(substring(utcNow(),0,7),'-',\n    '/'))}",
+            "value": "@{concat(activity('FN_GetProcessMetadata').output.firstRow.DeltaLakeSourceFolder,'/',\n    replace(substring(utcNow(),0,7),'-',\n    '/'))}",
             "type": "Expression"
           }
         },
@@ -154,7 +161,14 @@
           "secureOutput": false
         },
         "name": "SetFolderPath",
-        "dependsOn": []
+        "dependsOn": [
+          {
+            "activity": "FN_GetProcessMetadata",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
       },
       {
         "type": "SetVariable",
@@ -170,7 +184,14 @@
           "secureOutput": false
         },
         "name": "Set TimeNow",
-        "dependsOn": []
+        "dependsOn": [
+          {
+            "activity": "FN_GetProcessMetadata",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
       },
       {
         "type": "Lookup",
@@ -178,7 +199,7 @@
           "source": {
             "type": "LakehouseTableSource",
             "sqlReaderQuery": {
-              "value": "SELECT\n    [@{pipeline().parameters.WatermarkColumnName}] = \n    COALESCE(MAX(@{pipeline().parameters.WatermarkColumnName}), '@{pipeline().parameters.CurrentWatermark}' )\nFROM [lh_BronzeLayer].[@{pipeline().parameters.SchemaName}].[@{pipeline().parameters.TableName}]",
+              "value": "SELECT\n    [@{activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName}] = \n    COALESCE(MAX(@{activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName}), '@{activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue}' )\nFROM [lh_BronzeLayer].[@{activity('FN_GetProcessMetadata').output.firstRow.TableSchema}].[@{activity('FN_GetProcessMetadata').output.firstRow.BronzeTableName}]",
               "type": "Expression"
             },
             "queryTimeout": "00:02:00",
@@ -204,7 +225,7 @@
             },
             "annotations": []
           },
-          "firstRowOnly": false
+          "firstRowOnly": true
         },
         "policy": {
           "timeout": "0.00:10:00",
@@ -260,14 +281,14 @@
           "parameters": {
             "pTargetSchema": {
               "value": {
-                "value": "@pipeline().parameters.SchemaName",
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.TableSchema",
                 "type": "Expression"
               },
               "type": "string"
             },
             "pTargetTable": {
               "value": {
-                "value": "@pipeline().parameters.TableName",
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.BronzeTableName",
                 "type": "Expression"
               },
               "type": "string"
@@ -302,42 +323,168 @@
             "dependencyConditions": [
               "Succeeded"
             ]
+          },
+          {
+            "activity": "IngestSalesforceIds",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
           }
         ]
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SalesforceServiceCloudSource",
+            "query": {
+              "value": "SELECT  @{activity('FN_GetProcessMetadata').output.firstRow.PrimaryKeys}\nFROM    @{activity('FN_GetProcessMetadata').output.firstRow.ApiEndPoint}\n",
+              "type": "Expression"
+            },
+            "additionalColumns": [
+              {
+                "name": "_crda_BronzeLoadDateTime",
+                "value": {
+                  "value": "@utcNow()",
+                  "type": "Expression"
+                }
+              },
+              {
+                "name": "_crda_SourceExecutionId",
+                "value": {
+                  "value": "@string(pipeline().parameters.ExecutionId)",
+                  "type": "Expression"
+                }
+              }
+            ],
+            "includeDeletedObjects": true,
+            "partitionOption": "None",
+            "datasetSettings": {
+              "type": "SalesforceServiceCloudObject",
+              "schema": [],
+              "externalReferences": {
+                "connection": "@pipeline().libraryVariables.vl_SrcSalesforceKantata_Salesforce_ConnectionId"
+              },
+              "annotations": []
+            }
+          },
+          "sink": {
+            "type": "LakehouseTableSink",
+            "tableActionOption": "OverwriteSchema",
+            "applyVOrder": false,
+            "partitionOption": "None",
+            "datasetSettings": {
+              "type": "LakehouseTable",
+              "typeProperties": {
+                "schema": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.TableSchema",
+                  "type": "Expression"
+                },
+                "table": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.BronzeKantataIdTableName",
+                  "type": "Expression"
+                }
+              },
+              "schema": [],
+              "linkedService": {
+                "name": "lh_BronzeLayer",
+                "properties": {
+                  "type": "Lakehouse",
+                  "typeProperties": {
+                    "artifactId": "9e22841c-13b0-87c1-4fc4-f0acc6eb7c0f",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000",
+                    "rootFolder": "Tables"
+                  },
+                  "annotations": []
+                }
+              },
+              "annotations": []
+            }
+          },
+          "translator": {
+            "type": "TabularTranslator",
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            }
+          },
+          "enableStaging": false
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 5,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "IngestSalesforceIds",
+        "dependsOn": [
+          {
+            "activity": "SetFolderPath",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "SetFileName",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "SELECT * FROM ETL.FN_GetProcessMetadata('@{pipeline().parameters.StagingProjection}')",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "FabricDb",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "e8820c1e-7730-9945-4e3e-a6c80840fd25",
+                  "workspaceId": "00000000-0000-0000-0000-000000000000"
+                },
+                "externalReferences": {
+                  "connection": "a7a1bf77-e967-4eda-9115-55d4db06497f"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "FN_GetProcessMetadata",
+        "dependsOn": []
       }
     ],
     "parameters": {
-      "DeltaLakeSourceFolder": {
-        "type": "string",
-        "defaultValue": "raw/Kantata/BusinessUnit"
-      },
-      "SchemaName": {
-        "type": "string",
-        "defaultValue": "Kantata"
-      },
-      "TableName": {
-        "type": "string",
-        "defaultValue": "BusinessUnit"
-      },
-      "KantataSelectColumns": {
-        "type": "string",
-        "defaultValue": "Budget_Code__c,CreatedById,CreatedDate,CurrencyIsoCode,Id,isActive__c,isDefault__c,IsDeleted,KimbleOne__AllowanceScheme__c,KimbleOne__BusinessUnit__c,KimbleOne__BusinessUnitGroup__c,KimbleOne__Calendar__c,KimbleOne__CreditNoteFooter__c,KimbleOne__ExpenseItemExchangeRateTolerancePct__c,KimbleOne__ExpenseItemSubmissionDays__c,KimbleOne__ExpensesTaxCodeRule__c,KimbleOne__InternalAccount__c,KimbleOne__InvoiceFooter__c,KimbleOne__InvoicePaymentTermDays__c,KimbleOne__InvoiceTaxCodeNumber__c,KimbleOne__InvoicingAddress__c,KimbleOne__InvoicingBusinessUnitName__c,KimbleOne__InvoicingCity__c,KimbleOne__InvoicingCountry__c,KimbleOne__InvoicingCurrencyIsoCode__c,KimbleOne__InvoicingName__c,KimbleOne__InvoicingPostalCode__c,KimbleOne__InvoicingState__c,KimbleOne__InvoicingStreet__c,KimbleOne__InvoicingStreetName__c,KimbleOne__IsActive__c,KimbleOne__IsOperatingEntity__c,KimbleOne__IsPrimaryOrganisationalEntity__c,KimbleOne__IsSecondaryOrganisationalEntity__c,KimbleOne__IsTradingEntity__c,KimbleOne__LogoDocumentName__c,KimbleOne__TaxCode__c,KimbleOne__TaxCodeReference__c,KimbleOne__TimePattern__c,KimbleOne__TimePatternRule__c,KimbleOne__TimePatternVariant__c,LastModifiedById,LastModifiedDate,LastReferencedDate,LastViewedDate,Name,OwnerId,Sage200CostCentreCode__c,Sage200DepartmentCode__c,SageDepartmentCode__c,SystemModstamp"
-      },
-      "ApiEndPoint": {
-        "type": "string",
-        "defaultValue": "KimbleOne__BusinessUnit__c"
-      },
-      "WatermarkColumnName": {
-        "type": "string",
-        "defaultValue": "SystemModstamp"
-      },
-      "CurrentWatermark": {
-        "type": "string",
-        "defaultValue": "2020-01-01T00:00:00Z"
-      },
       "ExecutionId": {
         "type": "int",
-        "defaultValue": -1
+        "defaultValue": 1073
+      },
+      "StagingProjection": {
+        "type": "string",
+        "defaultValue": "Kantata_BusinessUnit"
       }
     },
     "libraryVariables": {

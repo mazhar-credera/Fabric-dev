@@ -50,102 +50,124 @@ from delta.tables import DeltaTable
 
 STAGING_ROOT_PATH = f"Files/{pDeltaLakeFolder}"
 TARGET_PATH  = f"Tables/{pTargetSchema}/{pTargetTable}"
+# ============================================================
+# MAIN
+# ============================================================
+should_exit_success = False
+exit_message = ""
+try:
 
-print("=" * 60)
-print("RECOVERY: Rebuilding delta table from all parquet files")
-print(f"  Staging root : {STAGING_ROOT_PATH}")
-print(f"  Target       : {pTargetSchema}.{pTargetTable}")
-print("=" * 60)
+    print("=" * 60)
+    print("RECOVERY: Rebuilding delta table from all parquet files")
+    print(f"  Staging root : {STAGING_ROOT_PATH}")
+    print(f"  Target       : {pTargetSchema}.{pTargetTable}")
+    print("=" * 60)
 
-# --- 1. Walk all year/month subfolders and collect parquet paths ---
-print("\n[1/4] Scanning for parquet files...")
+    # --- 1. Walk all year/month subfolders and collect parquet paths ---
+    print("\n[1/4] Scanning for parquet files...")
 
-parquet_paths = []
+    parquet_paths = []
 
-for year_entry in mssparkutils.fs.ls(STAGING_ROOT_PATH):
-    if not year_entry.isDir:
-        continue
-    for month_entry in mssparkutils.fs.ls(year_entry.path):
-        if not month_entry.isDir:
+    for year_entry in mssparkutils.fs.ls(STAGING_ROOT_PATH):
+        if not year_entry.isDir:
             continue
-        for file_entry in mssparkutils.fs.ls(month_entry.path):
-            if file_entry.name.endswith(".parquet"):
-                parquet_paths.append(file_entry.path)
+        for month_entry in mssparkutils.fs.ls(year_entry.path):
+            if not month_entry.isDir:
+                continue
+            for file_entry in mssparkutils.fs.ls(month_entry.path):
+                if file_entry.name.endswith(".parquet"):
+                    parquet_paths.append(file_entry.path)
 
-if not parquet_paths:
-    raise FileNotFoundError(f"No parquet files found under {STAGING_ROOT_PATH}. Cannot recover.")
+    if parquet_paths:
 
-print(f"  Found {len(parquet_paths)} parquet file(s):")
-for p in parquet_paths:
-    print(f"    {p}")
+        print(f"  Found {len(parquet_paths)} parquet file(s):")
+        for p in parquet_paths:
+            print(f"    {p}")
 
-# --- 2. Read all parquets, unioning with schema evolution ---
-print("\n[2/4] Reading and unioning all parquet files...")
+        # --- 2. Read all parquets, unioning with schema evolution ---
+        print("\n[2/4] Reading and unioning all parquet files...")
 
-# Read each file individually so we can handle schema differences between files
-dfs = [spark.read.parquet(p) for p in parquet_paths]
+        # Read each file individually so we can handle schema differences between files
+        dfs = [spark.read.parquet(p) for p in parquet_paths]
 
-# Union using mergeSchema — adds nulls for columns missing in older files
-def union_with_schema_merge(df1: DataFrame, df2: DataFrame) -> DataFrame:
-    cols1 = set(df1.schema.fieldNames())
-    cols2 = set(df2.schema.fieldNames())
+        # Union using mergeSchema — adds nulls for columns missing in older files
+        def union_with_schema_merge(df1: DataFrame, df2: DataFrame) -> DataFrame:
+            cols1 = set(df1.schema.fieldNames())
+            cols2 = set(df2.schema.fieldNames())
 
-    # Pad df1 with any columns that exist in df2 but not df1
-    for field in df2.schema.fields:
-        if field.name not in cols1:
-            df1 = df1.withColumn(field.name, lit(None).cast(field.dataType))
+            # Pad df1 with any columns that exist in df2 but not df1
+            for field in df2.schema.fields:
+                if field.name not in cols1:
+                    df1 = df1.withColumn(field.name, lit(None).cast(field.dataType))
 
-    # Pad df2 with any columns that exist in df1 but not df2
-    for field in df1.schema.fields:
-        if field.name not in cols2:
-            df2 = df2.withColumn(field.name, lit(None).cast(field.dataType))
+            # Pad df2 with any columns that exist in df1 but not df2
+            for field in df1.schema.fields:
+                if field.name not in cols2:
+                    df2 = df2.withColumn(field.name, lit(None).cast(field.dataType))
 
-    # Reorder df2 columns to match df1 before unioning
-    df2 = df2.select(df1.columns)
+            # Reorder df2 columns to match df1 before unioning
+            df2 = df2.select(df1.columns)
 
-    return df1.union(df2)
+            return df1.union(df2)
 
-df_all = reduce(union_with_schema_merge, dfs)
+        df_all = reduce(union_with_schema_merge, dfs)
 
-print(f"  Total rows   : {df_all.count()}")
-print(f"  Total columns: {df_all.schema.fieldNames()}")
+        print(f"  Total rows   : {df_all.count()}")
+        print(f"  Total columns: {df_all.schema.fieldNames()}")
 
-# --- 3. Confirm target table is gone before writing ---
-print("\n[3/4] Verifying target table is absent...")
+        # --- 3. Confirm target table is gone before writing ---
+        print("\n[3/4] Verifying target table is absent...")
 
-if DeltaTable.isDeltaTable(spark, TARGET_PATH):
-    raise RuntimeError(
-        f"Target table already exists at {TARGET_PATH}. "
-        "This recovery cell should only be run when the table has been dropped. "
-        "Aborting to avoid duplicate data."
-    )
+        if DeltaTable.isDeltaTable(spark, TARGET_PATH):
+            raise RuntimeError(
+                f"Target table already exists at {TARGET_PATH}. "
+                "This recovery cell should only be run when the table has been dropped. "
+                "Aborting to avoid duplicate data."
+            )
 
-print("  Confirmed — target table does not exist. Proceeding with recovery write.")
+        print("  Confirmed — target table does not exist. Proceeding with recovery write.")
 
-# --- 4. Write as a new delta table ---
-print("\n[4/4] Writing recovered delta table...")
+        # --- 4. Write as a new delta table ---
+        print("\n[4/4] Writing recovered delta table...")
 
-spark.sql(f"CREATE SCHEMA IF NOT EXISTS {pTargetSchema}")
+        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {pTargetSchema}")
 
-(
-    df_all.write
-    .format("delta")
-    .mode("overwrite")   # safe here — we confirmed table doesn't exist above
-    .option("mergeSchema", "true")
-    .save(TARGET_PATH)
-)
+        (
+            df_all.write
+            .format("delta")
+            .mode("overwrite")   # safe here — we confirmed table doesn't exist above
+            .option("mergeSchema", "true")
+            .save(TARGET_PATH)
+        )
 
-spark.sql(f"""
-    CREATE TABLE IF NOT EXISTS {pTargetSchema}.`{pTargetTable}`
-    USING DELTA
-    LOCATION '{TARGET_PATH}'
-""")
+        spark.sql(f"""
+            CREATE TABLE IF NOT EXISTS {pTargetSchema}.`{pTargetTable}`
+            USING DELTA
+            LOCATION '{TARGET_PATH}'
+        """)
 
-print("\n" + "=" * 60)
-print("Recovery complete.")
-print(f"  Target table : {pTargetSchema}.{pTargetTable}")
-print(f"  Rows written : {df_all.count()}")
-print("=" * 60)
+        print("\n" + "=" * 60)
+        print("Recovery complete.")
+        print(f"  Target table : {pTargetSchema}.{pTargetTable}")
+        print(f"  Rows written : {df_all.count()}")
+        print("=" * 60)
+
+        # --- 5. Exit SUCCESS
+        # --- SET FLAG INSTEAD OF EXITING ---
+        should_exit_success = True
+        exit_message = "SUCCESS"
+
+    else:
+        print(f"No parquet files found under {STAGING_ROOT_PATH}. Cannot recover.")
+        should_exit_success = True
+        exit_message = "SUCCESS: No files to recover"
+
+except Exception as e:
+    mssparkutils.notebook.exit(f"FAILURE: {str(e)}")
+
+if should_exit_success:
+    mssparkutils.notebook.exit(exit_message)    
+
 
 # METADATA ********************
 
