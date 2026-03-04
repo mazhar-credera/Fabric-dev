@@ -1,0 +1,295 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "f69c1faa-b4ea-8c4a-4ddc-a8b076b0107f",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "pTargetSchema": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.TableSchema",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pBronzeTableShortcut": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.BronzeTableShortcut",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pSilverTableName": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.SilverTableName",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pWatermarkColumnName": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pWatermarkColumnValue": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pBronzeDataLoadWatermarkColumn": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.BronzeDataLoadWatermarkColumn",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pBronzeDataLoadWatermarkValue": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.SilverWatermarkValue",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pPrimaryKeysJson": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.PrimaryKeysJson",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pHashColumnsJson": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.KantataHashColumnsJson",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pTransformationsJson": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.TransformationsJson",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pExecutionId": {
+              "value": {
+                "value": "@pipeline().parameters.ExecutionId",
+                "type": "Expression"
+              },
+              "type": "int"
+            },
+            "pProcessId": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                "type": "Expression"
+              },
+              "type": "int"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_LoadSilverDeltaTables",
+        "dependsOn": [
+          {
+            "activity": "FN_GetProcessMetadata",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "SELECT * FROM ETL.FN_GetProcessMetadata('@{pipeline().parameters.StagingProjection}')",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "FabricDb",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "e8820c1e-7730-9945-4e3e-a6c80840fd25",
+                  "workspaceId": "00000000-0000-0000-0000-000000000000"
+                },
+                "externalReferences": {
+                  "connection": "a7a1bf77-e967-4eda-9115-55d4db06497f"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 3,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "FN_GetProcessMetadata",
+        "dependsOn": []
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "LakehouseTableSource",
+            "sqlReaderQuery": {
+              "value": "SELECT\n    [SilverWatermarkValue] = \n    COALESCE(MAX(@{activity('FN_GetProcessMetadata').output.firstRow.BronzeDataLoadWatermarkColumn}), '@{activity('FN_GetProcessMetadata').output.firstRow.SilverWatermarkValue}' )\nFROM @{activity('FN_GetProcessMetadata').output.firstRow.SilverTableFqName}\n",
+              "type": "Expression"
+            },
+            "queryTimeout": "00:02:00",
+            "partitionOption": "None"
+          },
+          "datasetSettings": {
+            "type": "LakehouseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "lh_SilverLayer",
+              "properties": {
+                "type": "Lakehouse",
+                "typeProperties": {
+                  "artifactId": "8c6ad211-a7ed-81bc-4fa8-03653231059f",
+                  "workspaceId": "00000000-0000-0000-0000-000000000000",
+                  "rootFolder": "Tables"
+                },
+                "externalReferences": {
+                  "connection": "1be520da-b501-45e2-94f4-548d7afc445a"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": true
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 15,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "ReadWatermark",
+        "dependsOn": [
+          {
+            "activity": "nb_LoadSilverDeltaTables",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "UPDATE T\nSET T.SilverWatermarkValue= '@{activity('ReadWatermark').output.firstRow.SilverWatermarkValue}'\nFROM ETL.ProcessMap AS T \nWHERE T.ProcessId = @{activity('FN_GetProcessMetadata').output.firstRow.ProcessId}; \n; \n\nSELECT RetVal = 1;\n\n",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "FabricDb",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "e8820c1e-7730-9945-4e3e-a6c80840fd25",
+                  "workspaceId": "00000000-0000-0000-0000-000000000000"
+                },
+                "externalReferences": {
+                  "connection": "a7a1bf77-e967-4eda-9115-55d4db06497f"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "UpdateSilverWatermark",
+        "dependsOn": [
+          {
+            "activity": "ReadWatermark",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "ExecutionId": {
+        "type": "int",
+        "defaultValue": 1073
+      },
+      "StagingProjection": {
+        "type": "string",
+        "defaultValue": "Kantata_Account"
+      }
+    },
+    "libraryVariables": {
+      "vl_SrcSalesforceKantata_Salesforce_ConnectionId": {
+        "type": "String",
+        "variableName": "Salesforce_ConnectionId",
+        "libraryName": "vl_SrcSalesforceKantata"
+      },
+      "vl_SrcSalesforceKantata_SalesforceOAuthURL": {
+        "type": "String",
+        "variableName": "SalesforceOAuthURL",
+        "libraryName": "vl_SrcSalesforceKantata"
+      },
+      "vl_SrcSalesforceKantata_SalesforceOAuthClientId": {
+        "type": "String",
+        "variableName": "SalesforceOAuthClientId",
+        "libraryName": "vl_SrcSalesforceKantata"
+      }
+    },
+    "variables": {
+      "FileName": {
+        "type": "String"
+      },
+      "FolderPath": {
+        "type": "String"
+      },
+      "TimeNow": {
+        "type": "String"
+      }
+    }
+  }
+}

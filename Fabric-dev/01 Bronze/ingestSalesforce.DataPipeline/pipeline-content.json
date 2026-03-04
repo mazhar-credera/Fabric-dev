@@ -199,7 +199,7 @@
           "source": {
             "type": "LakehouseTableSource",
             "sqlReaderQuery": {
-              "value": "SELECT\n    [@{activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName}] = \n    COALESCE(MAX(@{activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName}), '@{activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue}' )\nFROM [lh_BronzeLayer].[@{activity('FN_GetProcessMetadata').output.firstRow.TableSchema}].[@{activity('FN_GetProcessMetadata').output.firstRow.BronzeTableName}]",
+              "value": "SELECT\n    [BronzeWatermarkValue] = \n    COALESCE(MAX(@{activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName}), '@{activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue}' )\nFROM [lh_BronzeLayer].[@{activity('FN_GetProcessMetadata').output.firstRow.TableSchema}].[@{activity('FN_GetProcessMetadata').output.firstRow.BronzeTableName}]",
               "type": "Expression"
             },
             "queryTimeout": "00:02:00",
@@ -229,7 +229,7 @@
         },
         "policy": {
           "timeout": "0.00:10:00",
-          "retry": 5,
+          "retry": 15,
           "retryIntervalInSeconds": 30,
           "secureInput": false,
           "secureOutput": false
@@ -238,35 +238,6 @@
         "dependsOn": [
           {
             "activity": "nb_BronzeKantataDeltaAppend",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Lookup",
-        "typeProperties": {
-          "source": {
-            "type": "CopySource"
-          },
-          "datasetSettings": {
-            "type": "DatasetBase"
-          }
-        },
-        "policy": {
-          "timeout": "0.00:01:00",
-          "retry": 5,
-          "retryIntervalInSeconds": 30,
-          "secureInput": false,
-          "secureOutput": false
-        },
-        "name": "LogWatermark",
-        "state": "Inactive",
-        "onInactiveMarkAs": "Succeeded",
-        "dependsOn": [
-          {
-            "activity": "ReadWatermark",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -475,6 +446,55 @@
         },
         "name": "FN_GetProcessMetadata",
         "dependsOn": []
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "UPDATE T\nSET T.BronzeWatermarkValue= '@{activity('ReadWatermark').output.firstRow.BronzeWatermarkValue}'\nFROM ETL.ProcessMap AS T \nWHERE T.ProcessId = @{activity('FN_GetProcessMetadata').output.firstRow.ProcessId}; \n\nSELECT RetVal = 1;\n\n",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "FabricDb",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "e8820c1e-7730-9945-4e3e-a6c80840fd25",
+                  "workspaceId": "00000000-0000-0000-0000-000000000000"
+                },
+                "externalReferences": {
+                  "connection": "a7a1bf77-e967-4eda-9115-55d4db06497f"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "UpdateBronzeWatermarkValue",
+        "dependsOn": [
+          {
+            "activity": "ReadWatermark",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
       }
     ],
     "parameters": {
@@ -484,7 +504,7 @@
       },
       "StagingProjection": {
         "type": "string",
-        "defaultValue": "Kantata_BusinessUnit"
+        "defaultValue": "Kantata_Proposal"
       }
     },
     "libraryVariables": {

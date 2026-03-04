@@ -4,6 +4,7 @@ CREATE
 /*
 SELECT * FROM ETL.FN_GetProcessMetadata('SharePoint_DeskReservations')
 SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_BusinessUnit')
+SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Account')
 */
 ) RETURNS TABLE
 AS RETURN
@@ -20,20 +21,25 @@ AS RETURN
 		,P.ApiEndPoint
 		,P.SourceFormat
 		,P.TableSchema
+		/*Bronze*/
+		,P.WatermarkColumnName
 		,PM.BronzeWatermarkValue 
-		,PM.SilverWatermarkValue 
-		,P.WatermarkColumnName 
-		,P.BronzeDataLoadWatermarkColumn 
-		,P.ModificationTimeStampExpression 
+		,P.BronzeDataLoadWatermarkColumn
 		,objNames.BronzeTableName
 		,BronzeTablePath				= CONCAT(P.TableSchema,'/',objNames.BronzeTableName)
 		,ObjNames.BronzeTableShortcut
 		,objNames.BronzeKantataIdTableName
 		,fqObjNames.BronzeTableShortcutFqname
 		,fqObjNames.BronzeKantataIdTableFqName
+		/*Bronze*/
+		/*Silver*/
 		,objNames.SilverTableName
-		,SilverTablePath				= CONCAT(P.TableSchema,'/',objNames.SilverTableName)
+		,PM.SilverWatermarkValue 
+		,SilverTablePath				= REPLACE(objNames.SilverTableName, '.', '/')
 		,fqObjNames.SilverTableFqName
+		/*Silver*/
+		,P.ModificationTimeStampExpression 
+		,TransformationsJson			= ISNULL(ST.TransformationsJson , '{}') 
 		,KantataSelectColumns	= 
 				'' + (
 					SELECT STRING_AGG(
@@ -92,7 +98,8 @@ AS RETURN
 		,SharePointSite				= IIF(p.TableSchema = 'SharePoint', SP.SharePointSite  , NULL)
 		,SharePointOnlineListName	= IIF(p.TableSchema = 'SharePoint', SP.SharePointOnlineListName , NULL)
 	FROM Meta.Process P
-	LEFT JOIN ETL.ProcessMap PM ON PM.StagingProjection = P.StagingProjection AND PM.GroupId = 1 
+	LEFT JOIN ETL.ProcessMap			PM	ON PM.StagingProjection = P.StagingProjection AND PM.GroupId = 1 
+	LEFT JOIN ETL.SilverTransformations ST	ON ST.StagingProjection = P.StagingProjection 
 	  CROSS APPLY (
 		SELECT 
 			  BronzeTableName					= P.TableNameRoot
@@ -110,7 +117,7 @@ AS RETURN
 													CONCAT('lh_BronzeLayer.',p.TableSchema, '.', objNames.BronzeKantataIdTableName) 
 													, NULL) 
 			, BronzeTableShortcutFqname		= CONCAT('lh_SilverLayer.','Bronze',p.TableSchema,'.',P.TableNameRoot) 
-			, SilverTableFqName				= CONCAT('lh_SilverLayer.', p.TableSchema, '.', objNames.SilverTableName) 
+			, SilverTableFqName				= CONCAT('lh_SilverLayer.', objNames.SilverTableName) 
 	  ) fqObjNames 
 	  OUTER APPLY (
 		SELECT 
