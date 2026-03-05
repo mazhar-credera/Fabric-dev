@@ -33,7 +33,7 @@ pBronzeDataLoadWatermarkColumn = "_crda_BronzeLoadDateTime"
 pBronzeDataLoadWatermarkValue  = "2000-01-01 00:00:00"
 pPrimaryKeysJson    = '["Id"]'
 pHashColumnsJson    = '["Budget_Code__c","CreatedDate","CurrencyIsoCode","isActive__c","isDefault__c","IsDeleted","KimbleOne__AllowanceScheme__c","KimbleOne__BusinessUnit__c","KimbleOne__BusinessUnitGroup__c","KimbleOne__Calendar__c","KimbleOne__CreditNoteFooter__c","KimbleOne__ExpenseItemExchangeRateTolerancePct__c","KimbleOne__ExpenseItemSubmissionDays__c","KimbleOne__ExpensesTaxCodeRule__c","KimbleOne__InternalAccount__c","KimbleOne__InvoiceFooter__c","KimbleOne__InvoicePaymentTermDays__c","KimbleOne__InvoiceTaxCodeNumber__c","KimbleOne__InvoicingAddress__c","KimbleOne__InvoicingBusinessUnitName__c","KimbleOne__InvoicingCity__c","KimbleOne__InvoicingCountry__c","KimbleOne__InvoicingCurrencyIsoCode__c","KimbleOne__InvoicingName__c","KimbleOne__InvoicingPostalCode__c","KimbleOne__InvoicingState__c","KimbleOne__InvoicingStreet__c","KimbleOne__InvoicingStreetName__c","KimbleOne__IsActive__c","KimbleOne__IsOperatingEntity__c","KimbleOne__IsPrimaryOrganisationalEntity__c","KimbleOne__IsSecondaryOrganisationalEntity__c","KimbleOne__IsTradingEntity__c","KimbleOne__LogoDocumentName__c","KimbleOne__TaxCode__c","KimbleOne__TaxCodeReference__c","KimbleOne__TimePattern__c","KimbleOne__TimePatternRule__c","KimbleOne__TimePatternVariant__c","LastReferencedDate","Name","OwnerId","Sage200CostCentreCode__c","Sage200DepartmentCode__c","SageDepartmentCode__c"]'
-pTransformationsJson= '{"BusinessUnitName": "Name"}'
+pTransformationsJson= '{"computed": {"BusinessUnitName": "Name"}}'
 pExecutionId    = 1073
 pProcessId      = 10
 
@@ -47,15 +47,17 @@ pProcessId      = 10
 
 # CELL ********************
 
-# MAGIC %%sql
-# MAGIC /* sandbox testing
-# MAGIC drop table if exists Kantata.HISTORY_Business
-# MAGIC */
+/*%%sql*/
+/* sandbox testing */
+/*drop table if exists Kantata.HISTORY_Business*/
+
+/*mssparkutils.fs.rm("Tables/Kantata.HISTORY_BusinessUnit", recurse=True)*/
+
 
 # METADATA ********************
 
 # META {
-# META   "language": "sparksql",
+# META   "language": "python",
 # META   "language_group": "synapse_pyspark",
 # META   "frozen": true,
 # META   "editable": false
@@ -63,158 +65,625 @@ pProcessId      = 10
 
 # CELL ********************
 
+# =============================================================================
+# Notebook  : nb_Bronze_To_Silver_SCD2
+# Purpose   : Generic, metadata-driven ingestion from Bronze → Silver (SCD2)
+# Lakehouse : Attached to lh_silver
+# Author    : Data Engineering
+# Notes     : Designed to be environment-agnostic (dev/test/prod).
+#             No code changes required when promoting between environments.
+#             All environment-specific config is passed via parameters.
+# =============================================================================
+
+# ── Imports ──────────────────────────────────────────────────────────────────
 import json
-from datetime import datetime, timedelta
-from pyspark.sql import functions as F
-from pyspark.sql.window import Window
-from pyspark.sql.types import *
+import traceback
+from datetime import datetime, timezone
+from pyspark.sql import DataFrame, functions as F
+from pyspark.sql.types import (
+    StringType, IntegerType, LongType, DoubleType,
+    FloatType, BooleanType, DateType, TimestampType, DecimalType
+)
 from delta.tables import DeltaTable
 
-# --- 1. Parameter Initialization ---
-# These are defined in the Fabric Notebook Parameter Cell
-should_exit_success = False
-try:
-    # Parsing/transforming parameters from parameter cell that need it
-    pk_list = json.loads(pPrimaryKeysJson)
-    hash_cols = json.loads(pHashColumnsJson)
-    transformations = json.loads(pTransformationsJson)
-    exec_id = int(pExecutionId)
-    proc_id = int(pProcessId)
-    # Parsing/transforming Parameters
-    
-    TargetTable  = pSilverTableName.replace(".", "/")
-    TARGET_PATH  = f"Tables/{TargetTable}"
+# =============================================================================
+# SECTION 1 – PARAMETERS
+# All values are injected by the orchestrator (e.g. Data Factory / Fabric
+# Pipeline). Defaults below are illustrative only and should not be relied
+# upon in production.
+# =============================================================================
 
-    print("=" * 60)
-    print("Load Silver from Bronze")
-    print(f"  pBronzeTableShortcut : {pBronzeTableShortcut}")
-    print(f"  pSilverTableName : {pSilverTableName}")
-    print(f"  TARGET_PATH : {TARGET_PATH}")
-    print("=" * 60)
+# -- Widget / parameter definitions -------------------------------------------
+# In MS Fabric notebooks, parameters are injected as variables when the cell
+# is tagged as a "parameter cell". The cell below acts as that parameter cell.
+"""
+pBronzeTableShortcut       = ""          # Shortcut name in lh_silver pointing to the bronze delta table
+pSilverTableName           = ""          # Target silver delta table name (created in lh_silver)
+pWatermarkColumnName       = "SystemModstamp"           # Source watermark column (e.g. SystemModstamp)
+pWatermarkColumnValue      = "1900-01-01 00:00:00"      # Last processed source watermark value
+pBronzeDataLoadWatermarkColumn = "_crda_BronzeLoadDateTime"  # Bronze load metadata column
+pBronzeDataLoadWatermarkValue  = "1900-01-01 00:00:00"       # Last processed bronze load watermark
+pPrimaryKeysJson           = '["Id"]'                   # JSON array of primary key column names
+pHashColumnsJson           = '["Id","Name","Status"]'   # JSON array of columns used for row hash
+pTransformationsJson       = '{}'                       # JSON describing transformations / cleansing / computed cols
+pExecutionId               = 0                          # int32 execution identifier from orchestrator
+pProcessId                 = 0                          # int32 process identifier from orchestrator
+""" 
+
+# =============================================================================
+# SECTION 2 – CONSTANTS & CONFIGURATION
+# Centralised place for all "magic values" to make the notebook easy to
+# maintain and support.
+# =============================================================================
+
+BRONZE_LAKEHOUSE  = "lh_BronzeLayer"   # Bronze lakehouse name (consistent across envs)
+SILVER_LAKEHOUSE  = "lh_SilverLayer"   # Silver lakehouse name (consistent across envs)
+
+SCD2_ACTIVE_FROM_COL  = "_crda_ActiveFromDateTime"
+SCD2_ACTIVE_TO_COL    = "_crda_ActiveToDateTime"
+SCD2_IS_CURRENT_COL   = "isCurrent"          # Calculated: ActiveToDateTime = SCD2_OPEN_END_DATE
+SCD2_ROW_HASH_COL     = "_crda_RowHash"
+SCD2_IS_DELETED_COL   = "isDeleted"
+SCD2_OPEN_END_DATE    = "9999-12-31 23:59:59"  # Sentinel value for open / current rows
+
+META_SILVER_LOAD_DT_COL    = "_crda_SilverLoadDateTime"
+META_CREATED_EXEC_ID_COL   = "_crda_CreatedExecutionId"
+META_UPDATED_EXEC_ID_COL   = "_crda_UpdatedExecutionId"
+
+EXPIRE_OFFSET_MS = 3   # Milliseconds to subtract from incoming ActiveFrom when expiring old rows
+
+# =============================================================================
+# SECTION 3 – HELPER FUNCTIONS
+# =============================================================================
+
+def log(message: str, level: str = "INFO"):
+    """Simple structured logger – prefix with timestamp and level."""
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    print(f"[{ts}] [{level}] {message}")
 
 
-    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {pTargetSchema}")
-    
-    # --- 2. Extract & Deduplicate Bronze Data ---
-    # Filter by Load Watermark (File creation time)
-    df_bronze = spark.read.table(pBronzeTableShortcut) \
-        .filter(F.col(pBronzeDataLoadWatermarkColumn) > pBronzeDataLoadWatermarkValue)
+def parse_json_param(param_name: str, raw_value: str) -> any:
+    """
+    Safely parse a JSON string parameter.
+    Raises a ValueError with a descriptive message on failure.
+    """
+    try:
+        return json.loads(raw_value)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Parameter '{param_name}' is not valid JSON: {exc}") from exc
 
-    if not df_bronze.isEmpty():
 
-        print(f"  Rows   : {df_bronze.count()}")
-        # print(f"  Columns: {df_bronze.schema.fieldNames()}")
+def map_spark_type(type_str: str):
+    """
+    Convert a string type descriptor (from pTransformationsJson) to a Spark
+    DataType object. Extend this mapping as required.
+    """
+    mapping = {
+        "string":    StringType(),
+        "int":       IntegerType(),
+        "integer":   IntegerType(),
+        "long":      LongType(),
+        "bigint":    LongType(),
+        "double":    DoubleType(),
+        "float":     FloatType(),
+        "boolean":   BooleanType(),
+        "bool":      BooleanType(),
+        "date":      DateType(),
+        "timestamp": TimestampType(),
+    }
+    lower = type_str.lower().strip()
+    if lower.startswith("decimal"):
+        # e.g. "decimal(18,4)"
+        inner = lower.replace("decimal", "").strip("() ")
+        parts = inner.split(",")
+        precision = int(parts[0]) if len(parts) > 0 else 18
+        scale     = int(parts[1]) if len(parts) > 1 else 4
+        return DecimalType(precision, scale)
+    if lower not in mapping:
+        raise ValueError(f"Unsupported type descriptor '{type_str}' in pTransformationsJson.")
+    return mapping[lower]
 
-        # Deduplicate within the batch: Keep latest SystemModstamp per PK
-        window_spec = Window.partitionBy(*pk_list).orderBy(F.col(pWatermarkColumnName).desc())
-        df_deduped = df_bronze.withColumn("rn", F.row_number().over(window_spec)) \
-            .filter("rn = 1").drop("rn")
-        print(f"  Rows after dedupe   : {df_deduped.count()}")
 
-        # --- 3. Dynamic Transformations & Cleansing ---
-        # Apply logic from TransformationsJson (e.g., {"new_col": "col_a + col_b", "clean_name": "upper(name)"})
-        for col_name, expr in transformations.items():
-            df_deduped = df_deduped.withColumn(col_name, F.expr(expr))
+def apply_transformations(df: DataFrame, transformations: dict) -> DataFrame:
+    """
+    Apply metadata-driven transformations to a DataFrame.
 
-        # --- 4. Prepare Staging DataFrame for SCD2 ---
-        # Add _crda_RowHash and Metadata columns
-        df_staged = df_deduped.withColumn("_crda_RowHash", F.sha2(F.concat_ws("||", *hash_cols), 256)) \
-            .withColumn("ActiveFromDateTime", F.col(pWatermarkColumnName)) \
-            .withColumn("ActiveToDateTime", F.to_timestamp(F.lit("9999-12-31 23:59:59"))) \
-            .withColumn("isDeleted", F.lit(False)) \
-            .withColumn("_crda_SilverLoadDateTime", F.current_timestamp()) \
-            .withColumn("_crda_CreatedExecutionId", F.lit(exec_id).cast("int")) \
-            .withColumn("_crda_UpdatedExecutionId", F.lit(exec_id).cast("int"))
+    Expected pTransformationsJson structure (all keys optional):
+    {
+        "rename": {
+            "OldColumnName": "NewColumnName"
+        },
+        "cast": {
+            "ColumnName": "target_type"
+        },
+        "cleanse": {
+            "ColumnName": {
+                "trim":           true,
+                "upper":          false,
+                "lower":          false,
+                "replace_nulls":  "DEFAULT_VALUE",
+                "regex_replace":  { "pattern": "\\s+", "replacement": " " }
+            }
+        },
+        "computed": {
+            "NewColumnName": "spark_sql_expression_referencing_existing_columns"
+        },
+        "drop": ["ColumnToDrop1", "ColumnToDrop2"]
+    }
 
-        # Calculated column for isCurrent
-        df_staged = df_staged.withColumn("isCurrent", 
-            F.when(F.col("ActiveToDateTime") == "9999-12-31 23:59:59", True).otherwise(False))
+    Each key is independently optional – only the sections present are applied.
+    """
 
-        # --- 5. Upsert Logic (Merge) ---
-        if not spark.catalog.tableExists(pSilverTableName):
-            print("=" * 60)
-            print(f"  TargetTable : {pSilverTableName} : doesn't exist, so creating first time now ")
-            print("=" * 60)
-            # Initial Load
-            (
-                df_staged.write
-                .format("delta")
-                .save(TARGET_PATH)
-            )
-            print(f"TargetTable created {pSilverTableName}")
-
-            # Register the table in the metastore preserving case, if it doesn't exist yet
-            # spark.sql(f"""
-            #    CREATE TABLE IF NOT EXISTS `{pSilverTableName}`
-            #    USING DELTA
-            #    LOCATION '{TARGET_PATH}'
-            #""")
-            # print(f"register")
-
+    # -- 3a. Rename columns ---------------------------------------------------
+    rename_map: dict = transformations.get("rename", {})
+    for old_name, new_name in rename_map.items():
+        if old_name in df.columns:
+            log(f"  Renaming column '{old_name}' → '{new_name}'")
+            df = df.withColumnRenamed(old_name, new_name)
         else:
-            # SCD2 Merge Logic
-            silverTable = DeltaTable.forName(spark, pSilverTableName)
-            print(f"silverTable object initialized")
-            
-            # Identify records that need to be updated (PK match but Hash differs)
-            # We perform a "Merge" where we update existing records to expire them
-            # And insert new records. 
-            # Note: True SCD2 usually requires a union for the 'Update + Insert' pattern
-            
-            join_condition = " AND ".join([f"target.{c} = source.{c}" for c in pk_list])
-            
-            # 1. Expire existing records
-            # We execute and capture metrics in one go
-            (
-                silverTable.alias("target")
-                .merge(
-                    source = df_staged.alias("source"),
-                    condition = f"{join_condition} AND target.isCurrent = true AND target._crda_RowHash <> source._crda_RowHash"
-                )
-                .whenMatchedUpdate(set = {
-                    "ActiveToDateTime": F.expr("source.ActiveFromDateTime - INTERVAL 3 MILLISECONDS"),
-                    "isCurrent": F.lit(False),
-                    "_crda_UpdatedExecutionId": F.lit(exec_id)
-                })
-                .execute()
-            )
+            log(f"  WARN: Rename source column '{old_name}' not found – skipping.", "WARN")
 
-            # 2. Insert new records
-            # Only insert if the record is brand new or the hash has changed
-            df_to_insert = df_staged.alias("source").join(
-                spark.read.table(pSilverTableName).alias("target"),
-                F.expr(f"{join_condition} AND target.isCurrent = true"),
-                "left_outer"
-            ).filter("target._crda_RowHash IS NULL OR source._crda_RowHash <> target._crda_RowHash") \
-            .select("source.*")
+    # -- 3b. Cast columns to new types ----------------------------------------
+    cast_map: dict = transformations.get("cast", {})
+    for col_name, type_str in cast_map.items():
+        if col_name in df.columns:
+            target_type = map_spark_type(type_str)
+            log(f"  Casting '{col_name}' → {type_str}")
+            df = df.withColumn(col_name, F.col(col_name).cast(target_type))
+        else:
+            log(f"  WARN: Cast target column '{col_name}' not found – skipping.", "WARN")
 
-            if not df_to_insert.isEmpty():
-                print(f"Rows to insert : {df_to_insert.count()}")
-                (
-                    df_to_insert.write
-                    .format("delta")
-                    .mode("append")
-                    .option("mergeSchema", "true")
-                    .save(TARGET_PATH)
-                )
-                print(f"new inserts")
-            else:
-                print(f"nothing to insert")
-        
-        # Exit SUCCESS
-        should_exit_success = True
+    # -- 3c. Cleanse columns --------------------------------------------------
+    cleanse_map: dict = transformations.get("cleanse", {})
+    for col_name, rules in cleanse_map.items():
+        if col_name not in df.columns:
+            log(f"  WARN: Cleanse target column '{col_name}' not found – skipping.", "WARN")
+            continue
+        log(f"  Cleansing column '{col_name}' with rules: {rules}")
+        col_expr = F.col(col_name)
+
+        if rules.get("trim", False):
+            col_expr = F.trim(col_expr)
+        if rules.get("upper", False):
+            col_expr = F.upper(col_expr)
+        if rules.get("lower", False):
+            col_expr = F.lower(col_expr)
+
+        replace_null = rules.get("replace_nulls")
+        if replace_null is not None:
+            col_expr = F.coalesce(col_expr, F.lit(replace_null))
+
+        regex_rule = rules.get("regex_replace")
+        if regex_rule:
+            col_expr = F.regexp_replace(col_expr, regex_rule["pattern"], regex_rule["replacement"])
+
+        df = df.withColumn(col_name, col_expr)
+
+    # -- 3d. Add computed / derived columns -----------------------------------
+    computed_map: dict = transformations.get("computed", {})
+    for new_col, sql_expr in computed_map.items():
+        log(f"  Adding computed column '{new_col}' = {sql_expr}")
+        df = df.withColumn(new_col, F.expr(sql_expr))
+
+    # -- 3e. Drop unwanted columns --------------------------------------------
+    drop_list: list = transformations.get("drop", [])
+    for col_name in drop_list:
+        if col_name in df.columns:
+            log(f"  Dropping column '{col_name}'")
+            df = df.drop(col_name)
+        else:
+            log(f"  WARN: Drop target column '{col_name}' not found – skipping.", "WARN")
+
+    return df
+
+
+def compute_row_hash(df: DataFrame, hash_columns: list) -> DataFrame:
+    """
+    Compute a SHA2-256 hash over the specified columns and store in RowHash.
+    Columns are cast to string and concatenated with '|' as delimiter before
+    hashing to ensure consistency regardless of underlying types.
+    Missing columns are excluded with a warning.
+    """
+    valid_cols = [c for c in hash_columns if c in df.columns]
+    missing    = [c for c in hash_columns if c not in df.columns]
+    if missing:
+        log(f"  WARN: Hash columns not found in DataFrame – excluded: {missing}", "WARN")
+
+    hash_expr = F.sha2(
+        F.concat_ws("|", *[F.col(c).cast(StringType()) for c in valid_cols]),
+        256
+    )
+    return df.withColumn(SCD2_ROW_HASH_COL, hash_expr)
+
+
+def add_scd2_meta_columns(
+    df: DataFrame,
+    watermark_col: str,
+    execution_id: int,
+    load_datetime: datetime
+) -> DataFrame:
+    """
+    Append all required SCD2 and audit metadata columns to the incoming
+    (new / changed) records DataFrame.
+
+    Columns added:
+        ActiveFromDateTime  – copied from the source watermark column
+        ActiveToDateTime    – open-end sentinel (9999-12-31 23:59:59)
+        isCurrent           – derived from ActiveToDateTime (always True here)
+        isDeleted           – False by default (hard-delete not in scope)
+        _crda_SilverLoadDateTime   – notebook execution datetime (UTC)
+        _crda_CreatedExecutionId   – pExecutionId
+        _crda_UpdatedExecutionId   – pExecutionId
+    """
+    silver_load_ts = F.lit(load_datetime.strftime("%Y-%m-%d %H:%M:%S")).cast(TimestampType())
+
+    df = (
+        df
+        # ActiveFromDateTime = source watermark (SystemModstamp)
+        .withColumn(SCD2_ACTIVE_FROM_COL, F.col(watermark_col).cast(TimestampType()))
+        # ActiveToDateTime = open sentinel
+        .withColumn(SCD2_ACTIVE_TO_COL, F.lit(SCD2_OPEN_END_DATE).cast(TimestampType()))
+        # isCurrent – calculated; new rows are always current
+        .withColumn(SCD2_IS_CURRENT_COL,
+                    F.when(F.col(SCD2_ACTIVE_TO_COL) == F.lit(SCD2_OPEN_END_DATE).cast(TimestampType()),
+                           F.lit(True)).otherwise(F.lit(False)))
+        # isDeleted – default False
+        .withColumn(SCD2_IS_DELETED_COL, F.lit(False).cast(BooleanType()))
+        # Audit / lineage columns
+        .withColumn(META_SILVER_LOAD_DT_COL, silver_load_ts)
+        .withColumn(META_CREATED_EXEC_ID_COL, F.lit(execution_id).cast(IntegerType()))
+        .withColumn(META_UPDATED_EXEC_ID_COL, F.lit(execution_id).cast(IntegerType()))
+    )
+    return df
+
+
+def align_schema(source_df: DataFrame, target_df: DataFrame) -> DataFrame:
+    """
+    SCHEMA DRIFT HANDLER – Source vs Target.
+
+    Ensures the source DataFrame contains all columns present in the existing
+    target Delta table. Missing columns are added as NULL with the correct
+    type. Extra columns in the source (new columns added since last run) are
+    retained and will trigger a Delta schema evolution merge (mergeSchema=true).
+    """
+    target_schema = {field.name: field.dataType for field in target_df.schema}
+    source_cols   = set(source_df.columns)
+
+    for col_name, col_type in target_schema.items():
+        if col_name not in source_cols:
+            log(f"  Schema drift (source→target): Adding missing column '{col_name}' as NULL")
+            source_df = source_df.withColumn(col_name, F.lit(None).cast(col_type))
+
+    return source_df
+
+
+def silver_table_path(table_name: str) -> str:
+    """
+    Return the fully qualified Delta path for a silver table.
+    Supports dot-notation schema separation e.g. "Kantata.HISTORY_BusinessUnit"
+    resolves to "Tables/Kantata/HISTORY_BusinessUnit".
+    """
+    parts = table_name.split(".", 1)
+    if len(parts) == 2:
+        schema, tbl = parts
+        return f"Tables/{schema}/{tbl}"
+    return f"Tables/{table_name}"
+
+
+def ensure_schema_exists(table_name: str):
+    """
+    Creates the schema (folder) in the lakehouse if it does not already exist.
+    Required when using dot-notation table names e.g. "Kantata.HISTORY_BusinessUnit".
+    In MS Fabric, schemas map to folders under Tables/.
+    """
+    parts = table_name.split(".", 1)
+    if len(parts) == 2:
+        schema = parts[0]
+        log(f"  Ensuring schema '{schema}' exists in lh_silver")
+        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {schema}")
+
+# =============================================================================
+# SECTION 4 – MAIN EXECUTION
+# Wrapped in a try/except so the notebook always exits with a clear status.
+# =============================================================================
+
+execution_status = "FAILURE"   # Assume failure until all steps complete
+run_datetime     = datetime.now(timezone.utc)
+
+try:
+    log("=" * 70)
+    log("Bronze → Silver SCD2 Notebook – START")
+    log("=" * 70)
+
+    # ── 4.1  Validate & parse parameters ─────────────────────────────────────
+    log("STEP 1: Validating and parsing input parameters")
+
+    if not pBronzeTableShortcut:
+        raise ValueError("pBronzeTableShortcut is required and must not be empty.")
+    if not pSilverTableName:
+        raise ValueError("pSilverTableName is required and must not be empty.")
+
+    primary_keys : list = parse_json_param("pPrimaryKeysJson",    pPrimaryKeysJson)
+    hash_columns : list = parse_json_param("pHashColumnsJson",    pHashColumnsJson)
+    transformations     = parse_json_param("pTransformationsJson", pTransformationsJson)
+
+    if not isinstance(primary_keys, list) or len(primary_keys) == 0:
+        raise ValueError("pPrimaryKeysJson must be a non-empty JSON array.")
+    if not isinstance(hash_columns, list) or len(hash_columns) == 0:
+        raise ValueError("pHashColumnsJson must be a non-empty JSON array.")
+
+    execution_id : int = int(pExecutionId)
+    process_id   : int = int(pProcessId)
+
+    log(f"  Bronze shortcut          : {pBronzeTableShortcut}")
+    log(f"  Silver table             : {pSilverTableName}")
+    log(f"  Watermark column         : {pWatermarkColumnName}")
+    log(f"  Watermark value          : {pWatermarkColumnValue}")
+    log(f"  Bronze load wm column    : {pBronzeDataLoadWatermarkColumn}")
+    log(f"  Bronze load wm value     : {pBronzeDataLoadWatermarkValue}")
+    log(f"  Primary keys             : {primary_keys}")
+    log(f"  Hash columns             : {hash_columns}")
+    log(f"  Execution ID             : {execution_id}")
+    log(f"  Process ID               : {process_id}")
+
+    SourceTable  = pBronzeTableShortcut.replace(".", "/")
+    TargetTable  = pSilverTableName.replace(".", "/")
+
+    # ── 4.2  Read new Bronze records using Bronze Load watermark ──────────────
+    # The lh_silver lakehouse has a shortcut to lh_bronze delta tables.
+    # Reading via the shortcut name keeps the code environment-agnostic.
+    log("STEP 2: Reading new Bronze records since last Bronze load watermark")
+
+    bronze_df = (
+        spark.read
+             .format("delta")
+             .load(silver_table_path(pBronzeTableShortcut))  # shortcut in lh_silver
+             .filter(
+                 F.col(pBronzeDataLoadWatermarkColumn) > F.lit(pBronzeDataLoadWatermarkValue).cast(TimestampType())
+             )
+    )
+
+    new_record_count = bronze_df.count()
+    log(f"  Bronze records after watermark filter: {new_record_count:,}")
+
+    if new_record_count == 0:
+        log("  No new bronze records found. Exiting with SUCCESS (nothing to process).")
+        execution_status = "SUCCESS"
+        # Exit the notebook cleanly
+        mssparkutils.notebook.exit(json.dumps({"status": execution_status, "recordsProcessed": 0}))
+
+    # ── 4.3  Filter on Source Watermark (SystemModstamp) ─────────────────────
+    # Capture late-arriving facts: filter on pWatermarkColumnName to ensure
+    # we only process records that are genuinely new from the source system.
+    log("STEP 3: Filtering on source watermark (SystemModstamp)")
+
+    bronze_df = bronze_df.filter(
+        F.col(pWatermarkColumnName) > F.lit(pWatermarkColumnValue).cast(TimestampType())
+    )
+
+    watermark_filtered_count = bronze_df.count()
+    log(f"  Records after source watermark filter: {watermark_filtered_count:,}")
+
+    # ── 4.4  Deduplicate Bronze records ───────────────────────────────────────
+    # For a given primary key, retain only the record with the highest
+    # SystemModstamp (most recent source version) within this batch.
+    log("STEP 4: Deduplicating Bronze records on primary key + SystemModstamp")
+
+    from pyspark.sql.window import Window
+
+    dedup_window = (
+        Window
+        .partitionBy(*[F.col(k) for k in primary_keys])
+        .orderBy(F.col(pWatermarkColumnName).desc())
+    )
+
+    bronze_deduped_df = (
+        bronze_df
+        .withColumn("_dedup_rank", F.row_number().over(dedup_window))
+        .filter(F.col("_dedup_rank") == 1)
+        .drop("_dedup_rank")
+    )
+
+    deduped_count = bronze_deduped_df.count()
+    log(f"  Records after deduplication: {deduped_count:,}")
+
+    # ── 4.5  Apply metadata-driven transformations ────────────────────────────
+    log("STEP 5: Applying metadata-driven transformations / cleansing / computed columns")
+
+    transformed_df = apply_transformations(bronze_deduped_df, transformations)
+
+    # ── 4.6  Compute RowHash ──────────────────────────────────────────────────
+    log("STEP 6: Computing RowHash over hash columns")
+    transformed_df = compute_row_hash(transformed_df, hash_columns)
+
+    # ── 4.7  Add SCD2 & audit metadata columns ────────────────────────────────
+    log("STEP 7: Adding SCD2 and audit metadata columns")
+    transformed_df = add_scd2_meta_columns(
+        df            = transformed_df,
+        watermark_col = pWatermarkColumnName,
+        execution_id  = execution_id,
+        load_datetime = run_datetime
+    )
+
+    # ── 4.8  Silver table creation / schema evolution ─────────────────────────────
+    log("STEP 8: Checking if Silver Delta table exists; creating if not")
+
+    # Ensure schema (folder) exists for dot-notation table names
+    ensure_schema_exists(pSilverTableName)
+
+    silver_path   = silver_table_path(pSilverTableName)
+    table_exists  = DeltaTable.isDeltaTable(spark, silver_path)
+
+    if not table_exists:
+        # ── First-run: create the Silver table from the incoming batch ────────
+        log(f"  Silver table '{pSilverTableName}' does not exist. Creating now.")
+
+        (
+            transformed_df.write
+            .format("delta")
+            .mode("overwrite")
+            .option("overwriteSchema", "true")
+            .save(silver_path)
+        )
+
+        log(f"  Silver table created with {deduped_count:,} initial records.")
+        execution_status = "SUCCESS"
 
     else:
-        print("No new data found. Preparing to exit.")
-        should_exit_success = True
+        # ── Subsequent runs: SCD2 MERGE ───────────────────────────────────────
+        log(f"  Silver table '{pSilverTableName}' exists. Performing SCD2 merge.")
 
-except Exception as e:
-    print(f"FAILURE: {str(e)}")
-    mssparkutils.notebook.exit(f"FAILURE: {str(e)}")
+        # Read existing silver table for schema alignment check
+        existing_silver_df = spark.read.format("delta").load(silver_path)
 
-if should_exit_success:
-    mssparkutils.notebook.exit("SUCCESS")
+        # SCHEMA DRIFT (1): source → existing target
+        # Ensure incoming data has all columns the target already knows about.
+        transformed_df = align_schema(transformed_df, existing_silver_df)
 
+        silver_delta = DeltaTable.forPath(spark, silver_path)
+
+        # Build the join condition on all primary key columns
+        pk_join_condition = " AND ".join(
+            [f"target.{k} = source.{k}" for k in primary_keys]
+        )
+
+        # Expiry offset: 3 ms prior to the incoming row's ActiveFromDateTime
+        # expressed in microseconds for Spark interval arithmetic
+        expire_expr = (
+            F.col(f"source.{SCD2_ACTIVE_FROM_COL}") -
+            F.expr(f"INTERVAL {EXPIRE_OFFSET_MS} MILLISECONDS")
+        )
+
+        # ── Step A: Expire currently-active rows whose hash has changed ───────
+        # We update the ActiveToDateTime of the existing current row to be
+        # 3 ms prior to the incoming row's ActiveFromDateTime, then mark it
+        # as non-current.  _crda_UpdatedExecutionId is also stamped.
+        log("  Step A: Expiring changed current rows")
+
+        silver_delta.alias("target").merge(
+            transformed_df.alias("source"),
+            f"{pk_join_condition} "
+            f"AND target.{SCD2_IS_CURRENT_COL} = true "
+            f"AND target.{SCD2_ROW_HASH_COL} <> source.{SCD2_ROW_HASH_COL}"
+        ).whenMatchedUpdate(set={
+            SCD2_ACTIVE_TO_COL     : expire_expr,
+            SCD2_IS_CURRENT_COL    : F.lit(False),
+            META_UPDATED_EXEC_ID_COL: F.lit(execution_id).cast(IntegerType())
+        }).execute()
+
+        log("  Step A complete: Expired rows updated.")
+
+        # ── Step B: Insert new / changed rows ─────────────────────────────────
+        # Insert rows that are either:
+        #   (a) brand-new PKs not previously seen in silver, or
+        #   (b) changed rows (hash differs) – the old row was expired in Step A
+        #
+        # We use a left-anti approach: read the current silver state and
+        # only insert records from the incoming batch that don't already
+        # exist as current rows with the same hash.
+        log("  Step B: Inserting new / changed rows")
+
+        current_silver_df = (
+            spark.read.format("delta").load(silver_path)
+                 .filter(F.col(SCD2_IS_CURRENT_COL) == True)
+                 .select(*primary_keys, SCD2_ROW_HASH_COL)
+        )
+
+        # Rows to insert = incoming records whose (PK + hash) do not already
+        # exist in the current silver (i.e. they are new or changed)
+        join_cond = [F.col(f"incoming.{k}") == F.col(f"existing.{k}") for k in primary_keys]
+        join_cond.append(F.col(f"incoming.{SCD2_ROW_HASH_COL}") == F.col(f"existing.{SCD2_ROW_HASH_COL}"))
+
+        rows_to_insert = (
+            transformed_df.alias("incoming")
+            .join(
+                current_silver_df.alias("existing"),
+                on=join_cond,
+                how="left_anti"
+            )
+        )
+
+        insert_count = rows_to_insert.count()
+        log(f"  Rows to insert: {insert_count:,}")
+
+        if insert_count > 0:
+            # SCHEMA DRIFT (2): incoming batch may have NEW columns (e.g. new
+            # computed columns added to pTransformationsJson since last run).
+            # Writing with mergeSchema=true automatically evolves the Delta schema.
+            (
+                rows_to_insert.write
+                .format("delta")
+                .mode("append")
+                .option("mergeSchema", "true")   # handles schema drift scenario 2
+                .save(silver_path)
+            )
+            log(f"  Step B complete: {insert_count:,} rows inserted.")
+        else:
+            log("  Step B: No new rows to insert.")
+
+        # ── Step C: Recalculate isCurrent after merge ──────────────────────────
+        # isCurrent is a calculated column. After the merge, refresh it for
+        # any rows that may have been updated (Delta does not support computed
+        # columns natively in merge, so we do a targeted update pass).
+        log("  Step C: Refreshing isCurrent calculated column")
+
+        silver_delta.update(
+            condition = F.col(SCD2_ACTIVE_TO_COL) == F.lit(SCD2_OPEN_END_DATE).cast(TimestampType()),
+            set       = {SCD2_IS_CURRENT_COL: F.lit(True)}
+        )
+        silver_delta.update(
+            condition = F.col(SCD2_ACTIVE_TO_COL) != F.lit(SCD2_OPEN_END_DATE).cast(TimestampType()),
+            set       = {SCD2_IS_CURRENT_COL: F.lit(False)}
+        )
+        log("  Step C complete: isCurrent refreshed.")
+
+        execution_status = "SUCCESS"
+
+    # ── 4.9  Optimise Silver table ────────────────────────────────────────────
+    # OPTIMIZE + ZORDER on primary keys to improve query performance over time.
+    log("STEP 9: Running OPTIMIZE on Silver Delta table")
+
+    zorder_cols = ", ".join(primary_keys)
+    spark.sql(f"OPTIMIZE delta.`{silver_path}` ZORDER BY ({zorder_cols})")
+    log("  OPTIMIZE complete.")
+
+    # ── 4.10  Final summary ───────────────────────────────────────────────────
+    log("=" * 70)
+    log(f"Bronze → Silver SCD2 Notebook – COMPLETE | Status: {execution_status}")
+    log(f"  Silver table : {pSilverTableName}")
+    log(f"  Records read from bronze (post-wm filter): {watermark_filtered_count:,}")
+    log(f"  Records after deduplication              : {deduped_count:,}")
+    log("=" * 70)
+
+# =============================================================================
+# SECTION 5 – ERROR HANDLING
+# Any unhandled exception is caught here. The notebook logs the full traceback
+# and exits with FAILURE so the calling pipeline can handle it appropriately.
+# =============================================================================
+
+except Exception as exc:
+    execution_status = "FAILURE"
+    log("=" * 70, "ERROR")
+    log(f"Bronze → Silver SCD2 Notebook – FAILED", "ERROR")
+    log(f"Error message : {str(exc)}", "ERROR")
+    log("Full traceback:", "ERROR")
+    log(traceback.format_exc(), "ERROR")
+    log("=" * 70, "ERROR")
+
+finally:
+    # ── Always exit with a structured JSON result ─────────────────────────────
+    exit_payload = json.dumps({
+        "status"         : execution_status,
+        "silverTable"    : pSilverTableName,
+        "executionId"    : execution_id,
+        "processId"      : process_id,
+        "notebookRunDt"  : run_datetime.strftime("%Y-%m-%d %H:%M:%S UTC")
+    })
+
+    log(f"Notebook exit payload: {exit_payload}")
+
+    # mssparkutils.notebook.exit signals the result back to any calling pipeline
+    mssparkutils.notebook.exit(exit_payload)
 
 # METADATA ********************
 
