@@ -1,0 +1,137 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1\nAND\t\tStagingProjection IN ('Kantata_ActivityRole', 'Kantata_ApplicationRole', 'Kantata_Contact', 'Kantata_DeliveryElement', 'Kantata_DeliveryGroup', 'Kantata_DeliveryProgram')",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "51c45504_ef2a_46a4_bdf0_5dfcc51e27f8",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDb",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbVnet"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": false
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "GetStagingProjections",
+        "dependsOn": []
+      },
+      {
+        "type": "ForEach",
+        "typeProperties": {
+          "items": {
+            "value": "@activity('GetStagingProjections').output.value",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "type": "InvokePipeline",
+              "typeProperties": {
+                "parameters": {
+                  "ExecutionId": 1073,
+                  "StagingProjection": {
+                    "value": "@item().StagingProjection",
+                    "type": "Expression"
+                  }
+                },
+                "waitOnCompletion": false,
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "pipelineId": "558301c8-614f-985a-49dd-9105c1f844cf",
+                "operationType": "InvokeFabricPipeline"
+              },
+              "externalReferences": {
+                "connection": "7182ff4b-cc49-4924-b266-371090e1a26a"
+              },
+              "policy": {
+                "timeout": "0.01:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "pl_ingestSalesforce",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "fe_Stage",
+        "dependsOn": [
+          {
+            "activity": "nb_SparkPoolWarmUp",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "21916e28-ac9b-a2ac-423b-bc72b6dde9a9",
+          "workspaceId": "00000000-0000-0000-0000-000000000000"
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_SparkPoolWarmUp",
+        "dependsOn": [
+          {
+            "activity": "GetStagingProjections",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      }
+    ],
+    "libraryVariables": {
+      "vl_FabricObjects_cnFabricDbVnet": {
+        "type": "String",
+        "variableName": "cnFabricDbVnet",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_WorkspaceId": {
+        "type": "String",
+        "variableName": "WorkspaceId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_FabricDb": {
+        "type": "String",
+        "variableName": "FabricDb",
+        "libraryName": "vl_FabricObjects"
+      }
+    }
+  }
+}

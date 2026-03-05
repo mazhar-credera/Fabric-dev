@@ -5,6 +5,7 @@ CREATE
 SELECT * FROM ETL.FN_GetProcessMetadata('SharePoint_DeskReservations')
 SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_BusinessUnit')
 SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Account')
+SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Proposal')
 */
 ) RETURNS TABLE
 AS RETURN
@@ -28,6 +29,7 @@ AS RETURN
 		,objNames.BronzeTableName
 		,BronzeTablePath				= CONCAT(P.TableSchema,'/',objNames.BronzeTableName)
 		,ObjNames.BronzeTableShortcut
+		,BronzeTableShortcutPath		= REPLACE(objNames.BronzeTableShortcut, '.', '/')
 		,objNames.BronzeKantataIdTableName
 		,fqObjNames.BronzeTableShortcutFqname
 		,fqObjNames.BronzeKantataIdTableFqName

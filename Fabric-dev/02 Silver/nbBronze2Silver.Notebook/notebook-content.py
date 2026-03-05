@@ -47,17 +47,17 @@ pProcessId      = 10
 
 # CELL ********************
 
-/*%%sql*/
-/* sandbox testing */
-/*drop table if exists Kantata.HISTORY_Business*/
-
-/*mssparkutils.fs.rm("Tables/Kantata.HISTORY_BusinessUnit", recurse=True)*/
+# MAGIC %%sql
+# MAGIC /* sandbox testing */
+# MAGIC drop table if exists Kantata.HISTORY_Proposal
+# MAGIC 
+# MAGIC /*mssparkutils.fs.rm("Tables/Kantata.HISTORY_BusinessUnit", recurse=True)*/
 
 
 # METADATA ********************
 
 # META {
-# META   "language": "python",
+# META   "language": "sparksql",
 # META   "language_group": "synapse_pyspark",
 # META   "frozen": true,
 # META   "editable": false
@@ -123,7 +123,7 @@ SCD2_ACTIVE_FROM_COL  = "_crda_ActiveFromDateTime"
 SCD2_ACTIVE_TO_COL    = "_crda_ActiveToDateTime"
 SCD2_IS_CURRENT_COL   = "isCurrent"          # Calculated: ActiveToDateTime = SCD2_OPEN_END_DATE
 SCD2_ROW_HASH_COL     = "_crda_RowHash"
-SCD2_IS_DELETED_COL   = "isDeleted"
+IS_DELETED_COL   = "_crda_isDeleted"
 SCD2_OPEN_END_DATE    = "9999-12-31 23:59:59"  # Sentinel value for open / current rows
 
 META_SILVER_LOAD_DT_COL    = "_crda_SilverLoadDateTime"
@@ -328,7 +328,7 @@ def add_scd2_meta_columns(
                     F.when(F.col(SCD2_ACTIVE_TO_COL) == F.lit(SCD2_OPEN_END_DATE).cast(TimestampType()),
                            F.lit(True)).otherwise(F.lit(False)))
         # isDeleted – default False
-        .withColumn(SCD2_IS_DELETED_COL, F.lit(False).cast(BooleanType()))
+        .withColumn(IS_DELETED_COL, F.lit(False).cast(BooleanType()))
         # Audit / lineage columns
         .withColumn(META_SILVER_LOAD_DT_COL, silver_load_ts)
         .withColumn(META_CREATED_EXEC_ID_COL, F.lit(execution_id).cast(IntegerType()))
@@ -422,7 +422,7 @@ try:
     log(f"  Bronze load wm column    : {pBronzeDataLoadWatermarkColumn}")
     log(f"  Bronze load wm value     : {pBronzeDataLoadWatermarkValue}")
     log(f"  Primary keys             : {primary_keys}")
-    log(f"  Hash columns             : {hash_columns}")
+    #log(f"  Hash columns             : {hash_columns}")
     log(f"  Execution ID             : {execution_id}")
     log(f"  Process ID               : {process_id}")
 

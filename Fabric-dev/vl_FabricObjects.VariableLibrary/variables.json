@@ -1,0 +1,23 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/variableLibrary/definition/variables/1.0.0/schema.json",
+  "variables": [
+    {
+      "name": "cnFabricDbVnet",
+      "note": "",
+      "type": "String",
+      "value": "a7a1bf77-e967-4eda-9115-55d4db06497f"
+    },
+    {
+      "name": "WorkspaceId",
+      "note": "",
+      "type": "String",
+      "value": "29f8113f-2a90-401e-a4f7-d6121b481419"
+    },
+    {
+      "name": "FabricDb",
+      "note": "",
+      "type": "String",
+      "value": "0840fd25-a6c8-4e3e-9945-7730e8820c1e"
+    }
+  ]
+}
