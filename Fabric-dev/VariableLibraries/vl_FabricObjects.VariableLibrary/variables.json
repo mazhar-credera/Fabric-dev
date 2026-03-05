@@ -18,6 +18,12 @@
       "note": "",
       "type": "String",
       "value": "0840fd25-a6c8-4e3e-9945-7730e8820c1e"
+    },
+    {
+      "name": "cnFabricPipelinesId",
+      "note": "",
+      "type": "String",
+      "value": "3f168872-223f-4cf9-9398-36253b1470ee"
     }
   ]
 }

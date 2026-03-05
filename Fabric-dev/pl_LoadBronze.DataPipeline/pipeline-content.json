@@ -68,16 +68,16 @@
                 "operationType": "InvokeFabricPipeline"
               },
               "externalReferences": {
-                "connection": "7182ff4b-cc49-4924-b266-371090e1a26a"
+                "connection": "3f168872-223f-4cf9-9398-36253b1470ee"
               },
               "policy": {
-                "timeout": "0.01:00:00",
+                "timeout": "0.12:00:00",
                 "retry": 0,
                 "retryIntervalInSeconds": 30,
                 "secureInput": false,
                 "secureOutput": false
               },
-              "name": "pl_ingestSalesforce",
+              "name": "Invoke pipeline1",
               "dependsOn": []
             }
           ]
@@ -95,8 +95,8 @@
       {
         "type": "TridentNotebook",
         "typeProperties": {
-          "notebookId": "21916e28-ac9b-a2ac-423b-bc72b6dde9a9",
-          "workspaceId": "00000000-0000-0000-0000-000000000000"
+          "notebookId": "b6dde9a9-bc72-423b-a2ac-ac9b21916e28",
+          "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419"
         },
         "policy": {
           "timeout": "0.00:10:00",
@@ -106,6 +106,8 @@
           "secureOutput": false
         },
         "name": "nb_SparkPoolWarmUp",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
         "dependsOn": [
           {
             "activity": "GetStagingProjections",
