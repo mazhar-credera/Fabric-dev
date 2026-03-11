@@ -146,6 +146,10 @@ try:
             LOCATION '{TARGET_PATH}'
         """)
 
+        # Force a Metadata Refresh / force the SQL endpoint to sync the specific table
+        query = f"REFRESH TABLE `{pTargetSchema}`.`{pTargetTable}`"
+        spark.sql(query)
+
         print("\n" + "=" * 60)
         print("Recovery complete.")
         print(f"  Target table : {pTargetSchema}.{pTargetTable}")

@@ -38,6 +38,22 @@ pDeltaLakeFolder = "raw/Kantata/BusinessUnit/2026/02"
 
 # CELL ********************
 
+# Force a Metadata Refresh / force the SQL endpoint to sync the specific table
+#sandbox cell
+#query = f"REFRESH TABLE `{pTargetSchema}`.`{pTargetTable}`"
+#spark.sql(query)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark",
+# META   "frozen": true,
+# META   "editable": false
+# META }
+
+# CELL ********************
+
 # ============================================================
 # Schema-Drift-Safe Delta Append
 # Bronze Lakehouse | Parameterised
@@ -148,6 +164,10 @@ try:
             LOCATION '{TARGET_PATH}'
         """)
 
+        # Force a Metadata Refresh / force the SQL endpoint to sync the specific table
+        query = f"REFRESH TABLE `{pTargetSchema}`.`{pTargetTable}`"
+        spark.sql(query)
+
         print("\n" + "=" * 60)
         print("Append complete.")
         print(f"  Target table : {pTargetSchema}.{pTargetTable}")
@@ -173,5 +193,7 @@ if should_exit_early:
 
 # META {
 # META   "language": "python",
-# META   "language_group": "synapse_pyspark"
+# META   "language_group": "synapse_pyspark",
+# META   "frozen": false,
+# META   "editable": true
 # META }

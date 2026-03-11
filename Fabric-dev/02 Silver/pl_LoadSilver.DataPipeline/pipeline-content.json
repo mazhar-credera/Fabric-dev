@@ -2,48 +2,95 @@
   "properties": {
     "activities": [
       {
-        "name": "GetStagingProjections",
         "type": "Lookup",
-        "dependsOn": [],
-        "policy": {
-          "timeout": "0.00:10:00",
-          "retry": 0,
-          "retryIntervalInSeconds": 30,
-          "secureOutput": false,
-          "secureInput": false
-        },
         "typeProperties": {
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1\nAND\t\tStagingProjection IN ('Kantata_ActivityRole', 'Kantata_ApplicationRole', 'Kantata_Contact', 'Kantata_DeliveryElement', 'Kantata_DeliveryGroup', 'Kantata_DeliveryProgram')",
+              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1\nAND\t\tStagingProjection IN ('Kantata_Account', 'Kantata_BusinessUnit')\n/*\nAND\t\tStagingProjection IN ('Kantata_ActivityRole', 'Kantata_ApplicationRole', 'Kantata_Contact', 'Kantata_DeliveryElement', 'Kantata_DeliveryGroup', 'Kantata_DeliveryProgram') */",
               "type": "Expression"
             },
-            "queryTimeout": "02:00:00",
-            "partitionOption": "None"
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
           },
-          "firstRowOnly": false,
           "datasetSettings": {
-            "annotations": [],
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
             "connectionSettings": {
-              "name": "ffed0561_378d_4bd5_85d2_df118012d2a0",
+              "name": "528da292_61e4_43f2_b1c7_060f20aa3939",
               "properties": {
-                "annotations": [],
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
-                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId",
-                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDb"
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDb",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
                 },
                 "externalReferences": {
                   "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbVnet"
-                }
+                },
+                "annotations": []
               }
             },
-            "type": "FabricSqlDatabaseTable",
-            "schema": [],
-            "typeProperties": {}
+            "annotations": []
+          },
+          "firstRowOnly": false
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "GetStagingProjections",
+        "dependsOn": []
+      },
+      {
+        "type": "ForEach",
+        "typeProperties": {
+          "items": {
+            "value": "@activity('GetStagingProjections').output.value",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "type": "InvokePipeline",
+              "typeProperties": {
+                "parameters": {
+                  "ExecutionId": 1073,
+                  "StagingProjection": {
+                    "value": "@item().StagingProjection",
+                    "type": "Expression"
+                  }
+                },
+                "waitOnCompletion": true,
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "pipelineId": "dd5af36d-c28e-9280-4918-0dab82beabfb",
+                "operationType": "InvokeFabricPipeline"
+              },
+              "externalReferences": {
+                "connection": "1a2c4c71-4ef2-4838-bd3a-2f14c381d214"
+              },
+              "policy": {
+                "timeout": "0.01:30:00",
+                "retry": 5,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "LoadSilverFromBronze",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "fe_Stage",
+        "dependsOn": [
+          {
+            "activity": "GetStagingProjections",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
           }
-        }
+        ]
       }
     ],
     "libraryVariables": {

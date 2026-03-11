@@ -91,6 +91,10 @@
               },
               "type": "int"
             }
+          },
+          "sessionTag": {
+            "value": "@replace(pipeline().DataFactory,'-', '_')",
+            "type": "Expression"
           }
         },
         "policy": {
@@ -260,7 +264,7 @@
       },
       "StagingProjection": {
         "type": "string",
-        "defaultValue": "Kantata_Account"
+        "defaultValue": "Kantata_Proposal"
       }
     },
     "libraryVariables": {

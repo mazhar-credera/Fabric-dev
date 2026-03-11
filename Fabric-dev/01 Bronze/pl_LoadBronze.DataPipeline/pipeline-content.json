@@ -7,7 +7,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1\nAND\t\tStagingProjection IN ('Kantata_ActivityRole', 'Kantata_ApplicationRole', 'Kantata_Contact', 'Kantata_DeliveryElement', 'Kantata_DeliveryGroup', 'Kantata_DeliveryProgram')",
+              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1\nAND\t\tStagingProjection IN ('Kantata_ActivityRole', 'Kantata_ApplicationRole', 'Kantata_Contact', 'Kantata_DeliveryElement', 'Kantata_DeliveryGroup', 'Kantata_DeliveryProgram') ",
               "type": "Expression"
             },
             "partitionOption": "None",
@@ -17,7 +17,7 @@
             "type": "FabricSqlDatabaseTable",
             "schema": [],
             "connectionSettings": {
-              "name": "51c45504_ef2a_46a4_bdf0_5dfcc51e27f8",
+              "name": "050fe46f_1f33_4d1c_b3a6_ece7928ddf87",
               "properties": {
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
@@ -36,7 +36,7 @@
         },
         "policy": {
           "timeout": "0.00:10:00",
-          "retry": 0,
+          "retry": 5,
           "retryIntervalInSeconds": 30,
           "secureInput": false,
           "secureOutput": false
@@ -62,22 +62,22 @@
                     "type": "Expression"
                   }
                 },
-                "waitOnCompletion": false,
+                "waitOnCompletion": true,
                 "workspaceId": "00000000-0000-0000-0000-000000000000",
                 "pipelineId": "558301c8-614f-985a-49dd-9105c1f844cf",
                 "operationType": "InvokeFabricPipeline"
               },
               "externalReferences": {
-                "connection": "3f168872-223f-4cf9-9398-36253b1470ee"
+                "connection": "1a2c4c71-4ef2-4838-bd3a-2f14c381d214"
               },
               "policy": {
-                "timeout": "0.12:00:00",
-                "retry": 0,
+                "timeout": "0.01:30:00",
+                "retry": 5,
                 "retryIntervalInSeconds": 30,
                 "secureInput": false,
                 "secureOutput": false
               },
-              "name": "Invoke pipeline1",
+              "name": "Invoke Salesforce",
               "dependsOn": []
             }
           ]
@@ -95,8 +95,12 @@
       {
         "type": "TridentNotebook",
         "typeProperties": {
-          "notebookId": "b6dde9a9-bc72-423b-a2ac-ac9b21916e28",
-          "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419"
+          "notebookId": "21916e28-ac9b-a2ac-423b-bc72b6dde9a9",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "sessionTag": {
+            "value": "@replace(pipeline().DataFactory,'-', '_')",
+            "type": "Expression"
+          }
         },
         "policy": {
           "timeout": "0.00:10:00",
@@ -106,8 +110,6 @@
           "secureOutput": false
         },
         "name": "nb_SparkPoolWarmUp",
-        "state": "Inactive",
-        "onInactiveMarkAs": "Succeeded",
         "dependsOn": [
           {
             "activity": "GetStagingProjections",

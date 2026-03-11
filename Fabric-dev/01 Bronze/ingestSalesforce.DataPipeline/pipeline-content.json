@@ -96,7 +96,7 @@
           "enableStaging": false
         },
         "policy": {
-          "timeout": "0.00:30:00",
+          "timeout": "0.01:30:00",
           "retry": 5,
           "retryIntervalInSeconds": 30,
           "secureInput": false,
@@ -228,7 +228,7 @@
           "firstRowOnly": true
         },
         "policy": {
-          "timeout": "0.00:10:00",
+          "timeout": "0.00:30:00",
           "retry": 15,
           "retryIntervalInSeconds": 30,
           "secureInput": false,
@@ -278,6 +278,10 @@
               },
               "type": "string"
             }
+          },
+          "sessionTag": {
+            "value": "@replace(pipeline().DataFactory,'-', '_')",
+            "type": "Expression"
           }
         },
         "policy": {
@@ -383,7 +387,7 @@
           "enableStaging": false
         },
         "policy": {
-          "timeout": "0.00:30:00",
+          "timeout": "0.01:30:00",
           "retry": 5,
           "retryIntervalInSeconds": 30,
           "secureInput": false,
@@ -480,7 +484,7 @@
           }
         },
         "policy": {
-          "timeout": "0.00:10:00",
+          "timeout": "0.00:30:00",
           "retry": 10,
           "retryIntervalInSeconds": 30,
           "secureInput": false,
