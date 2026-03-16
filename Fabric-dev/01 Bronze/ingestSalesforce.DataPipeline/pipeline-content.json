@@ -194,57 +194,6 @@
         ]
       },
       {
-        "type": "Lookup",
-        "typeProperties": {
-          "source": {
-            "type": "LakehouseTableSource",
-            "sqlReaderQuery": {
-              "value": "SELECT\n    [BronzeWatermarkValue] = \n    COALESCE(MAX(@{activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName}), '@{activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue}' )\nFROM [lh_BronzeLayer].[@{activity('FN_GetProcessMetadata').output.firstRow.TableSchema}].[@{activity('FN_GetProcessMetadata').output.firstRow.BronzeTableName}]",
-              "type": "Expression"
-            },
-            "queryTimeout": "00:02:00",
-            "partitionOption": "None"
-          },
-          "datasetSettings": {
-            "type": "LakehouseTable",
-            "schema": [],
-            "connectionSettings": {
-              "name": "lh_BronzeLayer",
-              "properties": {
-                "type": "Lakehouse",
-                "typeProperties": {
-                  "artifactId": "9e22841c-13b0-87c1-4fc4-f0acc6eb7c0f",
-                  "workspaceId": "00000000-0000-0000-0000-000000000000",
-                  "rootFolder": "Tables"
-                },
-                "externalReferences": {
-                  "connection": "1be520da-b501-45e2-94f4-548d7afc445a"
-                },
-                "annotations": []
-              }
-            },
-            "annotations": []
-          },
-          "firstRowOnly": true
-        },
-        "policy": {
-          "timeout": "0.00:30:00",
-          "retry": 15,
-          "retryIntervalInSeconds": 30,
-          "secureInput": false,
-          "secureOutput": false
-        },
-        "name": "ReadWatermark",
-        "dependsOn": [
-          {
-            "activity": "nb_BronzeKantataDeltaAppend",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
-          }
-        ]
-      },
-      {
         "type": "TridentNotebook",
         "typeProperties": {
           "notebookId": "bf761730-b30f-86ea-4261-7e8ff45bcfa7",
@@ -425,15 +374,15 @@
             "type": "FabricSqlDatabaseTable",
             "schema": [],
             "connectionSettings": {
-              "name": "FabricDb",
+              "name": "f9e9ea58_a976_44e4_ab4a_2f738ff20146",
               "properties": {
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
-                  "artifactId": "e8820c1e-7730-9945-4e3e-a6c80840fd25",
-                  "workspaceId": "00000000-0000-0000-0000-000000000000"
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
                 },
                 "externalReferences": {
-                  "connection": "a7a1bf77-e967-4eda-9115-55d4db06497f"
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbId"
                 },
                 "annotations": []
               }
@@ -471,11 +420,105 @@
               "properties": {
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
-                  "artifactId": "e8820c1e-7730-9945-4e3e-a6c80840fd25",
-                  "workspaceId": "00000000-0000-0000-0000-000000000000"
+                  "artifactId": "0840fd25-a6c8-4e3e-9945-7730e8820c1e",
+                  "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419"
                 },
                 "externalReferences": {
                   "connection": "a7a1bf77-e967-4eda-9115-55d4db06497f"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "UpdateBronzeWatermarkValu",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": []
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "LakehouseTableSource",
+            "sqlReaderQuery": {
+              "value": "SELECT\n    [BronzeWatermarkValue] = \n    COALESCE(MAX(@{activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName}), '@{activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue}' )\nFROM [lh_BronzeLayer].[@{activity('FN_GetProcessMetadata').output.firstRow.TableSchema}].[@{activity('FN_GetProcessMetadata').output.firstRow.BronzeTableName}]",
+              "type": "Expression"
+            },
+            "partitionOption": "None"
+          },
+          "datasetSettings": {
+            "type": "LakehouseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "eb2dd645_a500_4176_b74b_0007179057b1",
+              "properties": {
+                "type": "Lakehouse",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_LakehouseBronzeId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId",
+                  "rootFolder": "Tables"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnLakehouseId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": true
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 15,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "ReadWatermark",
+        "dependsOn": [
+          {
+            "activity": "nb_BronzeKantataDeltaAppend",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "UPDATE T\nSET T.BronzeWatermarkValue= '@{activity('ReadWatermark').output.firstRow.BronzeWatermarkValue}'\nFROM ETL.ProcessMap AS T \nWHERE T.ProcessId = @{activity('FN_GetProcessMetadata').output.firstRow.ProcessId}; \n\nSELECT RetVal = 1;\n",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "17fc90d0_b5ef_4aec_8f01_080ec4482269",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId"
                 },
                 "annotations": []
               }
@@ -526,6 +569,41 @@
         "type": "String",
         "variableName": "SalesforceOAuthClientId",
         "libraryName": "vl_SrcSalesforceKantata"
+      },
+      "vl_FabricObjects_cnFabricDb": {
+        "type": "String",
+        "variableName": "cnFabricDb",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_WorkspaceId": {
+        "type": "String",
+        "variableName": "WorkspaceId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_cnFabricDbId": {
+        "type": "String",
+        "variableName": "cnFabricDbId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_FabricDbId": {
+        "type": "String",
+        "variableName": "FabricDbId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_cnLakehouseId": {
+        "type": "String",
+        "variableName": "cnLakehouseId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_LakehouseBronzeId": {
+        "type": "String",
+        "variableName": "LakehouseBronzeId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_cnFabricDbId_1": {
+        "type": "String",
+        "variableName": "cnFabricDbId",
+        "libraryName": "vl_FabricObjects"
       }
     },
     "variables": {

@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/variableLibrary/definition/variables/1.0.0/schema.json",
   "variables": [
     {
-      "name": "cnFabricDbVnet",
+      "name": "cnFabricDbId",
       "note": "",
       "type": "String",
-      "value": "a7a1bf77-e967-4eda-9115-55d4db06497f"
+      "value": "ddf0e276-48ae-4dc4-9df6-3b81e29d6735"
     },
     {
       "name": "WorkspaceId",
@@ -14,16 +14,28 @@
       "value": "29f8113f-2a90-401e-a4f7-d6121b481419"
     },
     {
-      "name": "FabricDb",
+      "name": "FabricDbId",
       "note": "",
       "type": "String",
-      "value": "0840fd25-a6c8-4e3e-9945-7730e8820c1e"
+      "value": "1ecf3c7a-a994-4cd2-bd66-269b6707c135"
     },
     {
       "name": "cnFabricPipelinesId",
       "note": "",
       "type": "String",
       "value": "1a2c4c71-4ef2-4838-bd3a-2f14c381d214"
+    },
+    {
+      "name": "cnLakehouseId",
+      "note": "",
+      "type": "String",
+      "value": "1be520da-b501-45e2-94f4-548d7afc445a"
+    },
+    {
+      "name": "LakehouseBronzeId",
+      "note": "",
+      "type": "String",
+      "value": "c6eb7c0f-f0ac-4fc4-87c1-13b09e22841c"
     }
   ]
 }
