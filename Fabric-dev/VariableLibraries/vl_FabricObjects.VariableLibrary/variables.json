@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/variableLibrary/definition/variables/1.0.0/schema.json",
   "variables": [
     {
-      "name": "cnFabricDbId",
+      "name": "cnFabricDbConnectionId",
       "note": "",
       "type": "String",
       "value": "ddf0e276-48ae-4dc4-9df6-3b81e29d6735"
@@ -17,7 +17,7 @@
       "name": "FabricDbId",
       "note": "",
       "type": "String",
-      "value": "1ecf3c7a-a994-4cd2-bd66-269b6707c135"
+      "value": "0840fd25-a6c8-4e3e-9945-7730e8820c1e"
     },
     {
       "name": "cnFabricPipelinesId",
@@ -36,6 +36,12 @@
       "note": "",
       "type": "String",
       "value": "c6eb7c0f-f0ac-4fc4-87c1-13b09e22841c"
+    },
+    {
+      "name": "cnLakehouseSqlEndPointConnectionId",
+      "note": "",
+      "type": "String",
+      "value": "c0c16bdb-465f-438b-9625-8d07b867d9cc"
     }
   ]
 }

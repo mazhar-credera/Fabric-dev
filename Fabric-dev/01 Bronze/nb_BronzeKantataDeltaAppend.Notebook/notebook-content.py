@@ -26,8 +26,10 @@
 # Type here in the cell editor to add code!
 pTargetSchema = "Kantata"
 pTargetTable = "BusinessUnit"
-pParquetFile = "25-125827.parquet"
-pDeltaLakeFolder = "raw/Kantata/BusinessUnit/2026/02"
+pParquetFile = "05-115730.parquet"
+pDeltaLakeFolder = "raw/bronze/Kantata/BusinessUnit/2026/03"
+pWatermarkColumnName = "SystemModstamp"
+pBronzeWatermarkValue= "2000-01-01"
 
 # METADATA ********************
 
@@ -101,7 +103,7 @@ def add_missing_columns(df_new, existing_schema):
 # ============================================================
 # MAIN
 # ============================================================
-should_exit_early = False
+final_output = None
 try:
     print("=" * 60)
     print("Schema-drift-safe delta append")
@@ -175,19 +177,37 @@ try:
         print("=" * 60)
 
         # ------------------------------------------------------------
-        # 10. Exit SUCCESS
+        # NEW: Calculate Watermark and Exit with Value
         # ------------------------------------------------------------
-        mssparkutils.notebook.exit("SUCCESS")
+        print("\n[6/6] Calculating Watermark for Pipeline...")
+        
+        # We query the TARGET_PATH directly to ensure we see the data we just wrote
+        watermark_df = spark.sql(f"""
+            SELECT COALESCE(MAX({pWatermarkColumnName}), '{pBronzeWatermarkValue}') as BronzeWatermarkValue
+            FROM `{pTargetSchema}`.`{pTargetTable}`
+        """)
+        
+        # Store the value in our variable instead of exiting immediately
+        final_output = str(watermark_df.collect()[0][0])
+        print(f"  Watermark identified: {final_output}")
 
     else:
-        print("No new data found. Preparing to exit.")
-        should_exit_early = True
+        # This handles the case where df_new.isEmpty() is True
+        print("No new data found. Returning existing watermark.")
+        final_output = str(pBronzeWatermarkValue)
 
 except Exception as e:
-    mssparkutils.notebook.exit(f"FAILURE: {str(e)}")
+    # This only catches REAL errors now
+    error_msg = f"FAILURE: {str(e)}"
+    print(error_msg)
+    mssparkutils.notebook.exit(error_msg)
 
-if should_exit_early:
-    mssparkutils.notebook.exit("SUCCESS")
+# ------------------------------------------------------------
+# FINAL EXIT (Outside the try/except)
+# ------------------------------------------------------------
+if final_output:
+    mssparkutils.notebook.exit(final_output)
+    
 
 # METADATA ********************
 
