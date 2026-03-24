@@ -392,11 +392,13 @@ def ensure_schema_exists(table_name: str):
 # ── Safe defaults — must be defined BEFORE the try block so the finally ──────
 # block can always reference them even if execution fails during param parsing.
 execution_status         = "FAILURE"
+error_msg                = ""
 run_datetime_str         = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 execution_id             = 0
 process_id               = 0
 watermark_filtered_count = 0
 deduped_count            = 0
+silver_watermark         = "2000-01-01 00:00:00" 
 
 try:
     log("=" * 70)
@@ -423,12 +425,12 @@ try:
     execution_id : int = int(pExecutionId)
     process_id   : int = int(pProcessId)
 
-    log(f"  Bronze shortcut          : {pBronzeTableShortcut}")
-    log(f"  Silver table             : {pSilverTableName}")
-    log(f"  Watermark column         : {pWatermarkColumnName}")
-    log(f"  Watermark value          : {pWatermarkColumnValue}")
-    log(f"  Bronze load wm column    : {pBronzeDataLoadWatermarkColumn}")
-    log(f"  Bronze load wm value     : {pBronzeDataLoadWatermarkValue}")
+    log(f"  pBronzeTableShortcut     : {pBronzeTableShortcut}")
+    log(f"  pSilverTableName         : {pSilverTableName}")
+    log(f"  pWatermarkColumnName     : {pWatermarkColumnName}")
+    log(f"  pWatermarkColumnValue    : {pWatermarkColumnValue}")
+    log(f"  pBronzeDataLoadWatermarkColumn    : {pBronzeDataLoadWatermarkColumn}")
+    log(f"  pBronzeDataLoadWatermarkValue     : {pBronzeDataLoadWatermarkValue}")
     log(f"  Primary keys             : {primary_keys}")
     log(f"  Execution ID             : {execution_id}")
     log(f"  Process ID               : {process_id}")
@@ -457,7 +459,7 @@ try:
         log("STEP 3: Filtering on source watermark (SystemModstamp)")
 
         bronze_df = bronze_df.filter(
-            F.col(pWatermarkColumnName) > F.lit(pWatermarkColumnValue).cast(TimestampType())
+            F.col(pWatermarkColumnName) > F.lit(pBronzeDataLoadWatermarkValue).cast(TimestampType())
         )
 
         watermark_filtered_count = bronze_df.count()
@@ -608,12 +610,25 @@ try:
                 # Force SQL endpoint metadata refresh
                 spark.sql(f"REFRESH TABLE {pSilverTableName}")
 
+                # ── 4.10 Calculate Silver Watermark ──────────────────────────
+                log("STEP 10: Calculating Silver Watermark for Pipeline")
+                
+                # Query the table we just updated
+                wm_df = spark.sql(f"""
+                    SELECT COALESCE(MAX({pWatermarkColumnName}), '{pBronzeDataLoadWatermarkValue}') AS SilverWatermark
+                    FROM {pSilverTableName}
+                """)
+                
+                silver_watermark = str(wm_df.collect()[0][0])
+                log(f"  Silver Watermark identified: {silver_watermark}")
+
             # All paths through the else block succeeded
             execution_status = "SUCCESS"
 
             log("=" * 70)
             log(f"Bronze → Silver SCD2 Notebook – COMPLETE | Status: {execution_status}")
             log(f"  Silver table : {pSilverTableName}")
+            log(f"  silver_watermark : {silver_watermark}")
             log(f"  Records read from bronze (post-wm filter): {watermark_filtered_count:,}")
             log(f"  Records after deduplication              : {deduped_count:,}")
             log("=" * 70)
@@ -627,6 +642,7 @@ try:
 
 except Exception as exc:
     execution_status = "FAILURE"
+    error_msg   = f"FAILURE: {str(exc)}"
     log("=" * 70, "ERROR")
     log("Bronze → Silver SCD2 Notebook – FAILED", "ERROR")
     log(f"Error message : {str(exc)}", "ERROR")
@@ -640,23 +656,28 @@ finally:
     # the try block — so this block is guaranteed never to raise.
     exit_payload = json.dumps({
         "status"                  : execution_status,
+        "error_msg"               : error_msg,
         "silverTable"             : pSilverTableName,
         "executionId"             : execution_id,
         "processId"               : process_id,
         "notebookRunDt"           : run_datetime_str,
         "recordsFromBronze"       : watermark_filtered_count,
-        "recordsAfterDedup"       : deduped_count
+        "recordsAfterDedup"       : deduped_count,
+        "silverWatermark"         : silver_watermark 
     })
-
 
     log(f"Notebook exit payload: {exit_payload}")
 
-    if execution_status == "FAILURE":
-        # Force pipeline to fail
-        raise Exception(exit_payload)
-    else:
-        # Allow success through JSON return
-        mssparkutils.notebook.exit(exit_payload)
+    mssparkutils.notebook.exit(exit_payload)
+
+#
+#    if execution_status == "FAILURE":
+#        # This makes the Pipeline Activity turn RED/Fail
+#        raise Exception(exit_payload)
+    
+#    # This makes the Pipeline Activity turn GREEN/Success
+#    mssparkutils.notebook.exit(exit_payload)
+
 
     
 

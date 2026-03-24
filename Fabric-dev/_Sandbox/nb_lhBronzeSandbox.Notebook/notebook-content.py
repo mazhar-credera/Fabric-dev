@@ -23,7 +23,10 @@
 # CELL ********************
 
 # MAGIC %%sql
-# MAGIC drop table if exists Kantata.BusinessUnit
+# MAGIC /*drop table if exists Kantata.ActivityAssignment
+# MAGIC drop table if exists Kantata.ResourcedActivity 
+# MAGIC drop table if exists Kantata.ActivityAssignmentDemand */
+# MAGIC drop table if exists Kantata.Resource
 
 
 # METADATA ********************
@@ -31,26 +34,26 @@
 # META {
 # META   "language": "sparksql",
 # META   "language_group": "synapse_pyspark",
-# META   "frozen": true,
-# META   "editable": false
+# META   "frozen": false,
+# META   "editable": true
 # META }
 
 # CELL ********************
 
-parquet_path = "Files/raw/Kantata/BusinessUnit"
+parquet_path = "Files/raw/bronze/Kantata/Resource"
 
 # First, list the files to confirm what you're deleting
 print("Files to be deleted:")
-notebookutils.fs.ls("Files/raw/Kantata/BusinessUnit")
+notebookutils.fs.ls("Files/raw/bronze/Kantata/Resource")
 
 # Delete (choose the appropriate level)
-notebookutils.fs.rm("Files/raw/Kantata/BusinessUnit", recurse=True)
+notebookutils.fs.rm("Files/raw/bronze/Kantata/Resource", recurse=True)
 
 print("Deletion complete!")
 
 # Verify it's gone
 try:
-    notebookutils.fs.ls("Files/raw/Kantata/BusinessUnit")
+    notebookutils.fs.ls("Files/raw/bronze/Kantata/Resource")
 except:
     print("Folder successfully deleted")
 
@@ -59,8 +62,8 @@ except:
 # META {
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark",
-# META   "frozen": true,
-# META   "editable": false
+# META   "frozen": false,
+# META   "editable": true
 # META }
 
 # CELL ********************

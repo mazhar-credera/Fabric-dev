@@ -130,15 +130,15 @@
             "type": "FabricSqlDatabaseTable",
             "schema": [],
             "connectionSettings": {
-              "name": "FabricDb",
+              "name": "94dc67c1_853e_4723_9ba5_cabfa12878f7",
               "properties": {
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
-                  "artifactId": "e8820c1e-7730-9945-4e3e-a6c80840fd25",
-                  "workspaceId": "00000000-0000-0000-0000-000000000000"
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
                 },
                 "externalReferences": {
-                  "connection": "a7a1bf77-e967-4eda-9115-55d4db06497f"
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
                 },
                 "annotations": []
               }
@@ -157,99 +157,76 @@
         "dependsOn": []
       },
       {
-        "type": "Lookup",
+        "type": "IfCondition",
         "typeProperties": {
-          "source": {
-            "type": "LakehouseTableSource",
-            "sqlReaderQuery": {
-              "value": "SELECT\n    [SilverWatermarkValue] = \n    COALESCE(MAX(@{activity('FN_GetProcessMetadata').output.firstRow.BronzeDataLoadWatermarkColumn}), '@{activity('FN_GetProcessMetadata').output.firstRow.SilverWatermarkValue}' )\nFROM @{activity('FN_GetProcessMetadata').output.firstRow.SilverTableFqName}\n",
-              "type": "Expression"
-            },
-            "queryTimeout": "00:02:00",
-            "partitionOption": "None"
+          "expression": {
+            "value": "@not(equals(json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).status,'FAILURE'))",
+            "type": "Expression"
           },
-          "datasetSettings": {
-            "type": "LakehouseTable",
-            "schema": [],
-            "connectionSettings": {
-              "name": "lh_SilverLayer",
-              "properties": {
-                "type": "Lakehouse",
-                "typeProperties": {
-                  "artifactId": "8c6ad211-a7ed-81bc-4fa8-03653231059f",
-                  "workspaceId": "00000000-0000-0000-0000-000000000000",
-                  "rootFolder": "Tables"
+          "ifTrueActivities": [
+            {
+              "type": "Lookup",
+              "typeProperties": {
+                "source": {
+                  "type": "FabricSqlDatabaseSource",
+                  "sqlReaderQuery": {
+                    "value": "UPDATE T\nSET T.SilverWatermarkValue= '@{json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).silverWatermark}'\nFROM ETL.ProcessMap AS T \nWHERE T.ProcessId = @{activity('FN_GetProcessMetadata').output.firstRow.ProcessId}; \n\nSELECT RetVal = 1;\n",
+                    "type": "Expression"
+                  },
+                  "partitionOption": "None",
+                  "queryTimeout": "02:00:00"
                 },
-                "externalReferences": {
-                  "connection": "1be520da-b501-45e2-94f4-548d7afc445a"
-                },
-                "annotations": []
-              }
-            },
-            "annotations": []
-          },
-          "firstRowOnly": true
+                "datasetSettings": {
+                  "type": "FabricSqlDatabaseTable",
+                  "schema": [],
+                  "connectionSettings": {
+                    "name": "b84b6ef0_719d_4258_8f71_4dc633fa14af",
+                    "properties": {
+                      "type": "FabricSqlDatabase",
+                      "typeProperties": {
+                        "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                        "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                      },
+                      "externalReferences": {
+                        "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                      },
+                      "annotations": []
+                    }
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.00:10:00",
+                "retry": 10,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "UpdateSilverWatermark",
+              "dependsOn": []
+            }
+          ],
+          "ifFalseActivities": [
+            {
+              "type": "SetVariable",
+              "typeProperties": {
+                "variableName": "IsPipelineFailed",
+                "value": "'True'"
+              },
+              "policy": {
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "Set IsPipelineFailed",
+              "dependsOn": []
+            }
+          ]
         },
-        "policy": {
-          "timeout": "0.00:10:00",
-          "retry": 15,
-          "retryIntervalInSeconds": 30,
-          "secureInput": false,
-          "secureOutput": false
-        },
-        "name": "ReadWatermark",
+        "name": "If Success",
         "dependsOn": [
           {
             "activity": "nb_LoadSilverDeltaTables",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
-          }
-        ]
-      },
-      {
-        "type": "Lookup",
-        "typeProperties": {
-          "source": {
-            "type": "FabricSqlDatabaseSource",
-            "sqlReaderQuery": {
-              "value": "UPDATE T\nSET T.SilverWatermarkValue= '@{activity('ReadWatermark').output.firstRow.SilverWatermarkValue}'\nFROM ETL.ProcessMap AS T \nWHERE T.ProcessId = @{activity('FN_GetProcessMetadata').output.firstRow.ProcessId}; \n; \n\nSELECT RetVal = 1;\n\n",
-              "type": "Expression"
-            },
-            "partitionOption": "None",
-            "queryTimeout": "02:00:00"
-          },
-          "datasetSettings": {
-            "type": "FabricSqlDatabaseTable",
-            "schema": [],
-            "connectionSettings": {
-              "name": "FabricDb",
-              "properties": {
-                "type": "FabricSqlDatabase",
-                "typeProperties": {
-                  "artifactId": "e8820c1e-7730-9945-4e3e-a6c80840fd25",
-                  "workspaceId": "00000000-0000-0000-0000-000000000000"
-                },
-                "externalReferences": {
-                  "connection": "a7a1bf77-e967-4eda-9115-55d4db06497f"
-                },
-                "annotations": []
-              }
-            },
-            "annotations": []
-          }
-        },
-        "policy": {
-          "timeout": "0.00:10:00",
-          "retry": 10,
-          "retryIntervalInSeconds": 30,
-          "secureInput": false,
-          "secureOutput": false
-        },
-        "name": "UpdateSilverWatermark",
-        "dependsOn": [
-          {
-            "activity": "ReadWatermark",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -282,17 +259,27 @@
         "type": "String",
         "variableName": "SalesforceOAuthClientId",
         "libraryName": "vl_SrcSalesforceKantata"
+      },
+      "vl_FabricObjects_cnFabricDbConnectionId": {
+        "type": "String",
+        "variableName": "cnFabricDbConnectionId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_WorkspaceId": {
+        "type": "String",
+        "variableName": "WorkspaceId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_FabricDbId": {
+        "type": "String",
+        "variableName": "FabricDbId",
+        "libraryName": "vl_FabricObjects"
       }
     },
     "variables": {
-      "FileName": {
-        "type": "String"
-      },
-      "FolderPath": {
-        "type": "String"
-      },
-      "TimeNow": {
-        "type": "String"
+      "IsPipelineFailed": {
+        "type": "String",
+        "defaultValue": "false"
       }
     }
   }

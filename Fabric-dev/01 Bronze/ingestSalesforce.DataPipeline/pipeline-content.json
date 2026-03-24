@@ -10,6 +10,29 @@
               "value": "SELECT  @{activity('FN_GetProcessMetadata').output.firstRow.KantataSelectColumns}\nFROM    @{activity('FN_GetProcessMetadata').output.firstRow.ApiEndPoint}\nWHERE   @{activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName} > @{formatDateTime(activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue,'yyyy-MM-ddTHH:mm:ssZ')}",
               "type": "Expression"
             },
+            "additionalColumns": [
+              {
+                "name": "_crda_BronzeLoadDateTime",
+                "value": {
+                  "value": "@utcNow()",
+                  "type": "Expression"
+                }
+              },
+              {
+                "name": "_crda_SourceFileName",
+                "value": {
+                  "value": "@concat(variables('FolderPath'),'/',variables('FileName'))",
+                  "type": "Expression"
+                }
+              },
+              {
+                "name": "_crda_SourceExecutionId",
+                "value": {
+                  "value": "@string(pipeline().parameters.ExecutionId)",
+                  "type": "Expression"
+                }
+              }
+            ],
             "includeDeletedObjects": false,
             "partitionOption": "AutoDetect",
             "datasetSettings": {
@@ -256,6 +279,22 @@
               "value": "SELECT  @{activity('FN_GetProcessMetadata').output.firstRow.PrimaryKeys}\nFROM    @{activity('FN_GetProcessMetadata').output.firstRow.ApiEndPoint}\n",
               "type": "Expression"
             },
+            "additionalColumns": [
+              {
+                "name": "_crda_BronzeLoadDateTime",
+                "value": {
+                  "value": "@utcNow()",
+                  "type": "Expression"
+                }
+              },
+              {
+                "name": "_crda_SourceExecutionId",
+                "value": {
+                  "value": "@pipeline().parameters.ExecutionId",
+                  "type": "Expression"
+                }
+              }
+            ],
             "includeDeletedObjects": false,
             "partitionOption": "AutoDetect",
             "datasetSettings": {
@@ -349,7 +388,7 @@
             "type": "FabricSqlDatabaseTable",
             "schema": [],
             "connectionSettings": {
-              "name": "f5fc20f8_0fb8_4eff_a13a_b43c72217410",
+              "name": "715f0b27_fe57_4779_8fc5_726cd85209ef",
               "properties": {
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
@@ -391,7 +430,7 @@
             "type": "FabricSqlDatabaseTable",
             "schema": [],
             "connectionSettings": {
-              "name": "7d942872_4a75_4c06_9711_6d736a0305ca",
+              "name": "8632fbdb_0912_4cf5_a83b_d9abafbed430",
               "properties": {
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
