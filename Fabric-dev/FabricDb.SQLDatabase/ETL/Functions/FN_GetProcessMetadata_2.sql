@@ -1,10 +1,12 @@
 CREATE  
-	FUNCTION ETL.FN_GetProcessMetadata(
+	FUNCTION ETL.FN_GetProcessMetadata_2(
 		@stagingProjection VARCHAR(512) , @ProcessPath VARCHAR(512)
 /*
-SELECT * FROM ETL.FN_GetProcessMetadata('SharePoint_DeskReservations')
-SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Resource', 'pl_IngestSalesforce')
-SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Resource', 'pl_LoadSilverFromBronze')
+SELECT * FROM ETL.FN_GetProcessMetadata_2('SharePoint_DeskReservations')
+SELECT * FROM ETL.FN_GetProcessMetadata_2('Kantata_BusinessUnit')
+SELECT * FROM ETL.FN_GetProcessMetadata_2('Kantata_Account')
+SELECT * FROM ETL.FN_GetProcessMetadata_2('Kantata_Resource', 'pl_IngestSalesforce')
+SELECT * FROM ETL.FN_GetProcessMetadata_2('Kantata_Resource', 'pl_LoadSilverFromBronze')
 */
 ) RETURNS TABLE
 AS RETURN

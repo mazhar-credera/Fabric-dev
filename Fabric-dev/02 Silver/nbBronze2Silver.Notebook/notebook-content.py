@@ -589,17 +589,17 @@ try:
                 else:
                     log("  Step B: No new rows to insert.")
 
-            # ── 4.9 Refresh isCurrent ─────────────────────────────────
-            log("STEP 4.9: Refreshing isCurrent calculated column")
-            silver_delta.update(
-                condition = F.col(SCD2_ACTIVE_TO_COL) == F.lit(SCD2_OPEN_END_DATE).cast(TimestampType()),
-                set       = {SCD2_IS_CURRENT_COL: F.lit(True)}
-            )
-            silver_delta.update(
-                condition = F.col(SCD2_ACTIVE_TO_COL) != F.lit(SCD2_OPEN_END_DATE).cast(TimestampType()),
-                set       = {SCD2_IS_CURRENT_COL: F.lit(False)}
-            )
-            log("  Step C complete: isCurrent refreshed.")
+                # ── 4.9 Refresh isCurrent ─────────────────────────────────
+                log("STEP 4.9: Refreshing isCurrent calculated column")
+                silver_delta.update(
+                    condition = F.col(SCD2_ACTIVE_TO_COL) == F.lit(SCD2_OPEN_END_DATE).cast(TimestampType()),
+                    set       = {SCD2_IS_CURRENT_COL: F.lit(True)}
+                )
+                silver_delta.update(
+                    condition = F.col(SCD2_ACTIVE_TO_COL) != F.lit(SCD2_OPEN_END_DATE).cast(TimestampType()),
+                    set       = {SCD2_IS_CURRENT_COL: F.lit(False)}
+                )
+                log("  Step C complete: isCurrent refreshed.")
 
             # ── 4.10  Optimise Silver table ─────────────────────────────────
             log("STEP 10: Running OPTIMIZE on Silver Delta table")

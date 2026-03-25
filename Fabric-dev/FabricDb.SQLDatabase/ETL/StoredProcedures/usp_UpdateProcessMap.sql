@@ -40,8 +40,19 @@ SET NOCOUNT ON ;
 		WHERE	P.ProcessId = @_ProcessId
 	END ;
 
+	IF @_UpdateType = 'RunStatus'
+	BEGIN
+		UPDATE	P
+		SET		P.RunStatus = @_NewRunStatus 
+		FROM	ETL.ProcessMap P
+		WHERE	P.ProcessId = @_ProcessId
+	END ;
+
+
+
+
 	--return something for the Fabric Lookup
-	SELECT RetVal = 1;
+	SELECT ProcessId = @ProcessId;
 
 END ;
 

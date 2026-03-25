@@ -378,7 +378,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT * FROM ETL.FN_GetProcessMetadata('@{pipeline().parameters.StagingProjection}')",
+              "value": "SELECT * FROM ETL.FN_GetProcessMetadata('@{pipeline().parameters.StagingProjection}', '@{pipeline().PipelineName}')",
               "type": "Expression"
             },
             "partitionOption": "None",
@@ -388,7 +388,7 @@
             "type": "FabricSqlDatabaseTable",
             "schema": [],
             "connectionSettings": {
-              "name": "65a5a91e_c13e_4676_b8d3_931e0d9a96de",
+              "name": "f2770db7_5a30_4785_9a01_92712720442d",
               "properties": {
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
@@ -464,7 +464,7 @@
             "type": "FabricSqlDatabaseTable",
             "schema": [],
             "connectionSettings": {
-              "name": "c13e4af3_7711_4e02_96b0_7bcc18d578b7",
+              "name": "7c196295_15f2_4441_8dd9_e8fdf0a411b7",
               "properties": {
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
@@ -551,7 +551,7 @@
             "type": "FabricSqlDatabaseTable",
             "schema": [],
             "connectionSettings": {
-              "name": "b9b6aa64_7bfd_4e4e_bd80_e98b04e2199d",
+              "name": "db96ea8f_85a4_4711_a77c_16e0b81841b1",
               "properties": {
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
@@ -580,6 +580,144 @@
             "activity": "FN_GetProcessMetadata",
             "dependencyConditions": [
               "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderStoredProcedureName": "[ETL].[usp_UpdateExecutionLog_Failure]",
+            "storedProcedureParameters": {
+              "ExecutionId": {
+                "value": {
+                  "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                  "type": "Expression"
+                },
+                "type": "Int32"
+              },
+              "ErrorMessage": {
+                "value": {
+                  "value": "@activity('IngestSalesforce').error.message",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "ProcessId": {
+                "value": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                  "type": "Expression"
+                },
+                "type": "Int32"
+              }
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "a4d7c4e0_6612_406e_b328_82f68118cf25",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "cd_IngestSalesforce_Failure",
+        "dependsOn": [
+          {
+            "activity": "IngestSalesforce",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderStoredProcedureName": "[ETL].[usp_UpdateExecutionLog_Failure]",
+            "storedProcedureParameters": {
+              "ExecutionId": {
+                "value": {
+                  "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                  "type": "Expression"
+                },
+                "type": "Int32"
+              },
+              "ErrorMessage": {
+                "value": {
+                  "value": "@activity('IngestSalesforceIds').error.message",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "ProcessId": {
+                "value": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                  "type": "Expression"
+                },
+                "type": "Int32"
+              }
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "41ec4786_7a0a_4294_8002_3a5089fe3c75",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "cd_IngestSalesforceIds_Failure",
+        "dependsOn": [
+          {
+            "activity": "IngestSalesforceIds",
+            "dependencyConditions": [
+              "Failed"
             ]
           }
         ]
