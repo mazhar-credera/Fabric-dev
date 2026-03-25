@@ -3,20 +3,19 @@ CREATE
 		@BatchId		INT , 
 		@ProcessId		INT , 
 		@ExternalHandlerId	VARCHAR(255) , 
-		@LogDescription		VARCHAR(255) , 
-		@ExecutionId	INT OUTPUT
+		@PipelineName		VARCHAR(255) , 
+		@LogDescription		VARCHAR(255) ,
+		@WorkspaceId		VARCHAR(1024) 
 
 AS
 BEGIN 
 SET NOCOUNT ON ;
 	INSERT INTO ETL.ExecutionLog 
-		( ProcessId, BatchId, LogDescription, ExternalHandlerId, FinalStatus)
+		( ProcessId, BatchId, LogDescription, PipelineName, ExternalHandlerId, WorkspaceId, FinalStatus)
 	VALUES
-		(@ProcessId, @BatchId, @LogDescription, @ExternalHandlerId, 'Start')
+		(@ProcessId, @BatchId, @LogDescription, @PipelineName, @ExternalHandlerId, @WorkspaceId, 'Start')
 
-	SELECT @ExecutionId=SCOPE_IDENTITY();
-
-	SELECT ExecutionId = @ExecutionId;
+	SELECT ExecutionId=SCOPE_IDENTITY();
 
 END ;
 
