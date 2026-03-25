@@ -589,38 +589,38 @@ try:
                 else:
                     log("  Step B: No new rows to insert.")
 
-                # Step C: Refresh isCurrent
-                log("  Step C: Refreshing isCurrent calculated column")
-                silver_delta.update(
-                    condition = F.col(SCD2_ACTIVE_TO_COL) == F.lit(SCD2_OPEN_END_DATE).cast(TimestampType()),
-                    set       = {SCD2_IS_CURRENT_COL: F.lit(True)}
-                )
-                silver_delta.update(
-                    condition = F.col(SCD2_ACTIVE_TO_COL) != F.lit(SCD2_OPEN_END_DATE).cast(TimestampType()),
-                    set       = {SCD2_IS_CURRENT_COL: F.lit(False)}
-                )
-                log("  Step C complete: isCurrent refreshed.")
+            # ── 4.9 Refresh isCurrent ─────────────────────────────────
+            log("STEP 4.9: Refreshing isCurrent calculated column")
+            silver_delta.update(
+                condition = F.col(SCD2_ACTIVE_TO_COL) == F.lit(SCD2_OPEN_END_DATE).cast(TimestampType()),
+                set       = {SCD2_IS_CURRENT_COL: F.lit(True)}
+            )
+            silver_delta.update(
+                condition = F.col(SCD2_ACTIVE_TO_COL) != F.lit(SCD2_OPEN_END_DATE).cast(TimestampType()),
+                set       = {SCD2_IS_CURRENT_COL: F.lit(False)}
+            )
+            log("  Step C complete: isCurrent refreshed.")
 
-                # ── 4.9  Optimise Silver table ─────────────────────────────────
-                log("STEP 9: Running OPTIMIZE on Silver Delta table")
-                zorder_cols = ", ".join(primary_keys)
-                spark.sql(f"OPTIMIZE delta.`{silver_path}` ZORDER BY ({zorder_cols})")
-                log("  OPTIMIZE complete.")
+            # ── 4.10  Optimise Silver table ─────────────────────────────────
+            log("STEP 10: Running OPTIMIZE on Silver Delta table")
+            zorder_cols = ", ".join(primary_keys)
+            spark.sql(f"OPTIMIZE delta.`{silver_path}` ZORDER BY ({zorder_cols})")
+            log("  OPTIMIZE complete.")
 
-                # Force SQL endpoint metadata refresh
-                spark.sql(f"REFRESH TABLE {pSilverTableName}")
+            # Force SQL endpoint metadata refresh
+            spark.sql(f"REFRESH TABLE {pSilverTableName}")
 
-                # ── 4.10 Calculate Silver Watermark ──────────────────────────
-                log("STEP 10: Calculating Silver Watermark for Pipeline")
+            # ── 4.11 Calculate Silver Watermark ──────────────────────────
+            log("STEP 11: Calculating Silver Watermark for Pipeline")
                 
-                # Query the table we just updated
-                wm_df = spark.sql(f"""
-                    SELECT COALESCE(MAX({pWatermarkColumnName}), '{pBronzeDataLoadWatermarkValue}') AS SilverWatermark
-                    FROM {pSilverTableName}
-                """)
+            # Query the table we just updated
+            wm_df = spark.sql(f"""
+                SELECT COALESCE(MAX({pWatermarkColumnName}), '{pBronzeDataLoadWatermarkValue}') AS SilverWatermark
+                FROM {pSilverTableName}
+            """)
                 
-                silver_watermark = str(wm_df.collect()[0][0])
-                log(f"  Silver Watermark identified: {silver_watermark}")
+            silver_watermark = str(wm_df.collect()[0][0])
+            log(f"  Silver Watermark identified: {silver_watermark}")
 
             # All paths through the else block succeeded
             execution_status = "SUCCESS"

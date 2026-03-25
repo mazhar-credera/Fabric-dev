@@ -28,7 +28,7 @@
               {
                 "name": "_crda_SourceExecutionId",
                 "value": {
-                  "value": "@string(pipeline().parameters.ExecutionId)",
+                  "value": "@string(activity('usp_InsertExecutionLog').output.firstRow.ExecutionId)",
                   "type": "Expression"
                 }
               }
@@ -140,7 +140,7 @@
         "name": "SetFileName",
         "dependsOn": [
           {
-            "activity": "FN_GetProcessMetadata",
+            "activity": "usp_InsertExecutionLog",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -163,7 +163,7 @@
         "name": "SetFolderPath",
         "dependsOn": [
           {
-            "activity": "FN_GetProcessMetadata",
+            "activity": "usp_InsertExecutionLog",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -186,7 +186,7 @@
         "name": "Set TimeNow",
         "dependsOn": [
           {
-            "activity": "FN_GetProcessMetadata",
+            "activity": "usp_InsertExecutionLog",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -290,7 +290,7 @@
               {
                 "name": "_crda_SourceExecutionId",
                 "value": {
-                  "value": "@pipeline().parameters.ExecutionId",
+                  "value": "@string(activity('usp_InsertExecutionLog').output.firstRow.ExecutionId)",
                   "type": "Expression"
                 }
               }
@@ -388,7 +388,7 @@
             "type": "FabricSqlDatabaseTable",
             "schema": [],
             "connectionSettings": {
-              "name": "715f0b27_fe57_4779_8fc5_726cd85209ef",
+              "name": "65a5a91e_c13e_4676_b8d3_931e0d9a96de",
               "properties": {
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
@@ -419,9 +419,43 @@
         "typeProperties": {
           "source": {
             "type": "FabricSqlDatabaseSource",
-            "sqlReaderQuery": {
-              "value": "UPDATE T\nSET T.BronzeWatermarkValue= '@{activity('nb_BronzeKantataDeltaAppend').output.result.exitValue}'\nFROM ETL.ProcessMap AS T \nWHERE T.ProcessId = @{activity('FN_GetProcessMetadata').output.firstRow.ProcessId}; \n\nSELECT RetVal = 1;",
-              "type": "Expression"
+            "sqlReaderStoredProcedureName": "[ETL].[usp_UpdateExecutionLog_Success]",
+            "storedProcedureParameters": {
+              "ExecutionId": {
+                "value": {
+                  "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                  "type": "Expression"
+                },
+                "type": "Int32"
+              },
+              "Status": {
+                "value": {
+                  "value": "BronzeWatermark",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "InitialWatermark": {
+                "value": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "UpdatedWatermark": {
+                "value": {
+                  "value": "@{activity('nb_BronzeKantataDeltaAppend').output.result.exitValue}",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "ProcessId": {
+                "value": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                  "type": "Expression"
+                },
+                "type": "Int32"
+              }
             },
             "partitionOption": "None",
             "queryTimeout": "02:00:00"
@@ -430,7 +464,7 @@
             "type": "FabricSqlDatabaseTable",
             "schema": [],
             "connectionSettings": {
-              "name": "8632fbdb_0912_4cf5_a83b_d9abafbed430",
+              "name": "c13e4af3_7711_4e02_96b0_7bcc18d578b7",
               "properties": {
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
@@ -453,10 +487,97 @@
           "secureInput": false,
           "secureOutput": false
         },
-        "name": "UpdateBronzeWatermarkValue",
+        "name": "usp_UpdateExecutionLog_Success",
         "dependsOn": [
           {
             "activity": "nb_BronzeKantataDeltaAppend",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderStoredProcedureName": "[ETL].[usp_InsertExecutionLog]",
+            "storedProcedureParameters": {
+              "BatchId": {
+                "value": "1",
+                "type": "Int32"
+              },
+              "ProcessId": {
+                "value": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                  "type": "Expression"
+                },
+                "type": "Int32"
+              },
+              "ExternalHandlerId": {
+                "value": {
+                  "value": "@pipeline().Pipeline",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "PipelineName": {
+                "value": {
+                  "value": "@pipeline().PipelineName",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "WorkspaceId": {
+                "value": {
+                  "value": "@pipeline().DataFactory",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "LogDescription": {
+                "value": {
+                  "value": "Load Bronze for : @{pipeline().parameters.StagingProjection}",
+                  "type": "Expression"
+                },
+                "type": "String"
+              }
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "b9b6aa64_7bfd_4e4e_bd80_e98b04e2199d",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 3,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "usp_InsertExecutionLog",
+        "dependsOn": [
+          {
+            "activity": "FN_GetProcessMetadata",
             "dependencyConditions": [
               "Succeeded"
             ]
