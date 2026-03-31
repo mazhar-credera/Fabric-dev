@@ -42,6 +42,24 @@
       "note": "",
       "type": "String",
       "value": "c0c16bdb-465f-438b-9625-8d07b867d9cc"
+    },
+    {
+      "name": "GoldWarehouseId",
+      "note": "",
+      "type": "String",
+      "value": "c96d34ab-a8e4-4555-ba89-72762be1310f"
+    },
+    {
+      "name": "cnGoldWarehouseConnectionId",
+      "note": "",
+      "type": "String",
+      "value": "2d12198b-ac8d-4216-9a5e-2d9f0ce89290"
+    },
+    {
+      "name": "GoldWarehouseConnectionString",
+      "note": "",
+      "type": "String",
+      "value": "26wb2mhrmc7ufbgouobam4lram-h4i7qkmqfipebjhx2yjbwsaude.datawarehouse.fabric.microsoft.com"
     }
   ]
 }

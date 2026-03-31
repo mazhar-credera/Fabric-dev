@@ -12,6 +12,7 @@ CREATE TABLE [ETL].[ProcessMap] (
     [LastExecutionId]        INT           CONSTRAINT [DF__ETL_ProcessMap_LastExecutionId] DEFAULT ((-1)) NOT NULL,
     [LastFileLoadedDateTime] DATETIME2 (7) NULL,
     [IsActive]               BIT           CONSTRAINT [DF__ETL_ProcessMap__IsActive] DEFAULT ((1)) NOT NULL,
+    [CurrentWatermark]       VARCHAR (255) CONSTRAINT [DF__ETL_ProcessMap_CurrentWatermark] DEFAULT ('2000-01-01') NOT NULL,
     CONSTRAINT [PK__ETL_ProcessMap] PRIMARY KEY CLUSTERED ([ProcessId] ASC),
     CONSTRAINT [UQ__ETL_ProcessMap] UNIQUE NONCLUSTERED ([GroupId] ASC, [StagingProjection] ASC)
 );

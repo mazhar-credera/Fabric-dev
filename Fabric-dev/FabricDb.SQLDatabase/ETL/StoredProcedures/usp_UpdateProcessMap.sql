@@ -40,6 +40,14 @@ SET NOCOUNT ON ;
 		WHERE	P.ProcessId = @_ProcessId
 	END ;
 
+	IF @_UpdateType = 'CurrentWatermark'
+	BEGIN
+		UPDATE	P
+		SET		P.CurrentWatermark = CONVERT(VARCHAR(35),@_NewWatermark, 121)
+		FROM	ETL.ProcessMap P
+		WHERE	P.ProcessId = @_ProcessId
+	END ;
+
 	IF @_UpdateType = 'RunStatus'
 	BEGIN
 		UPDATE	P
@@ -48,11 +56,8 @@ SET NOCOUNT ON ;
 		WHERE	P.ProcessId = @_ProcessId
 	END ;
 
-
-
-
 	--return something for the Fabric Lookup
-	SELECT ProcessId = @ProcessId;
+	SELECT RetVal = 1;
 
 END ;
 

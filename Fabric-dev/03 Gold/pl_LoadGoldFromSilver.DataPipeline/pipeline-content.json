@@ -1,0 +1,492 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "FN_GetProcessMetadata",
+        "type": "Lookup",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 3,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "SELECT * FROM ETL.FN_GetProcessMetadata('@{pipeline().parameters.StagingProjection}', '@{pipeline().parameters.ProcessPathProc}')",
+              "type": "Expression"
+            },
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "datasetSettings": {
+            "annotations": [],
+            "connectionSettings": {
+              "name": "0956542f_8afe_4842_97e4_cb99f10a066f",
+              "properties": {
+                "annotations": [],
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId",
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                }
+              }
+            },
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "typeProperties": {}
+          }
+        }
+      },
+      {
+        "name": "usp_InsertExecutionLog",
+        "type": "Lookup",
+        "dependsOn": [
+          {
+            "activity": "FN_GetProcessMetadata",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 3,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderStoredProcedureName": "[ETL].[usp_InsertExecutionLog]",
+            "storedProcedureParameters": {
+              "BatchId": {
+                "type": "Int32",
+                "value": "1"
+              },
+              "ProcessId": {
+                "type": "Int32",
+                "value": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                  "type": "Expression"
+                }
+              },
+              "ExternalHandlerId": {
+                "type": "String",
+                "value": {
+                  "value": "@pipeline().Pipeline",
+                  "type": "Expression"
+                }
+              },
+              "PipelineName": {
+                "type": "String",
+                "value": {
+                  "value": "@pipeline().PipelineName",
+                  "type": "Expression"
+                }
+              },
+              "WorkspaceId": {
+                "type": "String",
+                "value": {
+                  "value": "@pipeline().DataFactory",
+                  "type": "Expression"
+                }
+              },
+              "LogDescription": {
+                "type": "String",
+                "value": {
+                  "value": "Executing Proc : @{pipeline().parameters.ProcessPathProc}",
+                  "type": "Expression"
+                }
+              }
+            },
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "datasetSettings": {
+            "annotations": [],
+            "connectionSettings": {
+              "name": "ca73deca_be1a_4728_8c24_642d2e926cbc",
+              "properties": {
+                "annotations": [],
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId",
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                }
+              }
+            },
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "typeProperties": {}
+          }
+        }
+      },
+      {
+        "name": "Fail-LoadGold",
+        "type": "Fail",
+        "dependsOn": [
+          {
+            "activity": "usp_UpdateExecutionLog_Failure",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "typeProperties": {
+          "message": {
+            "value": "Load Gold Failed (@{pipeline().parameters.StagingProjection} / @{pipeline().parameters.ProcessPathProc})",
+            "type": "Expression"
+          },
+          "errorCode": "500"
+        }
+      },
+      {
+        "name": "usp_UpdateExecutionLog_Failure",
+        "type": "Lookup",
+        "dependsOn": [
+          {
+            "activity": "Executing Stored Proc",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderStoredProcedureName": "[ETL].[usp_UpdateExecutionLog_Failure]",
+            "storedProcedureParameters": {
+              "ExecutionId": {
+                "type": "Int32",
+                "value": {
+                  "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                  "type": "Expression"
+                }
+              },
+              "ErrorMessage": {
+                "type": "String",
+                "value": {
+                  "value": "@activity('Executing Stored Proc').error.message",
+                  "type": "Expression"
+                }
+              },
+              "ProcessId": {
+                "type": "Int32",
+                "value": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                  "type": "Expression"
+                }
+              }
+            },
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "datasetSettings": {
+            "annotations": [],
+            "connectionSettings": {
+              "name": "cab5025e_b81b_4930_860f_072aed138745",
+              "properties": {
+                "annotations": [],
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId",
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                }
+              }
+            },
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "typeProperties": {}
+          }
+        }
+      },
+      {
+        "name": "usp_UpdateProcessMap",
+        "type": "Lookup",
+        "dependsOn": [
+          {
+            "activity": "usp_InsertExecutionLog",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 3,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderStoredProcedureName": "[ETL].[usp_UpdateProcessMap]",
+            "storedProcedureParameters": {
+              "ProcessId": {
+                "type": "Int32",
+                "value": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                  "type": "Expression"
+                }
+              },
+              "UpdateType": {
+                "type": "String",
+                "value": {
+                  "value": "RunStatus",
+                  "type": "Expression"
+                }
+              },
+              "NewRunStatus": {
+                "type": "String",
+                "value": {
+                  "value": "Running",
+                  "type": "Expression"
+                }
+              }
+            },
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "datasetSettings": {
+            "annotations": [],
+            "connectionSettings": {
+              "name": "ca73deca_be1a_4728_8c24_642d2e926cbc",
+              "properties": {
+                "annotations": [],
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId",
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                }
+              }
+            },
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "typeProperties": {}
+          }
+        }
+      },
+      {
+        "name": "usp_UpdateExecutionLog_Success",
+        "type": "Lookup",
+        "dependsOn": [
+          {
+            "activity": "Executing Stored Proc",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 10,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderStoredProcedureName": "[ETL].[usp_UpdateExecutionLog_Success]",
+            "storedProcedureParameters": {
+              "ExecutionId": {
+                "type": "Int32",
+                "value": {
+                  "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                  "type": "Expression"
+                }
+              },
+              "Status": {
+                "type": "String",
+                "value": {
+                  "value": "Done",
+                  "type": "Expression"
+                }
+              },
+              "ProcessId": {
+                "type": "Int32",
+                "value": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                  "type": "Expression"
+                }
+              }
+            },
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "datasetSettings": {
+            "annotations": [],
+            "connectionSettings": {
+              "name": "cab5025e_b81b_4930_860f_072aed138745",
+              "properties": {
+                "annotations": [],
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId",
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                }
+              }
+            },
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "typeProperties": {}
+          }
+        }
+      },
+      {
+        "name": "Executing Stored Proc",
+        "type": "SqlServerStoredProcedure",
+        "dependsOn": [
+          {
+            "activity": "usp_UpdateProcessMap",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:30:00",
+          "retry": 5,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "storedProcedureName": {
+            "value": "@pipeline().parameters.ProcessPathProc",
+            "type": "Expression"
+          },
+          "storedProcedureParameters": {
+            "ExecutionId": {
+              "value": {
+                "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                "type": "Expression"
+              },
+              "type": "Int32"
+            },
+            "Watermark": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.CurrentWatermark",
+                "type": "Expression"
+              },
+              "type": "String"
+            },
+            "ProcessId": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                "type": "Expression"
+              },
+              "type": "Int32"
+            }
+          }
+        },
+        "connectionSettings": {
+          "name": "51540601_2d4e_4152_88e2_92b0cb15783e",
+          "properties": {
+            "annotations": [],
+            "type": "DataWarehouse",
+            "typeProperties": {
+              "endpoint": "@pipeline().libraryVariables.vl_FabricObjects_GoldWarehouseConnectionString",
+              "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_GoldWarehouseId",
+              "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+            },
+            "externalReferences": {
+              "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnGoldWarehouseConnectionId"
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "StagingProjection": {
+        "type": "string",
+        "defaultValue": "Kantata_DimDate"
+      },
+      "ProcessPathProc": {
+        "type": "string",
+        "defaultValue": "[Internal].[usp_Update_DimDate]"
+      }
+    },
+    "variables": {
+      "IsPipelineFailed": {
+        "type": "String",
+        "defaultValue": "false"
+      }
+    },
+    "libraryVariables": {
+      "vl_SrcSalesforceKantata_Salesforce_ConnectionId": {
+        "type": "String",
+        "variableName": "Salesforce_ConnectionId",
+        "libraryName": "vl_SrcSalesforceKantata"
+      },
+      "vl_SrcSalesforceKantata_SalesforceOAuthURL": {
+        "type": "String",
+        "variableName": "SalesforceOAuthURL",
+        "libraryName": "vl_SrcSalesforceKantata"
+      },
+      "vl_SrcSalesforceKantata_SalesforceOAuthClientId": {
+        "type": "String",
+        "variableName": "SalesforceOAuthClientId",
+        "libraryName": "vl_SrcSalesforceKantata"
+      },
+      "vl_FabricObjects_cnFabricDbConnectionId": {
+        "type": "String",
+        "variableName": "cnFabricDbConnectionId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_WorkspaceId": {
+        "type": "String",
+        "variableName": "WorkspaceId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_FabricDbId": {
+        "type": "String",
+        "variableName": "FabricDbId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_cnGoldWarehouseConnectionId": {
+        "type": "String",
+        "variableName": "cnGoldWarehouseConnectionId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_GoldWarehouseId": {
+        "type": "String",
+        "variableName": "GoldWarehouseId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_GoldWarehouseConnectionString": {
+        "type": "String",
+        "variableName": "GoldWarehouseConnectionString",
+        "libraryName": "vl_FabricObjects"
+      }
+    }
+  }
+}

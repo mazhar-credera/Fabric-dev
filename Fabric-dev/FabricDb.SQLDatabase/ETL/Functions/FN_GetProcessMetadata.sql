@@ -2,9 +2,9 @@ CREATE
 	FUNCTION ETL.FN_GetProcessMetadata(
 		@stagingProjection VARCHAR(512) , @ProcessPath VARCHAR(512)
 /*
-SELECT * FROM ETL.FN_GetProcessMetadata('SharePoint_DeskReservations')
 SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Resource', 'pl_IngestSalesforce')
 SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Resource', 'pl_LoadSilverFromBronze')
+SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_DimDate', '[Internal].[usp_Update_DimDate]')
 */
 ) RETURNS TABLE
 AS RETURN
@@ -12,6 +12,7 @@ AS RETURN
 	SELECT 
 		 PM.ProcessId 
 		,p.StagingProjection
+		,PM.ProcessPath 
 		,p.IngestPattern
 		,P.PrimaryKeys
 		,PrimaryKeysJson				= CONCAT('["',P.PrimaryKeys,'"]')
@@ -21,6 +22,7 @@ AS RETURN
 		,P.ApiEndPoint
 		,P.SourceFormat
 		,P.TableSchema
+		,PM.CurrentWatermark 
 		/*Bronze*/
 		,P.WatermarkColumnName
 		,PM.BronzeWatermarkValue 
@@ -127,7 +129,56 @@ AS RETURN
 			,SharePointOnlineListName= MAX(IIF(D.ordinal = 3, D.[value], NULL))
 		FROM string_split(P.ApiEndPoint, '\', 1) D
 	  ) SP  
-	WHERE p.StagingProjection LIKE @stagingProjection ;
+	WHERE	p.StagingProjection = @stagingProjection 
+	AND		P.IsActive = 1
+	UNION ALL
+	SELECT 
+		 PM.ProcessId 
+		,PM.StagingProjection
+		,PM.ProcessPath 
+		,IngestPattern					= NULL 
+		,PrimaryKeys					= NULL 
+		,PrimaryKeysJson				= NULL 
+		,DeltaLakeSourceFolder			= NULL 
+		,DeltaLakeBronzeFolder			= NULL 
+		,DeltaLakeSilverFolder			= NULL 
+		,ApiEndPoint					= NULL 
+		,SourceFormat					= NULL 
+		,TableSchema					= NULL 
+		,PM.CurrentWatermark 
+		/*Bronze*/
+		,WatermarkColumnName			= NULL 
+		,PM.BronzeWatermarkValue 
+		,BronzeDataLoadWatermarkColumn	= NULL 
+		,BronzeTableName				= NULL 
+		,BronzeTablePath				= NULL
+		,BronzeTableShortcut			= NULL 
+		,BronzeTableShortcutPath		= NULL
+		,BronzeKantataIdTableName		= NULL 
+		,BronzeTableShortcutFqname		= NULL 
+		,BronzeKantataIdTableFqName		= NULL 
+		/*Bronze*/
+		/*Silver*/
+		,SilverTableName				= NULL 
+		,PM.SilverWatermarkValue 
+		,SilverTablePath				= NULL 
+		,SilverTableFqName				= NULL 
+		/*Silver*/
+		,ModificationTimeStampExpression = NULL 
+		,TransformationsJson	= NULL 
+		,KantataSelectColumns	= NULL 
+		,KantataHashColumns		= NULL 
+		,KantataHashColumnsJson	= NULL 
+		,KantataColumnMapping	= NULL 
+		,SharePointDomain		= NULL 
+		,SharePointSite			= NULL 
+		,SharePointOnlineListName	= NULL 
+	FROM ETL.ProcessMap			PM
+	--CROSS APPLY Meta.Process	P	
+	WHERE	PM.StagingProjection = @stagingProjection 
+	AND		PM.ProcessPath	= @ProcessPath 
+	AND		PM.ProcessType	= 'ASQL'
+	AND		PM.IsActive		= 1 ;
 
 GO
 

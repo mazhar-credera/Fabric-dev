@@ -1,4 +1,4 @@
-CREATE --OR ALTER 
+CREATE   
 	PROCEDURE ETL.usp_UpdateExecutionLog_Failure
 		@ExecutionId		INT , 
 		@ErrorMessage		VARCHAR(MAX)  , 
@@ -9,15 +9,17 @@ SET NOCOUNT ON ;
 	DECLARE
 		@_ExecutionId		INT = @ExecutionId, 
 		@_ErrorMessage		VARCHAR(MAX)	= @ErrorMessage , 
-		@_ProcessId 		INT				= @ProcessId ; 
+		@_ProcessId 		INT				= @ProcessId , 
+		@FinalStatus		VARCHAR(50)		= 'Error' ;
+
 
 	--to swallow return dataset from Meta.usp_UpdateProcessMap
 	DECLARE @ProcessMap TABLE (RetVal BIT NULL ) ; 
 
 	UPDATE	b
 	SET		ExecutionEndTime = GETUTCDATE() , 
-			FinalStatus	= 'Error' , 
-			ErrorDetail	= @_ErrorMessage 
+			FinalStatus		 = @FinalStatus , 
+			ErrorDetail		 = @_ErrorMessage 
 	FROM	ETL.ExecutionLog	b
 	WHERE	b.ExecutionId = @_ExecutionId;
 		
@@ -31,10 +33,10 @@ SET NOCOUNT ON ;
 	EXEC ETL.usp_UpdateProcessMap
 		@ProcessId		= @_ProcessId , 
 		@UpdateType		= 'RunStatus' ,
-		@NewRunStatus	= 'Error' ;
+		@NewRunStatus	= @FinalStatus ;
 
 	--return something for the Fabric Lookup
-	SELECT Success = 1;
+	SELECT RetVal = 1;
 
 END ;
 

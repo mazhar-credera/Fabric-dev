@@ -1,11 +1,11 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
-    "type": "ApacheAirflowJob",
-    "displayName": "aa_OrchestrateEDWjob"
+    "type": "DataPipeline",
+    "displayName": "pl_LoadInternalFromSilver"
   },
   "config": {
     "version": "2.0",
-    "logicalId": "abdd12fc-4962-a65a-459e-3fa8906a41f2"
+    "logicalId": "15f86c3e-fda8-a86d-4f7d-90e7d58b470e"
   }
 }
