@@ -25,7 +25,7 @@
           "datasetSettings": {
             "annotations": [],
             "connectionSettings": {
-              "name": "0956542f_8afe_4842_97e4_cb99f10a066f",
+              "name": "2449db45_3c8b_4861_8931_40978582eb2b",
               "properties": {
                 "annotations": [],
                 "type": "FabricSqlDatabase",
@@ -57,7 +57,7 @@
         ],
         "policy": {
           "timeout": "0.00:10:00",
-          "retry": 3,
+          "retry": 0,
           "retryIntervalInSeconds": 30,
           "secureOutput": false,
           "secureInput": false
@@ -113,7 +113,7 @@
           "datasetSettings": {
             "annotations": [],
             "connectionSettings": {
-              "name": "ca73deca_be1a_4728_8c24_642d2e926cbc",
+              "name": "a636dc90_3ded_4221_a4d6_be90efb2354c",
               "properties": {
                 "annotations": [],
                 "type": "FabricSqlDatabase",
@@ -156,7 +156,7 @@
         "type": "Lookup",
         "dependsOn": [
           {
-            "activity": "Executing Stored Proc",
+            "activity": "Execute Stored Proc",
             "dependencyConditions": [
               "Failed"
             ]
@@ -164,7 +164,7 @@
         ],
         "policy": {
           "timeout": "0.00:30:00",
-          "retry": 10,
+          "retry": 0,
           "retryIntervalInSeconds": 30,
           "secureOutput": false,
           "secureInput": false
@@ -184,7 +184,7 @@
               "ErrorMessage": {
                 "type": "String",
                 "value": {
-                  "value": "@activity('Executing Stored Proc').error.message",
+                  "value": "@activity('Execute Stored Proc').error.message",
                   "type": "Expression"
                 }
               },
@@ -202,7 +202,7 @@
           "datasetSettings": {
             "annotations": [],
             "connectionSettings": {
-              "name": "cab5025e_b81b_4930_860f_072aed138745",
+              "name": "e90755ff_6674_4bda_bebd_5e1a2f10e57b",
               "properties": {
                 "annotations": [],
                 "type": "FabricSqlDatabase",
@@ -234,7 +234,7 @@
         ],
         "policy": {
           "timeout": "0.00:10:00",
-          "retry": 3,
+          "retry": 0,
           "retryIntervalInSeconds": 30,
           "secureOutput": false,
           "secureInput": false
@@ -272,7 +272,7 @@
           "datasetSettings": {
             "annotations": [],
             "connectionSettings": {
-              "name": "ca73deca_be1a_4728_8c24_642d2e926cbc",
+              "name": "9b82a3f7_02bb_4598_a2dc_7dea0d0a5d32",
               "properties": {
                 "annotations": [],
                 "type": "FabricSqlDatabase",
@@ -296,7 +296,7 @@
         "type": "Lookup",
         "dependsOn": [
           {
-            "activity": "Executing Stored Proc",
+            "activity": "Execute Stored Proc",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -304,7 +304,7 @@
         ],
         "policy": {
           "timeout": "0.00:30:00",
-          "retry": 10,
+          "retry": 0,
           "retryIntervalInSeconds": 30,
           "secureOutput": false,
           "secureInput": false
@@ -334,6 +334,20 @@
                   "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
                   "type": "Expression"
                 }
+              },
+              "InitialWatermark": {
+                "type": "String",
+                "value": {
+                  "value": "@activity('Execute Stored Proc').output.firstRow.InitialWatermark",
+                  "type": "Expression"
+                }
+              },
+              "UpdatedWatermark": {
+                "type": "String",
+                "value": {
+                  "value": "@activity('Execute Stored Proc').output.firstRow.UpdatedWatermark",
+                  "type": "Expression"
+                }
               }
             },
             "queryTimeout": "02:00:00",
@@ -342,7 +356,7 @@
           "datasetSettings": {
             "annotations": [],
             "connectionSettings": {
-              "name": "cab5025e_b81b_4930_860f_072aed138745",
+              "name": "3572b313_d743_43de_b83d_88e55caf8af9",
               "properties": {
                 "annotations": [],
                 "type": "FabricSqlDatabase",
@@ -362,8 +376,8 @@
         }
       },
       {
-        "name": "Executing Stored Proc",
-        "type": "SqlServerStoredProcedure",
+        "name": "Execute Stored Proc",
+        "type": "Lookup",
         "dependsOn": [
           {
             "activity": "usp_UpdateProcessMap",
@@ -373,54 +387,65 @@
           }
         ],
         "policy": {
-          "timeout": "0.01:30:00",
-          "retry": 5,
+          "timeout": "0.00:10:00",
+          "retry": 0,
           "retryIntervalInSeconds": 30,
           "secureOutput": false,
           "secureInput": false
         },
         "typeProperties": {
-          "storedProcedureName": {
-            "value": "@pipeline().parameters.ProcessPathProc",
-            "type": "Expression"
+          "source": {
+            "type": "DataWarehouseSource",
+            "sqlReaderStoredProcedureName": {
+              "value": "@pipeline().parameters.ProcessPathProc",
+              "type": "Expression"
+            },
+            "storedProcedureParameters": {
+              "ExecutionId": {
+                "type": "Int32",
+                "value": {
+                  "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                  "type": "Expression"
+                }
+              },
+              "ProcessId": {
+                "type": "Int32",
+                "value": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                  "type": "Expression"
+                }
+              },
+              "Watermark": {
+                "type": "String",
+                "value": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.CurrentWatermark",
+                  "type": "Expression"
+                }
+              }
+            },
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
           },
-          "storedProcedureParameters": {
-            "ExecutionId": {
-              "value": {
-                "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
-                "type": "Expression"
-              },
-              "type": "Int32"
-            },
-            "Watermark": {
-              "value": {
-                "value": "@activity('FN_GetProcessMetadata').output.firstRow.CurrentWatermark",
-                "type": "Expression"
-              },
-              "type": "String"
-            },
-            "ProcessId": {
-              "value": {
-                "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
-                "type": "Expression"
-              },
-              "type": "Int32"
-            }
-          }
-        },
-        "connectionSettings": {
-          "name": "51540601_2d4e_4152_88e2_92b0cb15783e",
-          "properties": {
+          "datasetSettings": {
             "annotations": [],
-            "type": "DataWarehouse",
-            "typeProperties": {
-              "endpoint": "@pipeline().libraryVariables.vl_FabricObjects_GoldWarehouseConnectionString",
-              "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_GoldWarehouseId",
-              "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+            "connectionSettings": {
+              "name": "881be0cc_2a70_434d_ae6e_6085e20aa84f",
+              "properties": {
+                "annotations": [],
+                "type": "DataWarehouse",
+                "typeProperties": {
+                  "endpoint": "@pipeline().libraryVariables.vl_FabricObjects_GoldWarehouseConnectionString",
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_GoldWarehouseId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnGoldWarehouseConnectionId"
+                }
+              }
             },
-            "externalReferences": {
-              "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnGoldWarehouseConnectionId"
-            }
+            "type": "DataWarehouseTable",
+            "schema": [],
+            "typeProperties": {}
           }
         }
       }
@@ -428,7 +453,7 @@
     "parameters": {
       "StagingProjection": {
         "type": "string",
-        "defaultValue": "Kantata_DimDate"
+        "defaultValue": "Internal_DimDate"
       },
       "ProcessPathProc": {
         "type": "string",

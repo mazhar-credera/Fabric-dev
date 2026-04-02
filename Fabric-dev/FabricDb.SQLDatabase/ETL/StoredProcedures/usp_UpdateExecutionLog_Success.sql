@@ -1,7 +1,7 @@
 CREATE   
 	PROCEDURE ETL.usp_UpdateExecutionLog_Success
 		@ExecutionId		INT , 
-		@Status				VARCHAR(50) ,  /* 'BronzeWatermark', 'SilverWatermark', 'CurrentWatermark' */
+		@Status				VARCHAR(50) ,  /* 'BronzeWatermark', 'SilverWatermark', 'CurrentWatermark', 'Done' */
 		@InitialWatermark	VARCHAR(255) = NULL , 
 		@UpdatedWatermark	VARCHAR(255) = NULL , 
 		@ProcessId			INT = NULL 
@@ -34,6 +34,12 @@ SET NOCOUNT ON ;
 				UpdatedWatermark	= CONVERT(VARCHAR(35),@_UpdatedWatermark, 121) 
 		FROM	ETL.ExecutionLog	b
 		WHERE	b.ExecutionId = @_ExecutionId;
+
+		INSERT INTO @ProcessMap(RetVal)
+		EXEC ETL.usp_UpdateProcessMap
+			@ProcessId		= @_ProcessId , 
+			@UpdateType		= 'CurrentWatermark' , 
+			@NewWatermark	= @_UpdatedWatermark ;
 	END ;
 		
 	INSERT INTO @ProcessMap(RetVal)
@@ -42,7 +48,7 @@ SET NOCOUNT ON ;
 		@UpdateType		= 'ExecutionId' , 
 		@ExecutionId	= @_ExecutionId ;
 
-	IF (@_Status IN ('BronzeWatermark', 'SilverWatermark', 'CurrentWatermark'))
+	IF (@_Status IN ('BronzeWatermark', 'SilverWatermark'))
 	BEGIN
 		INSERT INTO @ProcessMap(RetVal)
 		EXEC ETL.usp_UpdateProcessMap
@@ -54,7 +60,7 @@ SET NOCOUNT ON ;
 	INSERT INTO @ProcessMap(RetVal)
 	EXEC ETL.usp_UpdateProcessMap
 		@ProcessId		= @_ProcessId , 
-		@UpdateType		= 'RunStatus' , /*watermark*/
+		@UpdateType		= 'RunStatus' , 
 		@NewRunStatus	= @FinalStatus ;
 
 	--return something for the Fabric Lookup
