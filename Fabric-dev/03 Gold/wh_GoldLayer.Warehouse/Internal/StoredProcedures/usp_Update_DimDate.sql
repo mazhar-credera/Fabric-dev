@@ -584,6 +584,6 @@ BEGIN
 		SELECT IsSuccess=0
 	END CATCH;
 
-	SELECT IsSuccess=1
+	SELECT InitialWatermark=NULL, UpdatedWatermark = NULL;
 
 END;
