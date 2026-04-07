@@ -194,7 +194,7 @@
                     },
                     "UpdatedWatermark": {
                       "value": {
-                        "value": "@{json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).silverWatermark}",
+                        "value": "if(\n    greater(\n        @{json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).recordsAfterDedup},\n        0, \n        @{json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).silverWatermark})\n",
                         "type": "Expression"
                       },
                       "type": "String"
