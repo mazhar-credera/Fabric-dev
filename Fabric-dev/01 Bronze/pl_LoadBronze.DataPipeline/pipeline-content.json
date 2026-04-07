@@ -2,49 +2,6 @@
   "properties": {
     "activities": [
       {
-        "type": "Lookup",
-        "typeProperties": {
-          "source": {
-            "type": "FabricSqlDatabaseSource",
-            "sqlReaderQuery": {
-              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1\nAND\t\tStagingProjection IN ('Kantata_ActivityRole', 'Kantata_ApplicationRole', 'Kantata_Contact', 'Kantata_DeliveryElement', 'Kantata_DeliveryGroup', 'Kantata_DeliveryProgram') ",
-              "type": "Expression"
-            },
-            "partitionOption": "None",
-            "queryTimeout": "02:00:00"
-          },
-          "datasetSettings": {
-            "type": "FabricSqlDatabaseTable",
-            "schema": [],
-            "connectionSettings": {
-              "name": "050fe46f_1f33_4d1c_b3a6_ece7928ddf87",
-              "properties": {
-                "type": "FabricSqlDatabase",
-                "typeProperties": {
-                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDb",
-                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
-                },
-                "externalReferences": {
-                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbVnet"
-                },
-                "annotations": []
-              }
-            },
-            "annotations": []
-          },
-          "firstRowOnly": false
-        },
-        "policy": {
-          "timeout": "0.00:10:00",
-          "retry": 5,
-          "retryIntervalInSeconds": 30,
-          "secureInput": false,
-          "secureOutput": false
-        },
-        "name": "GetStagingProjections",
-        "dependsOn": []
-      },
-      {
         "type": "ForEach",
         "typeProperties": {
           "items": {
@@ -118,22 +75,65 @@
             ]
           }
         ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1 AND GroupId = 1 \nAND\t\tStagingProjection IN ('Kantata_ActivityAssignment', 'Kantata_ActivityAssignmentDemand', 'Kantata_Resource', 'Kantata_ActivityRole', 'Kantata_DeliveryGroup', 'Kantata_ResourcedActivity') \n",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "f2770db7_5a30_4785_9a01_92712720442d",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": false
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "GetStagingProjections",
+        "dependsOn": []
       }
     ],
     "libraryVariables": {
-      "vl_FabricObjects_cnFabricDbVnet": {
-        "type": "String",
-        "variableName": "cnFabricDbVnet",
-        "libraryName": "vl_FabricObjects"
-      },
       "vl_FabricObjects_WorkspaceId": {
         "type": "String",
         "variableName": "WorkspaceId",
         "libraryName": "vl_FabricObjects"
       },
-      "vl_FabricObjects_FabricDb": {
+      "vl_FabricObjects_cnFabricDbConnectionId": {
         "type": "String",
-        "variableName": "FabricDb",
+        "variableName": "cnFabricDbConnectionId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_FabricDbId": {
+        "type": "String",
+        "variableName": "FabricDbId",
         "libraryName": "vl_FabricObjects"
       }
     }

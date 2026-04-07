@@ -127,6 +127,8 @@ SCD2_OPEN_END_DATE    = "9999-12-31 23:59:59"  # Sentinel value for open / curre
 META_SILVER_LOAD_DT_COL    = "_crda_SilverLoadDateTime"
 META_CREATED_EXEC_ID_COL   = "_crda_CreatedExecutionId"
 META_UPDATED_EXEC_ID_COL   = "_crda_UpdatedExecutionId"
+KANTATA_IDs_TABLE	       = pBronzeTableShortcut + "_Id" 
+
 
 EXPIRE_OFFSET_MS = 3   # Milliseconds to subtract from incoming ActiveFrom when expiring old rows
 
@@ -621,6 +623,24 @@ try:
                 
             silver_watermark = str(wm_df.collect()[0][0])
             log(f"  Silver Watermark identified: {silver_watermark}")
+
+
+            # ── 4.12 Mark IS_DELETED_COL as True for deleted Ids from Source ──────────────────────────
+            log("STEP 12: Mark IS_DELETED_COL as True for deleted Ids from Source")
+            if pTargetSchema == 'Kantata':
+                merge_condition = " AND ".join([f"TGT.{pk} = SRC.{pk}" for pk in primary_keys])
+
+                sql = f"""
+                    MERGE INTO {pSilverTableName} TGT
+                    USING {KANTATA_IDs_TABLE} SRC
+                        ON {merge_condition}
+                    WHEN NOT MATCHED BY SOURCE AND TGT.{IS_DELETED_COL} <> 1 THEN
+                        UPDATE SET
+                            TGT._crda_isDeleted           = 1,
+                            TGT._crda_UpdatedExecutionId  = {pExecutionId}
+                """
+                log(f"  SQL for Mark IS_DELETED_COL : {sql}")
+                spark.sql(sql)
 
             # All paths through the else block succeeded
             execution_status = "SUCCESS"
