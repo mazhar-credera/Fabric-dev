@@ -1056,6 +1056,671 @@
         ]
       },
       {
+        "name": "DemandCapacity",
+        "sourceLineageTag": "[Internal].[DemandCapacity]",
+        "columns": [
+          {
+            "name": "DemandCapacitySk",
+            "dataType": "int64",
+            "sourceColumn": "DemandCapacitySk",
+            "formatString": "0",
+            "sourceProviderType": "bigint",
+            "sourceLineageTag": "DemandCapacitySk",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "ActivityAssignmentBk",
+            "dataType": "string",
+            "sourceColumn": "ActivityAssignmentBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ActivityAssignmentBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "DemandCapacityType",
+            "dataType": "string",
+            "sourceColumn": "DemandCapacityType",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "DemandCapacityType",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "PeriodStartDate",
+            "dataType": "dateTime",
+            "sourceColumn": "PeriodStartDate",
+            "formatString": "General Date",
+            "sourceProviderType": "date",
+            "sourceLineageTag": "PeriodStartDate",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "PeriodEndDate",
+            "dataType": "dateTime",
+            "sourceColumn": "PeriodEndDate",
+            "formatString": "General Date",
+            "sourceProviderType": "date",
+            "sourceLineageTag": "PeriodEndDate",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "PeriodStartSk",
+            "dataType": "int64",
+            "sourceColumn": "PeriodStartSk",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "PeriodStartSk",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "PeriodEndSk",
+            "dataType": "int64",
+            "sourceColumn": "PeriodEndSk",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "PeriodEndSk",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "PeriodStartMonthEnd",
+            "dataType": "dateTime",
+            "sourceColumn": "PeriodStartMonthEnd",
+            "formatString": "General Date",
+            "sourceProviderType": "date",
+            "sourceLineageTag": "PeriodStartMonthEnd",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "PeriodEndMonthEnd",
+            "dataType": "dateTime",
+            "sourceColumn": "PeriodEndMonthEnd",
+            "formatString": "General Date",
+            "sourceProviderType": "date",
+            "sourceLineageTag": "PeriodEndMonthEnd",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "PeriodStartMonthEndSk",
+            "dataType": "int64",
+            "sourceColumn": "PeriodStartMonthEndSk",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "PeriodStartMonthEndSk",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "PeriodEndMonthEndSk",
+            "dataType": "int64",
+            "sourceColumn": "PeriodEndMonthEndSk",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "PeriodEndMonthEndSk",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "ResourceBk",
+            "dataType": "string",
+            "sourceColumn": "ResourceBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ResourceBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "ResourcedActivityBk",
+            "dataType": "string",
+            "sourceColumn": "ResourcedActivityBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ResourcedActivityBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "ActivityAssignmentDemandBk",
+            "dataType": "string",
+            "sourceColumn": "ActivityAssignmentDemandBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ActivityAssignmentDemandBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "ActivityDemandStatusBk",
+            "dataType": "string",
+            "sourceColumn": "ActivityDemandStatusBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ActivityDemandStatusBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "CandidateStatusBk",
+            "dataType": "string",
+            "sourceColumn": "CandidateStatusBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "CandidateStatusBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "ActivityAssgnRoleBk",
+            "dataType": "string",
+            "sourceColumn": "ActivityAssgnRoleBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ActivityAssgnRoleBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "ActivityDeliveryGroupBk",
+            "dataType": "string",
+            "sourceColumn": "ActivityDeliveryGroupBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ActivityDeliveryGroupBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "DeliveryGroupAccountBk",
+            "dataType": "string",
+            "sourceColumn": "DeliveryGroupAccountBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "DeliveryGroupAccountBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "ResourcedActivityBusinessUnitBk",
+            "dataType": "string",
+            "sourceColumn": "ResourcedActivityBusinessUnitBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ResourcedActivityBusinessUnitBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "ReferenceDataBk",
+            "dataType": "string",
+            "sourceColumn": "ReferenceDataBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ReferenceDataBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "ResourcingStatusBk",
+            "dataType": "string",
+            "sourceColumn": "ResourcingStatusBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ResourcingStatusBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "ResourceDeliveryElementBk",
+            "dataType": "string",
+            "sourceColumn": "ResourceDeliveryElementBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ResourceDeliveryElementBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "DeliveryGroupForecastStatusBk",
+            "dataType": "string",
+            "sourceColumn": "DeliveryGroupForecastStatusBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "DeliveryGroupForecastStatusBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "UtilisationPercentage",
+            "dataType": "double",
+            "sourceColumn": "UtilisationPercentage",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "UtilisationPercentage",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "TotalActualCost",
+            "dataType": "double",
+            "sourceColumn": "TotalActualCost",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "TotalActualCost",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "ForecastP1Cost",
+            "dataType": "double",
+            "sourceColumn": "ForecastP1Cost",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "ForecastP1Cost",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "ForecastP2Cost",
+            "dataType": "double",
+            "sourceColumn": "ForecastP2Cost",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "ForecastP2Cost",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "ForecastP3Cost",
+            "dataType": "double",
+            "sourceColumn": "ForecastP3Cost",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "ForecastP3Cost",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "TotalActualUsage",
+            "dataType": "double",
+            "sourceColumn": "TotalActualUsage",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "TotalActualUsage",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "ForecastP1Usage",
+            "dataType": "double",
+            "sourceColumn": "ForecastP1Usage",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "ForecastP1Usage",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "ForecastP2Usage",
+            "dataType": "double",
+            "sourceColumn": "ForecastP2Usage",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "ForecastP2Usage",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "ForecastP3Usage",
+            "dataType": "double",
+            "sourceColumn": "ForecastP3Usage",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "ForecastP3Usage",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "ForecastRevenueRate",
+            "dataType": "double",
+            "sourceColumn": "ForecastRevenueRate",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "ForecastRevenueRate",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "TotalActualRevenue",
+            "dataType": "double",
+            "sourceColumn": "TotalActualRevenue",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "TotalActualRevenue",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "ForecastP1Revenue",
+            "dataType": "double",
+            "sourceColumn": "ForecastP1Revenue",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "ForecastP1Revenue",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "ForecastP2Revenue",
+            "dataType": "double",
+            "sourceColumn": "ForecastP2Revenue",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "ForecastP2Revenue",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "ForecastP3Revenue",
+            "dataType": "double",
+            "sourceColumn": "ForecastP3Revenue",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "ForecastP3Revenue",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "DemandRef",
+            "dataType": "string",
+            "sourceColumn": "DemandRef",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "DemandRef",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_CreatedExecutionId",
+            "dataType": "int64",
+            "sourceColumn": "_crda_CreatedExecutionId",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "_crda_CreatedExecutionId",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_CreatedDateTime",
+            "dataType": "dateTime",
+            "sourceColumn": "_crda_CreatedDateTime",
+            "formatString": "General Date",
+            "sourceProviderType": "datetime2",
+            "sourceLineageTag": "_crda_CreatedDateTime",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "{{Partition_Name}}",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "DemandCapacity",
+              "expressionSource": "DatabaseQuery",
+              "schemaName": "Internal"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "IsTableInBiModel",
+            "value": "False"
+          }
+        ]
+      },
+      {
         "name": "DimDate",
         "sourceLineageTag": "[Internal].[DimDate]",
         "columns": [
@@ -1716,6 +2381,761 @@
             "source": {
               "type": "entity",
               "entityName": "DimDate",
+              "expressionSource": "DatabaseQuery",
+              "schemaName": "Internal"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "IsTableInBiModel",
+            "value": "False"
+          }
+        ]
+      },
+      {
+        "name": "ResourceAbsence",
+        "sourceLineageTag": "[Internal].[ResourceAbsence]",
+        "columns": [
+          {
+            "name": "ResourceBk",
+            "dataType": "string",
+            "sourceColumn": "ResourceBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ResourceBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "AbsenceStartDate",
+            "dataType": "dateTime",
+            "sourceColumn": "AbsenceStartDate",
+            "formatString": "General Date",
+            "sourceProviderType": "date",
+            "sourceLineageTag": "AbsenceStartDate",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "AbsenceEndDate",
+            "dataType": "dateTime",
+            "sourceColumn": "AbsenceEndDate",
+            "formatString": "General Date",
+            "sourceProviderType": "date",
+            "sourceLineageTag": "AbsenceEndDate",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "NumberOfDays",
+            "dataType": "decimal",
+            "sourceColumn": "NumberOfDays",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "NumberOfDays",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_CreatedExecutionId",
+            "dataType": "int64",
+            "sourceColumn": "_crda_CreatedExecutionId",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "_crda_CreatedExecutionId",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_CreatedDateTime",
+            "dataType": "dateTime",
+            "sourceColumn": "_crda_CreatedDateTime",
+            "formatString": "General Date",
+            "sourceProviderType": "datetime2",
+            "sourceLineageTag": "_crda_CreatedDateTime",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "{{Partition_Name}}",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "ResourceAbsence",
+              "expressionSource": "DatabaseQuery",
+              "schemaName": "Internal"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "IsTableInBiModel",
+            "value": "False"
+          }
+        ]
+      },
+      {
+        "name": "ResourceAccountHistory",
+        "sourceLineageTag": "[Internal].[ResourceAccountHistory]",
+        "columns": [
+          {
+            "name": "PerformanceAnalysisBk",
+            "dataType": "string",
+            "sourceColumn": "PerformanceAnalysisBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "PerformanceAnalysisBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "ResourceBk",
+            "dataType": "string",
+            "sourceColumn": "ResourceBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ResourceBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "AccountBk",
+            "dataType": "string",
+            "sourceColumn": "AccountBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "AccountBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "TimePeriodBk",
+            "dataType": "string",
+            "sourceColumn": "TimePeriodBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "TimePeriodBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "PeriodStartDate",
+            "dataType": "dateTime",
+            "sourceColumn": "PeriodStartDate",
+            "formatString": "General Date",
+            "sourceProviderType": "date",
+            "sourceLineageTag": "PeriodStartDate",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "PeriodEndDate",
+            "dataType": "dateTime",
+            "sourceColumn": "PeriodEndDate",
+            "formatString": "General Date",
+            "sourceProviderType": "date",
+            "sourceLineageTag": "PeriodEndDate",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "PeriodStartSk",
+            "dataType": "int64",
+            "sourceColumn": "PeriodStartSk",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "PeriodStartSk",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "PeriodEndSk",
+            "dataType": "int64",
+            "sourceColumn": "PeriodEndSk",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "PeriodEndSk",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "P1ForecastResourceUsageDelivery",
+            "dataType": "double",
+            "sourceColumn": "P1ForecastResourceUsageDelivery",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "P1ForecastResourceUsageDelivery",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "P2ForecastResourceUsageDelivery",
+            "dataType": "double",
+            "sourceColumn": "P2ForecastResourceUsageDelivery",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "P2ForecastResourceUsageDelivery",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "P3ForecastResourceUsageDelivery",
+            "dataType": "double",
+            "sourceColumn": "P3ForecastResourceUsageDelivery",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "P3ForecastResourceUsageDelivery",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "FactoredP1ForecastResourceUsageDelivery",
+            "dataType": "double",
+            "sourceColumn": "FactoredP1ForecastResourceUsageDelivery",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "FactoredP1ForecastResourceUsageDelivery",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "FactoredP2ForecastResourceUsageDelivery",
+            "dataType": "double",
+            "sourceColumn": "FactoredP2ForecastResourceUsageDelivery",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "FactoredP2ForecastResourceUsageDelivery",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "FactoredP3ForecastResourceUsageDelivery",
+            "dataType": "double",
+            "sourceColumn": "FactoredP3ForecastResourceUsageDelivery",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "FactoredP3ForecastResourceUsageDelivery",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "P1ForecastRevenue",
+            "dataType": "double",
+            "sourceColumn": "P1ForecastRevenue",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "P1ForecastRevenue",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "P2ForecastRevenue",
+            "dataType": "double",
+            "sourceColumn": "P2ForecastRevenue",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "P2ForecastRevenue",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "P3ForecastRevenue",
+            "dataType": "double",
+            "sourceColumn": "P3ForecastRevenue",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "P3ForecastRevenue",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "RecordType",
+            "dataType": "string",
+            "sourceColumn": "RecordType",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "RecordType",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_CreatedDateTime",
+            "dataType": "dateTime",
+            "sourceColumn": "_crda_CreatedDateTime",
+            "formatString": "General Date",
+            "sourceProviderType": "datetime2",
+            "sourceLineageTag": "_crda_CreatedDateTime",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_CreatedExecutionId",
+            "dataType": "int64",
+            "sourceColumn": "_crda_CreatedExecutionId",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "_crda_CreatedExecutionId",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "{{Partition_Name}}",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "ResourceAccountHistory",
+              "expressionSource": "DatabaseQuery",
+              "schemaName": "Internal"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "IsTableInBiModel",
+            "value": "False"
+          }
+        ]
+      },
+      {
+        "name": "ResourceBenchDates",
+        "sourceLineageTag": "[Internal].[ResourceBenchDates]",
+        "columns": [
+          {
+            "name": "ResourceBk",
+            "dataType": "string",
+            "sourceColumn": "ResourceBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "ResourceBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "BenchStartDate",
+            "dataType": "dateTime",
+            "sourceColumn": "BenchStartDate",
+            "formatString": "General Date",
+            "sourceProviderType": "date",
+            "sourceLineageTag": "BenchStartDate",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "BenchEndDate",
+            "dataType": "dateTime",
+            "sourceColumn": "BenchEndDate",
+            "formatString": "General Date",
+            "sourceProviderType": "date",
+            "sourceLineageTag": "BenchEndDate",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "NumberOfDays",
+            "dataType": "int64",
+            "sourceColumn": "NumberOfDays",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "NumberOfDays",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "UtilisationPercentage",
+            "dataType": "decimal",
+            "sourceColumn": "UtilisationPercentage",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "UtilisationPercentage",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_CreatedExecutionId",
+            "dataType": "int64",
+            "sourceColumn": "_crda_CreatedExecutionId",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "_crda_CreatedExecutionId",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_CreatedDateTime",
+            "dataType": "dateTime",
+            "sourceColumn": "_crda_CreatedDateTime",
+            "formatString": "General Date",
+            "sourceProviderType": "datetime2",
+            "sourceLineageTag": "_crda_CreatedDateTime",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "{{Partition_Name}}",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "ResourceBenchDates",
+              "expressionSource": "DatabaseQuery",
+              "schemaName": "Internal"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "IsTableInBiModel",
+            "value": "False"
+          }
+        ]
+      },
+      {
+        "name": "ResourceMonthlyTargetDays",
+        "sourceLineageTag": "[Internal].[ResourceMonthlyTargetDays]",
+        "columns": [
+          {
+            "name": "PeriodStartDate",
+            "dataType": "dateTime",
+            "sourceColumn": "PeriodStartDate",
+            "formatString": "General Date",
+            "sourceProviderType": "date",
+            "sourceLineageTag": "PeriodStartDate",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "PeriodEndDate",
+            "dataType": "dateTime",
+            "sourceColumn": "PeriodEndDate",
+            "formatString": "General Date",
+            "sourceProviderType": "date",
+            "sourceLineageTag": "PeriodEndDate",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "BusinessUnitBk",
+            "dataType": "string",
+            "sourceColumn": "BusinessUnitBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "BusinessUnitBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "TargetBusinessDays",
+            "dataType": "double",
+            "sourceColumn": "TargetBusinessDays",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "TargetBusinessDays",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "TargetTrainingDays",
+            "dataType": "double",
+            "sourceColumn": "TargetTrainingDays",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "TargetTrainingDays",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "TargetHolidaysDays",
+            "dataType": "double",
+            "sourceColumn": "TargetHolidaysDays",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "TargetHolidaysDays",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "TargetOtherDays",
+            "dataType": "double",
+            "sourceColumn": "TargetOtherDays",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "TargetOtherDays",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "_crda_CreatedExecutionId",
+            "dataType": "int64",
+            "sourceColumn": "_crda_CreatedExecutionId",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "_crda_CreatedExecutionId",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_CreatedDateTime",
+            "dataType": "dateTime",
+            "sourceColumn": "_crda_CreatedDateTime",
+            "formatString": "General Date",
+            "sourceProviderType": "datetime2",
+            "sourceLineageTag": "_crda_CreatedDateTime",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "{{Partition_Name}}",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "ResourceMonthlyTargetDays",
               "expressionSource": "DatabaseQuery",
               "schemaName": "Internal"
             }
