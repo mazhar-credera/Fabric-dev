@@ -26,7 +26,7 @@
 # MAGIC /*drop table if exists Kantata.HISTORY_ActivityAssignment
 # MAGIC drop table if exists Kantata.HISTORY_ResourcedActivity 
 # MAGIC drop table if exists Kantata.HISTORY_ActivityAssignmentDemand */
-# MAGIC drop table if exists Kantata.HISTORY_Resource
+# MAGIC drop table if exists Kantata.HISTORY_PerformanceAnalysis
 
 
 # METADATA ********************

@@ -11,11 +11,11 @@ BEGIN
 	/*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 	USAGE
-	SELECT * FROM Meta.ProcessMap WHERE ProcessPath = '[Internal].[usp_Update_DemandActivity]'
-	DECLARE @ProcessId INT = (SELECT ProcessId FROM Meta.ProcessMap WHERE ProcessPath = '[Internal].[usp_Update_DemandActivity]')
-	DECLARE @ExecutionId INT = (SELECT LastExecutionId FROM Meta.ProcessMap WHERE ProcessPath = '[Internal].[usp_Update_DemandActivity]')
+	SELECT * FROM FabricDb.ETL.ProcessMap WHERE ProcessPath = '[Internal].[usp_Update_DemandActivity]'
+	DECLARE @ProcessId INT = (SELECT ProcessId FROM FabricDb.ETL.ProcessMap WHERE ProcessPath = '[Internal].[usp_Update_DemandActivity]')
+	DECLARE @ExecutionId INT = (SELECT LastExecutionId FROM FabricDb.ETL.ProcessMap WHERE ProcessPath = '[Internal].[usp_Update_DemandActivity]')
 	EXEC Internal.usp_Update_DemandActivity @ExecutionId = @ExecutionId, @Watermark ='20000101', @ProcessId=@ProcessId
-	SELECT count(1) FROM Internal.DemandActivity ; /*152919*/
+	SELECT count(1) FROM Internal.DemandActivity ; 
 	--TRUNCATE TABLE Internal.DemandActivity ; 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 	--Default Parameters
@@ -103,7 +103,7 @@ BEGIN
 				,DemandRef						= AAD.Demand_Ref__c 
 				,ActivityAssignmentLogNotes		= AA.KimbleOne__LongNotes__c 
 				,AA._crda_ActiveFromDateTime 
-				,AD._crda_HASH
+				,AD._crda_Hash
 
 			INTO #Source 
 			FROM		lh_SilverLayer.Kantata.HISTORY_ActivityAssignment		AA  
@@ -198,7 +198,7 @@ BEGIN
 								,AAD.Demand_Ref__c 
 								,AA.KimbleOne__LongNotes__c 
 							) 
-					) AS VARBINARY(16)) AS _crda_HASH
+					) AS VARBINARY(16)) AS _crda_Hash
 				)  AD  
 			WHERE	AA._crda_ActiveFromDateTime > @_Watermark 
 			AND		AA._crda_isDeleted			= 0 
@@ -353,6 +353,19 @@ BEGIN
 				,@_ExecutionId 
 				,GETUTCDATE()
 			FROM #Source SRC 
+
+			/*PK/Unique constraints are not enforced so...*/
+			;WITH cteDups
+			AS( 
+				SELECT	 ActivityAssignmentBk, ResourceBk, DemandStart
+						,RN =	ROW_NUMBER() 
+								OVER (
+									PARTITION BY	ActivityAssignmentBk, ResourceBk, DemandStart
+									ORDER BY		ActivityAssignmentBk, ResourceBk, DemandStart 
+								)
+				FROM	Internal.DemandActivity T
+			) 
+			DELETE FROM cteDups WHERE RN > 1 ;
 
 			SELECT @strNewWatermark = CONVERT(VARCHAR(35),ISNULL(MAX(S._crda_ActiveFromDateTime), @_Watermark),121) FROM #Source S ;
 

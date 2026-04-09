@@ -11,9 +11,9 @@ BEGIN
 	/*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 	USAGE 
-	SELECT * FROM Meta.ProcessMap WHERE ProcessPath = '[Internal].[usp_Update_ResourceAbsence]' 
-	DECLARE @ProcessId INT = (SELECT ProcessId FROM Meta.ProcessMap WHERE ProcessPath = '[Internal].[usp_Update_ResourceAbsence]')
-	DECLARE @ExecutionId INT = (SELECT LastExecutionId FROM Meta.ProcessMap WHERE ProcessPath = '[Internal].[usp_Update_ResourceAbsence]')
+	SELECT * FROM FabricDb.ETL.ProcessMap WHERE ProcessPath = '[Internal].[usp_Update_ResourceAbsence]' 
+	DECLARE @ProcessId INT = (SELECT ProcessId FROM FabricDb.ETL.ProcessMap WHERE ProcessPath = '[Internal].[usp_Update_ResourceAbsence]')
+	DECLARE @ExecutionId INT = (SELECT LastExecutionId FROM FabricDb.ETL.ProcessMap WHERE ProcessPath = '[Internal].[usp_Update_ResourceAbsence]')
 	EXEC Internal.usp_Update_ResourceAbsence @ExecutionId = @ExecutionId, @Watermark ='20000101', @ProcessId=@ProcessId ;
 	SELECT COUNT(1) FROM Internal.ResourceAbsence ; --8445 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
@@ -132,9 +132,22 @@ BEGIN
 			GROUP BY I.ResourceBk , I.Islands ;
 
 
+			/*PK/Unique constraints are not enforced so...*/
+			;WITH cteDups
+			AS( 
+				SELECT	ResourceBk, AbsenceStartDate 
+						,RN =	ROW_NUMBER() 
+								OVER (
+									PARTITION BY	ResourceBk, AbsenceStartDate
+									ORDER BY		AbsenceStartDate  
+								)
+				FROM	Internal.ResourceAbsence T
+			) 
+			DELETE FROM cteDups WHERE RN > 1 ;
+
+
 			SELECT @strNewWatermark = CONVERT(VARCHAR(35),ISNULL(MAX(S._crda_ActiveFromDateTime), @_Watermark),121) FROM #ResourceAbsence S ;
 			SELECT @strOldWatermark	= CONVERT(VARCHAR(35),@_Watermark,121);
-
 
 			SELECT	InitialWatermark	= @strOldWatermark, 
 					UpdatedWatermark	= @strNewWatermark ; 

@@ -1,4 +1,4 @@
-CREATE  
+CREATE   
 	PROCEDURE Internal.usp_Update_ResourceBenchDates
 	--Default Parameters
 	@ExecutionId	INT , 
@@ -38,10 +38,33 @@ BEGIN
 
 		BEGIN TRANSACTION 
 
+			DROP TABLE IF EXISTS #ExplodedOutResourceDates ; 
 			DROP TABLE IF EXISTS #Fcd; 
 			DROP TABLE IF EXISTS #FactCurrentDemand; 
 			DROP TABLE IF EXISTS #FactFutureDemand; 
 			DROP TABLE IF EXISTS #ExplodedOutEngagements ; 
+
+			SELECT	EmploymentStart = BU.DateFrom,
+					PeriodStart		= DD.[Date] , 
+					PeriodStartSk	= DD.DateKey , 
+					BU.ResourceBk 
+			INTO #ExplodedOutResourceDates 
+			FROM	Internal.DimDate		DD 
+			CROSS APPLY ( 
+				SELECT	ResourceBk	= HR.Id,
+						DateFrom	= CAST(MAX(HR.KimbleOne__StartDate__c) AS DATE),
+						DateTo		= CAST(MAX(COALESCE(HR.Provisional_End_Date__c, HR.KimbleOne__EndDate__c,@FutureDate)) AS DATE)
+				FROM	lh_SilverLayer.Kantata.HISTORY_Resource	HR	
+				WHERE	HR._crda_isDeleted = 0 
+				AND		HR._crda_ActiveToDateTime	= '9999-12-31 23:59:59' 
+				--AND		HR.Id = 'a1X8e000001foz4EAA'
+				GROUP BY 
+					HR.Id 
+			)	BU 
+			WHERE	DD.IsNonWorkDay = 0 
+			AND		DD.[Date] >= @PastDate AND DD.[Date] <= BU.DateTo 
+			ORDER BY ResourceBk, PeriodStart 
+			; 
 
 			/*#FactCurrentDemand*/
 			SELECT
@@ -269,7 +292,7 @@ BEGIN
 											ORDER BY	 F.PeriodStart
 										) 
 
-				FROM	Internal.FN_GetExplodeActiveDatesForResource(@PastDate, @FutureDate) F 
+				FROM	#ExplodedOutResourceDates F 
 				LEFT JOIN #ExplodedOutEngagements R	ON	R.ResourceBk = F.ResourceBk 
 													AND	R.InWorkDate = F.PeriodStart 
 			) , cteIdentifyIslandsOfAbsences
@@ -309,6 +332,20 @@ BEGIN
 													AND	DR._crda_ActiveToDateTime	= '9999-12-31 23:59:59'
 			WHERE	(DR.[Name] LIKE '#%' OR DR.[Name] LIKE '@%') ;
 			/*SELECT * FROM Internal.ResourceBenchDates WHERE ResourceBk = 'a1X3z000003w4BjEAI'*/
+
+			/*PK/Unique constraints are not enforced so...*/
+			;WITH cteDups
+			AS( 
+				SELECT	ResourceBk, BenchStartDate 
+						,RN =	ROW_NUMBER() 
+								OVER (
+									PARTITION BY	ResourceBk, BenchStartDate
+									ORDER BY		BenchStartDate 
+								)
+				FROM	Internal.ResourceBenchDates T
+			) 
+			DELETE FROM cteDups WHERE RN > 1 ;
+
 
 			SELECT @strNewWatermark = CONVERT(VARCHAR(35),ISNULL(MAX(@TimeNow), @_Watermark),121) ;
 			SELECT @strOldWatermark	= CONVERT(VARCHAR(35),@_Watermark,121);
