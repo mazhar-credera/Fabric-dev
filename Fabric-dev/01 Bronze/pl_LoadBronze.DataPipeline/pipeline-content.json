@@ -52,8 +52,8 @@
       {
         "type": "TridentNotebook",
         "typeProperties": {
-          "notebookId": "21916e28-ac9b-a2ac-423b-bc72b6dde9a9",
-          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "notebookId": "b6dde9a9-bc72-423b-a2ac-ac9b21916e28",
+          "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419",
           "sessionTag": {
             "value": "@replace(pipeline().DataFactory,'-', '_')",
             "type": "Expression"
@@ -67,6 +67,8 @@
           "secureOutput": false
         },
         "name": "nb_SparkPoolWarmUp",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
         "dependsOn": [
           {
             "activity": "GetStagingProjections",
@@ -82,7 +84,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1 AND GroupId = 1 \nAND\t\tStagingProjection IN ('Kantata_ActivityAssignment', 'Kantata_ActivityAssignmentDemand', 'Kantata_Resource', 'Kantata_ActivityRole', 'Kantata_DeliveryGroup', 'Kantata_ResourcedActivity') \n",
+              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1 AND GroupId = 1 \nAND\t\tStagingProjection IN ('Kantata_ResourcePeriod', 'Kantata_ResourceHistory') \n",
               "type": "Expression"
             },
             "partitionOption": "None",
