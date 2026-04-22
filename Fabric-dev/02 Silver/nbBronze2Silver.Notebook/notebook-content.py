@@ -606,6 +606,15 @@ try:
             # ── 4.10  Optimise Silver table ─────────────────────────────────
             log("STEP 10: Running OPTIMIZE on Silver Delta table")
             zorder_cols = ", ".join(primary_keys)
+
+            # just in case any of the PKs are not part of the first 32 columns
+                # of the delta table then do this
+            spark.sql(f"""
+                ALTER TABLE {pSilverTableName} 
+                SET TBLPROPERTIES ('delta.dataSkippingStatsColumns' = '{zorder_cols}')
+                """)
+            log("  Successfully updated statistics columns")
+
             spark.sql(f"OPTIMIZE delta.`{silver_path}` ZORDER BY ({zorder_cols})")
             log("  OPTIMIZE complete.")
 

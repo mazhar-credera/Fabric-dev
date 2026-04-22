@@ -497,3 +497,160 @@ SELECT * FROM Internal.ResourceAbsence
 -- META   "frozen": true,
 -- META   "editable": false
 -- META }
+
+-- CELL ********************
+
+CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS Internal.ResourceAccountHistory  
+AS
+
+
+	WITH cteResourceAccountHistory 
+	AS(
+		SELECT	 
+			 PA.Id								AS PerformanceAnalysisBk
+			,PA.KimbleOne__Resource__c			AS ResourceBk			
+			,PA.KimbleOne__TimePeriod__c		AS TimePeriodBk		
+			,COALESCE(PA.KimbleOne__Account__c , 'UnknownRecord')  AS AccountBk	
+			,CAST(TP.KimbleOne__StartDate__c AS DATE)		AS PeriodStartDate
+			,CAST(TP.KimbleOne__EndDate__c AS DATE)			AS PeriodEndDate	
+
+			/*ForecastRevenue*/
+			,NULL								AS P1ForecastRevenue
+			,NULL								AS P2ForecastRevenue
+			,NULL								AS P3ForecastRevenue
+
+			/*ResourceUsage*/
+			,IF(AF.Id = 'a0ED000000CxJIzMAN', PA.KimbleOne__P1ForecastResourceUsageDelivery__c, 0 )  AS P1ForecastResourceUsageDelivery
+			,IF(AF.Id = 'a0ED000000CxJIzMAN', PA.KimbleOne__P2ForecastResourceUsageDelivery__c, 0 )  AS P2ForecastResourceUsageDelivery
+			,IF(AF.Id = 'a0ED000000CxJIzMAN', PA.KimbleOne__P3ForecastResourceUsageDelivery__c, 0 )  AS P3ForecastResourceUsageDelivery
+					
+			/*FactoredResourceUsage*/	
+			,IF(AF.Id = 'a0ED000000CxJJ0MAN', PA.KimbleOne__P1ForecastResourceUsageDelivery__c, 0 ) AS FactoredP1ForecastResourceUsageDelivery	
+			,IF(AF.Id = 'a0ED000000CxJJ0MAN', PA.KimbleOne__P2ForecastResourceUsageDelivery__c, 0 ) AS FactoredP2ForecastResourceUsageDelivery	 
+			,IF(AF.Id = 'a0ED000000CxJJ0MAN', PA.KimbleOne__P3ForecastResourceUsageDelivery__c, 0 ) AS FactoredP3ForecastResourceUsageDelivery	 
+
+			,'ResourceDelivUsage'				AS RecordType
+			,ROW_NUMBER() 
+					OVER (
+						PARTITION BY	PA.Id, CAST(TP.KimbleOne__StartDate__c AS DATE)
+						ORDER BY		PA.Id, CAST(TP.KimbleOne__StartDate__c AS DATE)  
+					)						AS RN 
+
+		FROM		Kantata.HISTORY_PerformanceAnalysis	PA 
+
+		INNER JOIN Kantata.HISTORY_AnalysisFact	AF	ON	AF.Id = PA.KimbleOne__AnalysisFact__c 
+													AND	AF.Id IN (	/*'ResourceUsage', 'FactoredResourceUsage'*/
+																	'a0ED000000CxJIzMAN', 'a0ED000000CxJJ0MAN'
+																	) 
+													AND	AF._crda_isDeleted			= 0 
+													AND	AF._crda_ActiveToDateTime = '9999-12-31 23:59:59'
+
+		INNER JOIN	Kantata.HISTORY_TimePeriod	TP 	ON  TP.Id						= PA.KimbleOne__TimePeriod__c 
+													AND	TP._crda_isDeleted			= 0 
+													AND	TP._crda_ActiveToDateTime	= '9999-12-31 23:59:59' 
+
+		INNER JOIN	Kantata.HISTORY_PeriodType	PT	ON	PT.Id						= TP.KimbleOne__PeriodType__c 
+													AND PT._crda_isDeleted			= 0
+													AND	PT.`Name`					= 'Month'
+													AND	PT._crda_ActiveToDateTime	= '9999-12-31 23:59:59' 
+
+		WHERE	PA._crda_isDeleted			= 0 
+		AND		PA._crda_ActiveToDateTime	= '9999-12-31 23:59:59' 
+		AND		PA.KimbleOne__Resource__c	IS NOT NULL 
+
+		UNION ALL 
+
+		SELECT	 
+			 PA.Id									AS PerformanceAnalysisBk
+			,PA.KimbleOne__Resource__c				AS ResourceBk			
+			,PA.KimbleOne__TimePeriod__c			AS TimePeriodBk		
+			,COALESCE(PA.KimbleOne__Account__c , 'UnknownRecord')  AS AccountBk			
+			,CAST(TP.KimbleOne__StartDate__c AS DATE)AS PeriodStartDate	
+			,CAST(TP.KimbleOne__EndDate__c AS DATE)	AS PeriodEndDate		
+
+				/*ForecastRevenue*/
+			,PA.KimbleOne__CorporateCurrencyP1ForecastRevenueCalc	AS P1ForecastRevenue	
+			,PA.KimbleOne__CorporateCurrencyP2ForecastRevenueCalc	AS P2ForecastRevenue	
+			,PA.KimbleOne__CorporateCurrencyP3ForecastRevenueCalc	AS P3ForecastRevenue	
+
+				/*ResourceUsage*/
+			,NULL									AS P1ForecastResourceUsageDelivery	
+			,NULL									AS P2ForecastResourceUsageDelivery	
+			,NULL									AS P3ForecastResourceUsageDelivery	
+
+				/*FactoredResourceUsage*/
+			,NULL									AS FactoredP1ForecastResourceUsageDelivery	
+			,NULL									AS FactoredP2ForecastResourceUsageDelivery	
+			,NULL									AS FactoredP3ForecastResourceUsageDelivery	
+
+			,'ForecastRevenue'						AS RecordType
+			,ROW_NUMBER() 
+					OVER (
+						PARTITION BY	PA.Id, CAST(TP.KimbleOne__StartDate__c AS DATE)
+						ORDER BY		PA.Id, CAST(TP.KimbleOne__StartDate__c AS DATE)  
+					)						AS RN 
+
+		FROM		Kantata.HISTORY_PerformanceAnalysis	PA 
+
+		INNER JOIN	Kantata.HISTORY_TimePeriod			TP 	ON  TP.Id						= PA.KimbleOne__TimePeriod__c 
+															AND	TP._crda_isDeleted			= 0 
+															AND	TP._crda_ActiveToDateTime	= '9999-12-31 23:59:59' 
+
+		INNER JOIN	Kantata.HISTORY_PeriodType			PT	ON	PT.Id						= TP.KimbleOne__PeriodType__c 
+															AND PT._crda_isDeleted			= 0
+															AND	PT._crda_ActiveToDateTime	= '9999-12-31 23:59:59' 
+															AND	PT.`Name`					= 'Month'
+
+		WHERE	PA._crda_isDeleted			= 0 
+		AND		PA._crda_ActiveToDateTime	= '9999-12-31 23:59:59' 
+		AND		PA.KimbleOne__Resource__c	IS NOT NULL  
+		AND		PA.KimbleOne__AnalysisFact__c	IN ('a0E3z00000uZEf6EAG',	/*RevenueInternal*/
+													'a0E3z00000uZEf7EAG',	/*CostInternal	 */
+													'a0ED000000CxJIuMAN',	/*Revenue		 */
+													'a0ED000000CxJIvMAN')	/*Cost			 */
+		) 
+		SELECT  
+			 SRC.PerformanceAnalysisBk
+			,SRC.ResourceBk
+			,SRC.AccountBk
+			,SRC.TimePeriodBk
+			,SRC.PeriodStartDate
+			,SRC.PeriodEndDate 
+
+			,SRC.P1ForecastResourceUsageDelivery
+			,SRC.P2ForecastResourceUsageDelivery
+			,SRC.P3ForecastResourceUsageDelivery
+
+			,SRC.FactoredP1ForecastResourceUsageDelivery
+			,SRC.FactoredP2ForecastResourceUsageDelivery
+			,SRC.FactoredP3ForecastResourceUsageDelivery
+
+			,SRC.P1ForecastRevenue
+			,SRC.P2ForecastRevenue
+			,SRC.P3ForecastRevenue
+			,SRC.RecordType
+
+		FROM	cteResourceAccountHistory	SRC 
+		WHERE	SRC.RN = 1 
+
+
+
+-- METADATA ********************
+
+-- META {
+-- META   "language": "sparksql",
+-- META   "language_group": "synapse_pyspark"
+-- META }
+
+-- CELL ********************
+
+SELECT * FROM Internal.ResourceAccountHistory ; 
+
+-- METADATA ********************
+
+-- META {
+-- META   "language": "sparksql",
+-- META   "language_group": "synapse_pyspark",
+-- META   "frozen": true,
+-- META   "editable": false
+-- META }

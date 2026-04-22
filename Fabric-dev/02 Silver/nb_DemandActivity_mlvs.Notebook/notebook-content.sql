@@ -50,15 +50,15 @@ CREATE SCHEMA IF NOT EXISTS Internal;
 -- Enable change data feed (CDF) on the source tables so that optimal refresh can use incremental processing.
 -- https://learn.microsoft.com/en-us/fabric/data-engineering/materialized-lake-views/refresh-materialized-lake-view
 
-ALTER TABLE Kantata.HISTORY_ActivityAssignment SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
-ALTER TABLE Kantata.HISTORY_ActivityAssignmentDemand SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
-ALTER TABLE Kantata.HISTORY_Resource SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
-ALTER TABLE Kantata.HISTORY_ActivityRole SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
-ALTER TABLE Kantata.HISTORY_ResourcedActivity SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
-ALTER TABLE Kantata.HISTORY_DeliveryElement SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
-ALTER TABLE Kantata.HISTORY_DeliveryGroup SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
-ALTER TABLE Kantata.HISTORY_ForecastStatus SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
-ALTER TABLE Kantata.HISTORY_ReferenceData SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
+ALTER TABLE Kantata.HISTORY_ActivityAssignment          SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
+ALTER TABLE Kantata.HISTORY_ActivityAssignmentDemand    SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
+ALTER TABLE Kantata.HISTORY_Resource                    SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
+ALTER TABLE Kantata.HISTORY_ActivityRole                SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
+ALTER TABLE Kantata.HISTORY_ResourcedActivity           SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
+ALTER TABLE Kantata.HISTORY_DeliveryElement             SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
+ALTER TABLE Kantata.HISTORY_DeliveryGroup               SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
+ALTER TABLE Kantata.HISTORY_ForecastStatus              SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
+ALTER TABLE Kantata.HISTORY_ReferenceData               SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
 
 
 
