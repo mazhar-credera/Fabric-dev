@@ -1,6 +1,6 @@
 CREATE TABLE [dbo].[DimForecastStatus] (
 
-	[ForecastStatusSk] bigint IDENTITY NOT NULL, 
+	[ForecastStatusSk] int NOT NULL, 
 	[ForecastStatusBk] varchar(18) NOT NULL, 
 	[Name] varchar(80) NOT NULL, 
 	[ShortName] varchar(8) NOT NULL, 
@@ -18,7 +18,7 @@ CREATE TABLE [dbo].[DimForecastStatus] (
 	[_crda_Hash] varbinary(16) NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
-	[_crda_IsActive] bit NOT NULL
+	[_crda_isDeleted] bit NOT NULL
 );
 
 

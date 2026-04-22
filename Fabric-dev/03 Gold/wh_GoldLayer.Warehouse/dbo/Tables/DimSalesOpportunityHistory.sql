@@ -1,6 +1,6 @@
 CREATE TABLE [dbo].[DimSalesOpportunityHistory] (
 
-	[SalesOpportunityHistorySk] bigint IDENTITY NOT NULL, 
+	[SalesOpportunityHistorySk] int NOT NULL, 
 	[SalesOpportunityBk] varchar(18) NOT NULL, 
 	[OpportunityCreatedDate] datetime2(6) NOT NULL, 
 	[OpportunityCreatedDateSk] int NOT NULL, 
@@ -14,7 +14,7 @@ CREATE TABLE [dbo].[DimSalesOpportunityHistory] (
 	[IsCurrent] bit NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
-	[_crda_IsActive] bit NOT NULL
+	[_crda_isDeleted] bit NOT NULL
 );
 
 

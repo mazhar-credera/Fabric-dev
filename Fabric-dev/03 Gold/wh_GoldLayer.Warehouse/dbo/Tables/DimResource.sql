@@ -1,6 +1,6 @@
 CREATE TABLE [dbo].[DimResource] (
 
-	[ResourceSk] bigint IDENTITY NOT NULL, 
+	[ResourceSk] int NOT NULL, 
 	[ResourceBk] varchar(18) NOT NULL, 
 	[Name] varchar(80) NOT NULL, 
 	[FirstName] varchar(80) NOT NULL, 
@@ -11,16 +11,16 @@ CREATE TABLE [dbo].[DimResource] (
 	[CurrencyIsoCode] varchar(3) NOT NULL, 
 	[ActualCost] decimal(18,2) NOT NULL, 
 	[ActualCostUnitType] varchar(80) NOT NULL, 
-	[BusinessUnitSk] bigint NOT NULL, 
-	[OwnerSk] bigint NOT NULL, 
-	[GradeSk] bigint NOT NULL, 
-	[PracticeSk] bigint NOT NULL, 
+	[BusinessUnitSk] int NOT NULL, 
+	[OwnerSk] int NOT NULL, 
+	[GradeSk] int NOT NULL, 
+	[PracticeSk] int NOT NULL, 
 	[StartDate] date NULL, 
 	[EndDate] date NULL, 
 	[ContinuousServiceStart] date NULL, 
 	[LatestP1AssignmentEndDate] date NULL, 
-	[Notes] varchar(2000) NOT NULL, 
-	[LengthOfService] decimal(7,2) NOT NULL, 
+	[Notes] varchar(max) NOT NULL, 
+	[LengthOfService] decimal(7,2) NULL, 
 	[BillableFTE] varchar(80) NULL, 
 	[ResourceTypeBk] varchar(18) NULL, 
 	[ResourceType] varchar(80) NULL, 
@@ -53,7 +53,7 @@ CREATE TABLE [dbo].[DimResource] (
 	[_crda_Hash] varbinary(16) NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
-	[_crda_IsActive] bit NOT NULL
+	[_crda_isDeleted] bit NOT NULL
 );
 
 

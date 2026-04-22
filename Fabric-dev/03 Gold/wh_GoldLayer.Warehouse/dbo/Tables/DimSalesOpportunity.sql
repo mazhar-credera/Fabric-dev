@@ -1,9 +1,9 @@
 CREATE TABLE [dbo].[DimSalesOpportunity] (
 
-	[SalesOpportunitySk] bigint IDENTITY NOT NULL, 
+	[SalesOpportunitySk] int NOT NULL, 
 	[SalesOpportunityBk] varchar(18) NOT NULL, 
 	[Name] varchar(120) NOT NULL, 
-	[Description] varchar(2000) NOT NULL, 
+	[Description] varchar(max) NOT NULL, 
 	[AccountViewName] varchar(80) NOT NULL, 
 	[SOReference] varchar(512) NOT NULL, 
 	[LinkToProposal] varchar(255) NOT NULL, 
@@ -30,7 +30,7 @@ CREATE TABLE [dbo].[DimSalesOpportunity] (
 	[_crda_Hash] varbinary(16) NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
-	[_crda_IsActive] bit NOT NULL
+	[_crda_isDeleted] bit NOT NULL
 );
 
 

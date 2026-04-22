@@ -1,16 +1,16 @@
 CREATE TABLE [dbo].[DimProposal] (
 
-	[ProposalSk] bigint IDENTITY NOT NULL, 
+	[ProposalSk] int NOT NULL, 
 	[ProposalBk] varchar(18) NOT NULL, 
-	[Name] varchar(80) NOT NULL, 
-	[ShortName] varchar(80) NOT NULL, 
-	[Description] varchar(2000) NOT NULL, 
+	[Name] varchar(255) NOT NULL, 
+	[ShortName] varchar(255) NOT NULL, 
+	[Description] varchar(max) NOT NULL, 
 	[CurrencyIsoCode] varchar(3) NULL, 
-	[AccountSk] bigint NULL, 
-	[BusinessUnitSk] bigint NULL, 
-	[SalesOpportunitySk] bigint NULL, 
-	[ForecastStatusSk] bigint NULL, 
-	[PropositionSk] bigint NULL, 
+	[AccountSk] int NULL, 
+	[BusinessUnitSk] int NULL, 
+	[SalesOpportunitySk] int NULL, 
+	[ForecastStatusSk] int NULL, 
+	[PropositionSk] int NULL, 
 	[ForecastAtDetailedLevel] bit NULL, 
 	[AcceptanceDate] date NULL, 
 	[DeliveryStartDate] date NULL, 
@@ -24,7 +24,7 @@ CREATE TABLE [dbo].[DimProposal] (
 	[DetailedLevelContractRevenue] decimal(18,2) NULL, 
 	[DetailedLevelWeightedContractRevenue] decimal(18,2) NULL, 
 	[Discount] decimal(18,2) NULL, 
-	[DiscountPercentage] decimal(10,2) NULL, 
+	[DiscountPercentage] decimal(18,2) NULL, 
 	[HighLevelContractCost] decimal(18,2) NULL, 
 	[HighLevelContractRevenue] decimal(18,2) NULL, 
 	[HighLevelWeightedContractRevenue] decimal(18,2) NULL, 
@@ -45,7 +45,7 @@ CREATE TABLE [dbo].[DimProposal] (
 	[_crda_Hash] varbinary(16) NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
-	[_crda_IsActive] bit NOT NULL
+	[_crda_isDeleted] bit NOT NULL
 );
 
 

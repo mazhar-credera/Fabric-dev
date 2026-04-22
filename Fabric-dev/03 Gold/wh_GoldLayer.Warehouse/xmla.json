@@ -6067,21 +6067,6 @@
             ]
           },
           {
-            "name": "_crda_UpdatedExecutionId",
-            "dataType": "int64",
-            "sourceColumn": "_crda_UpdatedExecutionId",
-            "formatString": "0",
-            "sourceProviderType": "int",
-            "sourceLineageTag": "_crda_UpdatedExecutionId",
-            "summarizeBy": "sum",
-            "annotations": [
-              {
-                "name": "SummarizationSetBy",
-                "value": "Automatic"
-              }
-            ]
-          },
-          {
             "name": "_crda_CreatedDateTime",
             "dataType": "dateTime",
             "sourceColumn": "_crda_CreatedDateTime",
@@ -6097,27 +6082,12 @@
             ]
           },
           {
-            "name": "_crda_UpdatedDateTime",
-            "dataType": "dateTime",
-            "sourceColumn": "_crda_UpdatedDateTime",
-            "formatString": "General Date",
-            "sourceProviderType": "datetime2",
-            "sourceLineageTag": "_crda_UpdatedDateTime",
-            "summarizeBy": "none",
-            "annotations": [
-              {
-                "name": "SummarizationSetBy",
-                "value": "Automatic"
-              }
-            ]
-          },
-          {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -12827,12 +12797,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -13623,12 +13593,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -14879,21 +14849,6 @@
             ]
           },
           {
-            "name": "_crda_UpdatedExecutionId",
-            "dataType": "int64",
-            "sourceColumn": "_crda_UpdatedExecutionId",
-            "formatString": "0",
-            "sourceProviderType": "int",
-            "sourceLineageTag": "_crda_UpdatedExecutionId",
-            "summarizeBy": "sum",
-            "annotations": [
-              {
-                "name": "SummarizationSetBy",
-                "value": "Automatic"
-              }
-            ]
-          },
-          {
             "name": "_crda_CreatedDateTime",
             "dataType": "dateTime",
             "sourceColumn": "_crda_CreatedDateTime",
@@ -14909,27 +14864,12 @@
             ]
           },
           {
-            "name": "_crda_UpdatedDateTime",
-            "dataType": "dateTime",
-            "sourceColumn": "_crda_UpdatedDateTime",
-            "formatString": "General Date",
-            "sourceProviderType": "datetime2",
-            "sourceLineageTag": "_crda_UpdatedDateTime",
-            "summarizeBy": "none",
-            "annotations": [
-              {
-                "name": "SummarizationSetBy",
-                "value": "Automatic"
-              }
-            ]
-          },
-          {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -15338,21 +15278,6 @@
             ]
           },
           {
-            "name": "_crda_UpdatedExecutionId",
-            "dataType": "int64",
-            "sourceColumn": "_crda_UpdatedExecutionId",
-            "formatString": "0",
-            "sourceProviderType": "int",
-            "sourceLineageTag": "_crda_UpdatedExecutionId",
-            "summarizeBy": "sum",
-            "annotations": [
-              {
-                "name": "SummarizationSetBy",
-                "value": "Automatic"
-              }
-            ]
-          },
-          {
             "name": "_crda_CreatedDateTime",
             "dataType": "dateTime",
             "sourceColumn": "_crda_CreatedDateTime",
@@ -15368,27 +15293,12 @@
             ]
           },
           {
-            "name": "_crda_UpdatedDateTime",
-            "dataType": "dateTime",
-            "sourceColumn": "_crda_UpdatedDateTime",
-            "formatString": "General Date",
-            "sourceProviderType": "datetime2",
-            "sourceLineageTag": "_crda_UpdatedDateTime",
-            "summarizeBy": "none",
-            "annotations": [
-              {
-                "name": "SummarizationSetBy",
-                "value": "Automatic"
-              }
-            ]
-          },
-          {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -15696,12 +15606,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -15718,6 +15628,270 @@
             "source": {
               "type": "entity",
               "entityName": "DimKimbleUser",
+              "expressionSource": "DatabaseQuery",
+              "schemaName": "dbo"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "IsTableInBiModel",
+            "value": "False"
+          }
+        ]
+      },
+      {
+        "name": "DimLocation",
+        "sourceLineageTag": "[dbo].[DimLocation]",
+        "columns": [
+          {
+            "name": "LocationSk",
+            "dataType": "int64",
+            "sourceColumn": "LocationSk",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "LocationSk",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "LocationBk",
+            "dataType": "string",
+            "sourceColumn": "LocationBk",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "LocationBk",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "Name",
+            "dataType": "string",
+            "sourceColumn": "Name",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "Name",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "CurrencyIsoCode",
+            "dataType": "string",
+            "sourceColumn": "CurrencyIsoCode",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "CurrencyIsoCode",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "Code",
+            "dataType": "string",
+            "sourceColumn": "Code",
+            "sourceProviderType": "varchar",
+            "sourceLineageTag": "Code",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "Latitude",
+            "dataType": "double",
+            "sourceColumn": "Latitude",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "Latitude",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "Longitude",
+            "dataType": "double",
+            "sourceColumn": "Longitude",
+            "sourceProviderType": "decimal",
+            "sourceLineageTag": "Longitude",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ]
+          },
+          {
+            "name": "_crda_ActiveFromDate",
+            "dataType": "dateTime",
+            "sourceColumn": "_crda_ActiveFromDate",
+            "formatString": "General Date",
+            "sourceProviderType": "datetime2",
+            "sourceLineageTag": "_crda_ActiveFromDate",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_ActiveToDate",
+            "dataType": "dateTime",
+            "sourceColumn": "_crda_ActiveToDate",
+            "formatString": "General Date",
+            "sourceProviderType": "datetime2",
+            "sourceLineageTag": "_crda_ActiveToDate",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_ActiveFromDateSk",
+            "dataType": "int64",
+            "sourceColumn": "_crda_ActiveFromDateSk",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "_crda_ActiveFromDateSk",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_ActiveToDateSk",
+            "dataType": "int64",
+            "sourceColumn": "_crda_ActiveToDateSk",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "_crda_ActiveToDateSk",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "IsCurrent",
+            "dataType": "boolean",
+            "sourceColumn": "IsCurrent",
+            "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
+            "sourceProviderType": "bit",
+            "sourceLineageTag": "IsCurrent",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_Hash",
+            "sourceColumn": "_crda_Hash",
+            "sourceProviderType": "varbinary",
+            "sourceLineageTag": "_crda_Hash",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_CreatedExecutionId",
+            "dataType": "int64",
+            "sourceColumn": "_crda_CreatedExecutionId",
+            "formatString": "0",
+            "sourceProviderType": "int",
+            "sourceLineageTag": "_crda_CreatedExecutionId",
+            "summarizeBy": "sum",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_CreatedDateTime",
+            "dataType": "dateTime",
+            "sourceColumn": "_crda_CreatedDateTime",
+            "formatString": "General Date",
+            "sourceProviderType": "datetime2",
+            "sourceLineageTag": "_crda_CreatedDateTime",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          },
+          {
+            "name": "_crda_isDeleted",
+            "dataType": "boolean",
+            "sourceColumn": "_crda_isDeleted",
+            "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
+            "sourceProviderType": "bit",
+            "sourceLineageTag": "_crda_isDeleted",
+            "summarizeBy": "none",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "{{Partition_Name}}",
+            "mode": "directLake",
+            "source": {
+              "type": "entity",
+              "entityName": "DimLocation",
               "expressionSource": "DatabaseQuery",
               "schemaName": "dbo"
             }
@@ -16016,12 +16190,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -16453,12 +16627,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -16696,12 +16870,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -16997,12 +17171,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -17827,12 +18001,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -17870,7 +18044,7 @@
             "dataType": "int64",
             "sourceColumn": "ProposalSk",
             "formatString": "0",
-            "sourceProviderType": "bigint",
+            "sourceProviderType": "int",
             "sourceLineageTag": "ProposalSk",
             "summarizeBy": "sum",
             "annotations": [
@@ -17955,7 +18129,7 @@
             "dataType": "int64",
             "sourceColumn": "AccountSk",
             "formatString": "0",
-            "sourceProviderType": "bigint",
+            "sourceProviderType": "int",
             "sourceLineageTag": "AccountSk",
             "summarizeBy": "sum",
             "annotations": [
@@ -17970,7 +18144,7 @@
             "dataType": "int64",
             "sourceColumn": "BusinessUnitSk",
             "formatString": "0",
-            "sourceProviderType": "bigint",
+            "sourceProviderType": "int",
             "sourceLineageTag": "BusinessUnitSk",
             "summarizeBy": "sum",
             "annotations": [
@@ -17985,7 +18159,7 @@
             "dataType": "int64",
             "sourceColumn": "SalesOpportunitySk",
             "formatString": "0",
-            "sourceProviderType": "bigint",
+            "sourceProviderType": "int",
             "sourceLineageTag": "SalesOpportunitySk",
             "summarizeBy": "sum",
             "annotations": [
@@ -18000,7 +18174,7 @@
             "dataType": "int64",
             "sourceColumn": "ForecastStatusSk",
             "formatString": "0",
-            "sourceProviderType": "bigint",
+            "sourceProviderType": "int",
             "sourceLineageTag": "ForecastStatusSk",
             "summarizeBy": "sum",
             "annotations": [
@@ -18015,7 +18189,7 @@
             "dataType": "int64",
             "sourceColumn": "PropositionSk",
             "formatString": "0",
-            "sourceProviderType": "bigint",
+            "sourceProviderType": "int",
             "sourceLineageTag": "PropositionSk",
             "summarizeBy": "sum",
             "annotations": [
@@ -18246,7 +18420,7 @@
           },
           {
             "name": "DiscountPercentage",
-            "dataType": "decimal",
+            "dataType": "double",
             "sourceColumn": "DiscountPercentage",
             "sourceProviderType": "decimal",
             "sourceLineageTag": "DiscountPercentage",
@@ -18255,6 +18429,10 @@
               {
                 "name": "SummarizationSetBy",
                 "value": "Automatic"
+              },
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
               }
             ]
           },
@@ -18586,12 +18764,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -18844,12 +19022,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -20084,12 +20262,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -20367,12 +20545,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -20410,7 +20588,7 @@
             "dataType": "int64",
             "sourceColumn": "SalesOpportunityHistorySk",
             "formatString": "0",
-            "sourceProviderType": "bigint",
+            "sourceProviderType": "int",
             "sourceLineageTag": "SalesOpportunityHistorySk",
             "summarizeBy": "sum",
             "annotations": [
@@ -20613,12 +20791,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -21084,12 +21262,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -21342,12 +21520,12 @@
             ]
           },
           {
-            "name": "_crda_IsActive",
+            "name": "_crda_isDeleted",
             "dataType": "boolean",
-            "sourceColumn": "_crda_IsActive",
+            "sourceColumn": "_crda_isDeleted",
             "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
             "sourceProviderType": "bit",
-            "sourceLineageTag": "_crda_IsActive",
+            "sourceLineageTag": "_crda_isDeleted",
             "summarizeBy": "none",
             "annotations": [
               {
@@ -23680,29 +23858,9 @@
         "securityFilteringBehavior": "none"
       },
       {
-        "name": "13b93f692bc3a6178da1afcc21b6d6c1",
-        "fromTable": "DimProposal",
-        "fromColumn": "_crda_ActiveToDateSk",
-        "toTable": "DimDate(1)",
-        "toColumn": "DateSk",
-        "isActive": false,
-        "relyOnReferentialIntegrity": true,
-        "securityFilteringBehavior": "none"
-      },
-      {
         "name": "15514de6f4f3f2a46c2fe3b577e19a5d",
         "fromTable": "DimSector",
         "fromColumn": "_crda_ActiveToDateSk",
-        "toTable": "DimDate(1)",
-        "toColumn": "DateSk",
-        "isActive": false,
-        "relyOnReferentialIntegrity": true,
-        "securityFilteringBehavior": "none"
-      },
-      {
-        "name": "19c67e5c433c8be751249786b203aa5f",
-        "fromTable": "DimSalesOpportunityHistory",
-        "fromColumn": "OpportunityCreatedDateSk",
         "toTable": "DimDate(1)",
         "toColumn": "DateSk",
         "isActive": false,
@@ -23973,16 +24131,6 @@
         "name": "67f1752d26f3660c7192162ac72a0362",
         "fromTable": "DimKimbleUser",
         "fromColumn": "_crda_ActiveToDateSk",
-        "toTable": "DimDate(1)",
-        "toColumn": "DateSk",
-        "isActive": false,
-        "relyOnReferentialIntegrity": true,
-        "securityFilteringBehavior": "none"
-      },
-      {
-        "name": "6afb3a20d60343a35a408e17d3eda5fb",
-        "fromTable": "DimProposal",
-        "fromColumn": "_crda_ActiveFromDateSk",
         "toTable": "DimDate(1)",
         "toColumn": "DateSk",
         "isActive": false,
@@ -24382,26 +24530,6 @@
       {
         "name": "e74524791edbca453c00b9b86d0bf772",
         "fromTable": "DimProduct",
-        "fromColumn": "_crda_ActiveToDateSk",
-        "toTable": "DimDate(1)",
-        "toColumn": "DateSk",
-        "isActive": false,
-        "relyOnReferentialIntegrity": true,
-        "securityFilteringBehavior": "none"
-      },
-      {
-        "name": "ec9b2a5fc8126ba41add7435fdf46760",
-        "fromTable": "DimSalesOpportunityHistory",
-        "fromColumn": "_crda_ActiveFromDateSk",
-        "toTable": "DimDate(1)",
-        "toColumn": "DateSk",
-        "isActive": false,
-        "relyOnReferentialIntegrity": true,
-        "securityFilteringBehavior": "none"
-      },
-      {
-        "name": "ef2d1442d38918bdb2b546a435034455",
-        "fromTable": "DimSalesOpportunityHistory",
         "fromColumn": "_crda_ActiveToDateSk",
         "toTable": "DimDate(1)",
         "toColumn": "DateSk",

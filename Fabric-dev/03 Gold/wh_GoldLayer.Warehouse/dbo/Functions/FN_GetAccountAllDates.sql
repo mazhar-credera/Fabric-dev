@@ -1,4 +1,4 @@
-CREATE --OR ALTER
+CREATE   
 	FUNCTION dbo.FN_GetAccountAllDates(
 		@FutureDate DATE 
 /*	==============================================================
@@ -17,20 +17,20 @@ SELECT * FROM dbo.FN_GetAccountAllDates (@FutureDate) ORDER BY AccountSk, Period
 AS
 RETURN 
 
-	SELECT	PeriodStart		= [Date] , 
-			PeriodStartSk	= DateSk , 
-			PeriodEnd		= EOMONTH([Date]) , 
-			PeriodEndSk		= CAST(CONVERT(VARCHAR(8),EOMONTH([Date]), 112) AS INT) , 
+	SELECT	[Date]				AS PeriodStart	, 
+			DateSk				AS PeriodStartSk, 
+			EOMONTH([Date])		AS PeriodEnd	, 
+			CAST(CONVERT(VARCHAR(8),EOMONTH([Date]), 112) AS INT) AS PeriodEndSk, 
 			BU.AccountSk 
 	FROM	dbo.DimDate 
 	CROSS APPLY ( 
 		SELECT	B.AccountBk, AccountSk = B2.AccountSk , 
-				ActiveFrom	= MIN(DATEFROMPARTS(YEAR(B._crda_ActiveFromDate), MONTH(B._crda_ActiveFromDate), 1)) ,
-				ActiveTo	= IIF(
-									MAX(CAST(B._crda_ActiveToDate AS DATE)) = '90001231',
-									@FutureDate ,
-									MAX(CAST(B._crda_ActiveToDate AS DATE))
-								)
+				MIN(DATEFROMPARTS(YEAR(B._crda_ActiveFromDate), MONTH(B._crda_ActiveFromDate), 1)) AS ActiveFrom , 
+				IIF(
+						MAX(CAST(B._crda_ActiveToDate AS DATE)) = '90001231',
+						@FutureDate ,
+						MAX(CAST(B._crda_ActiveToDate AS DATE))
+					)												AS ActiveTo 
 		FROM	dbo.DimAccount B 
 		LEFT JOIN (
 			SELECT	B1.AccountBk, B1.AccountSk

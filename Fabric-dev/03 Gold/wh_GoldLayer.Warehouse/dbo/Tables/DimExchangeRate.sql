@@ -1,6 +1,6 @@
 CREATE TABLE [dbo].[DimExchangeRate] (
 
-	[ExchangeRateSk] bigint IDENTITY NOT NULL, 
+	[ExchangeRateSk] int NOT NULL, 
 	[CurrencyIsoCode] varchar(3) NOT NULL, 
 	[RateEffectiveStartDate] datetime2(6) NOT NULL, 
 	[RateEffectiveEndDate] datetime2(6) NOT NULL, 

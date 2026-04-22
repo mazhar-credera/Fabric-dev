@@ -1,6 +1,6 @@
 CREATE TABLE [dbo].[DimInvoiceableItem] (
 
-	[InvoiceableItemSk] bigint IDENTITY NOT NULL, 
+	[InvoiceableItemSk] int NOT NULL, 
 	[InvoiceableItemBk] varchar(18) NOT NULL, 
 	[Name] varchar(80) NOT NULL, 
 	[InvoiceItemAge] decimal(18,0) NULL, 
@@ -17,10 +17,8 @@ CREATE TABLE [dbo].[DimInvoiceableItem] (
 	[IsCurrent] bit NOT NULL, 
 	[_crda_Hash] varbinary(16) NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
-	[_crda_UpdatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
-	[_crda_UpdatedDateTime] datetime2(6) NULL, 
-	[_crda_IsActive] bit NOT NULL
+	[_crda_isDeleted] bit NOT NULL
 );
 
 

@@ -1,9 +1,9 @@
 CREATE TABLE [dbo].[DimOpportunityStage] (
 
-	[OpportunityStageSk] bigint IDENTITY NOT NULL, 
+	[OpportunityStageSk] int NOT NULL, 
 	[OpportunityStageBk] varchar(18) NOT NULL, 
 	[Name] varchar(80) NOT NULL, 
-	[Description] varchar(255) NOT NULL, 
+	[Description] varchar(max) NOT NULL, 
 	[Sequence] smallint NOT NULL, 
 	[SequencedName] varchar(255) NOT NULL, 
 	[CurrencyIsoCode] varchar(3) NOT NULL, 
@@ -18,7 +18,7 @@ CREATE TABLE [dbo].[DimOpportunityStage] (
 	[_crda_Hash] varbinary(16) NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
-	[_crda_IsActive] bit NOT NULL
+	[_crda_isDeleted] bit NOT NULL
 );
 
 

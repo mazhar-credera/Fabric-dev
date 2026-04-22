@@ -15,7 +15,7 @@ BEGIN
 	DECLARE @ProcessId INT = (SELECT ProcessId FROM FabricDb.ETL.ProcessMap WHERE ProcessPath = '[dbo].[usp_Update_DimDeliveryElement]')
 	DECLARE @LastExecId INT = (SELECT LastExecutionId FROM FabricDb.ETL.ProcessMap WHERE ProcessPath = '[dbo].[usp_Update_DimDeliveryElement]')
 	EXEC dbo.usp_Update_DimDeliveryElement @ExecutionId = @LastExecId, @Watermark ='20000101', @ProcessId=@ProcessId ;
-	SELECT count(1) FROM dbo.DimDeliveryElement ;  --50632
+	SELECT * FROM dbo.DimDeliveryElement ;  --50632
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
 	--Default Parameters
 	DECLARE @_ExecutionId	INT = @ExecutionId, 
@@ -202,7 +202,7 @@ BEGIN
 				,_crda_isDeleted
 			) 
 			SELECT 
-				  RN= ROW_NUMBER()OVER (PARTITION BY SRC.DeliveryElementBk ORDER BY SRC._crda_ActiveFromDateTime)
+				  RN= ROW_NUMBER()OVER (ORDER BY SRC.DeliveryElementBk, SRC._crda_ActiveFromDateTime)
 				, SRC.DeliveryElementBk
 				, SRC.[Name] 
 				, SRC.ShortName

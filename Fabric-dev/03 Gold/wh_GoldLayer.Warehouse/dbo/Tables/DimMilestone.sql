@@ -1,12 +1,12 @@
 CREATE TABLE [dbo].[DimMilestone] (
 
-	[MilestoneSk] bigint IDENTITY NOT NULL, 
+	[MilestoneSk] int NOT NULL, 
 	[MilestoneBk] varchar(18) NOT NULL, 
 	[MilestoneName] varchar(80) NOT NULL, 
 	[MilestoneDate] date NOT NULL, 
 	[BaselineMilestoneDate] date NULL, 
 	[MilestoneDateSk] int NOT NULL, 
-	[BaselineMilestoneDateSk] int NOT NULL, 
+	[BaselineMilestoneDateSk] int NULL, 
 	[MilestoneValue] decimal(18,2) NULL, 
 	[SupplierInvoicingCurrencyMilestoneValue] decimal(18,2) NULL, 
 	[CurrencyIsoCode] varchar(3) NULL, 
@@ -17,7 +17,7 @@ CREATE TABLE [dbo].[DimMilestone] (
 	[DeliveryElementBk] varchar(18) NULL, 
 	[MilestoneType] varchar(255) NULL, 
 	[MilestoneStatus] varchar(255) NULL, 
-	[DaysFromToday] int NULL, 
+	[DaysFromToday] int NOT NULL, 
 	[UrlToKanataPoRecord] varchar(255) NOT NULL, 
 	[_crda_ActiveFromDate] datetime2(6) NOT NULL, 
 	[_crda_ActiveToDate] datetime2(6) NOT NULL, 
@@ -27,7 +27,7 @@ CREATE TABLE [dbo].[DimMilestone] (
 	[_crda_Hash] varbinary(16) NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
-	[_crda_IsActive] bit NOT NULL
+	[_crda_isDeleted] bit NOT NULL
 );
 
 

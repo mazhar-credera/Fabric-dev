@@ -1,6 +1,6 @@
 CREATE TABLE [dbo].[DimInvoiceStatus] (
 
-	[InvoiceStatusSk] bigint IDENTITY NOT NULL, 
+	[InvoiceStatusSk] int NOT NULL, 
 	[InvoiceStatusBk] varchar(18) NOT NULL, 
 	[InvoiceStatus] varchar(255) NOT NULL, 
 	[InvoiceDomain] varchar(255) NOT NULL, 

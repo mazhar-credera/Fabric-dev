@@ -1,11 +1,11 @@
 CREATE TABLE [dbo].[DimProduct] (
 
-	[ProductSk] bigint IDENTITY NOT NULL, 
+	[ProductSk] int NOT NULL, 
 	[ProductBk] varchar(18) NOT NULL, 
 	[Name] varchar(80) NOT NULL, 
-	[Description] varchar(1024) NOT NULL, 
+	[Description] varchar(max) NOT NULL, 
 	[CurrencyIsoCode] varchar(3) NOT NULL, 
-	[BusinessUnitSk] bigint NOT NULL, 
+	[BusinessUnitSk] int NOT NULL, 
 	[Sage200NominalAccount] varchar(50) NULL, 
 	[Sage50NominalAccount] varchar(50) NULL, 
 	[SageInstantNominalAccount] varchar(50) NULL, 
@@ -24,7 +24,7 @@ CREATE TABLE [dbo].[DimProduct] (
 	[_crda_Hash] varbinary(16) NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
-	[_crda_IsActive] bit NOT NULL
+	[_crda_isDeleted] bit NOT NULL
 );
 
 

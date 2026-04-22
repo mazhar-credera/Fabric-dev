@@ -1,12 +1,12 @@
-CREATE TABLE [dbo].[DimSector] (
+CREATE TABLE [dbo].[DimLocation] (
 
-	[SectorSk] int NOT NULL, 
-	[SectorBk] varchar(18) NOT NULL, 
+	[LocationSk] int NOT NULL, 
+	[LocationBk] varchar(18) NOT NULL, 
 	[Name] varchar(80) NOT NULL, 
 	[CurrencyIsoCode] varchar(3) NOT NULL, 
-	[StartDate] datetime2(6) NOT NULL, 
-	[EndDate] datetime2(6) NOT NULL, 
-	[SectorGroups] varchar(255) NOT NULL, 
+	[Code] varchar(80) NULL, 
+	[Latitude] decimal(18,7) NULL, 
+	[Longitude] decimal(18,7) NULL, 
 	[_crda_ActiveFromDate] datetime2(6) NOT NULL, 
 	[_crda_ActiveToDate] datetime2(6) NOT NULL, 
 	[_crda_ActiveFromDateSk] int NOT NULL, 
@@ -20,6 +20,6 @@ CREATE TABLE [dbo].[DimSector] (
 
 
 GO
-ALTER TABLE [dbo].[DimSector] ADD CONSTRAINT PK__dbo_DimSector primary key NONCLUSTERED ([SectorSk]);
+ALTER TABLE [dbo].[DimLocation] ADD CONSTRAINT PK__dbo_DimLocation primary key NONCLUSTERED ([LocationSk]);
 GO
-ALTER TABLE [dbo].[DimSector] ADD CONSTRAINT UQ__dbo_DimSector unique NONCLUSTERED ([SectorBk], [_crda_ActiveFromDate]);
+ALTER TABLE [dbo].[DimLocation] ADD CONSTRAINT UQ__dbo_DimLocation unique NONCLUSTERED ([LocationBk], [_crda_ActiveFromDate]);

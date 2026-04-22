@@ -1,6 +1,6 @@
 CREATE TABLE [dbo].[DimOpportunitySource] (
 
-	[OpportunitySourceSk] bigint IDENTITY NOT NULL, 
+	[OpportunitySourceSk] int NOT NULL, 
 	[OpportunitySourceBk] varchar(18) NOT NULL, 
 	[Name] varchar(80) NOT NULL, 
 	[OwnerSk] int NOT NULL, 
@@ -14,7 +14,7 @@ CREATE TABLE [dbo].[DimOpportunitySource] (
 	[_crda_Hash] varbinary(16) NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
-	[_crda_IsActive] bit NOT NULL
+	[_crda_isDeleted] bit NOT NULL
 );
 
 

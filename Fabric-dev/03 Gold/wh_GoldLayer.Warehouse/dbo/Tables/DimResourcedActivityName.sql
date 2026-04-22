@@ -1,6 +1,6 @@
 CREATE TABLE [dbo].[DimResourcedActivityName] (
 
-	[ResourcedActivityNameSk] bigint IDENTITY NOT NULL, 
+	[ResourcedActivityNameSk] int NOT NULL, 
 	[ResourcedActivityName] varchar(255) NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL

@@ -15,7 +15,7 @@ BEGIN
 	DECLARE @ProcessId INT = (SELECT ProcessId FROM FabricDb.ETL.ProcessMap WHERE ProcessPath = '[dbo].[usp_Update_DimBusinessUnit]')
 	DECLARE @LastExecId INT = (SELECT LastExecutionId FROM FabricDb.ETL.ProcessMap WHERE ProcessPath = '[dbo].[usp_Update_DimBusinessUnit]')
 	EXEC dbo.usp_Update_DimBusinessUnit @ExecutionId = @LastExecId, @Watermark ='20000101', @ProcessId=@ProcessId ;
-	SELECT COUNT(1) FROM dbo.DimBusinessUnit ; 
+	SELECT *  FROM dbo.DimBusinessUnit ; 
 	SELECT Src_hash=_crda_Hash, * from dbo.DimBusinessUnit ; 
 	--TRUNCATE TABLE dbo.DimBusinessUnit ; 
 	@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*/
@@ -149,7 +149,7 @@ BEGIN
 			AND		T._crda_isDeleted			= 0  ; 
 			--SELECT COUNT(1) from #Source
 
-			--Realign History dates
+			/*Realign History dates*/ 
 			EXEC dbo.usp_CompressHistoriesAndRealignDimensionHistoryDates  @TableNameRoot = 'BusinessUnit';
 
 
@@ -195,7 +195,7 @@ BEGIN
 				,_crda_isDeleted
 			)
 			SELECT  
-				RN= ROW_NUMBER()OVER (PARTITION BY SRC.BusinessUnitBk ORDER BY SRC._crda_ActiveFromDateTime) , 
+				RN= ROW_NUMBER()OVER (ORDER BY SRC.BusinessUnitBk, SRC._crda_ActiveFromDateTime ) , 
 				SRC.BusinessUnitBk , 
 				SRC.BusinessUnitName , 
 				SRC.CurrencyIsoCode , 
@@ -234,8 +234,7 @@ BEGIN
 				,GETUTCDATE() 
 				,0
 			FROM	#Source			SRC 
-			ORDER BY 
-				SRC.BusinessUnitBk, SRC._crda_ActiveFromDateTime ;
+			ORDER BY SRC.BusinessUnitBk, SRC._crda_ActiveFromDateTime ;
 
 
 			SELECT @strNewWatermark = CONVERT(VARCHAR(35),ISNULL(MAX(S._crda_ActiveFromDateTime), @_Watermark),121) FROM #Source S ;

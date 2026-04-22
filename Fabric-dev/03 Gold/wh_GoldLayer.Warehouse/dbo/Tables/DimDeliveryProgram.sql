@@ -1,10 +1,10 @@
 CREATE TABLE [dbo].[DimDeliveryProgram] (
 
-	[DeliveryProgramSk] bigint IDENTITY NOT NULL, 
+	[DeliveryProgramSk] int NOT NULL, 
 	[DeliveryProgramBk] varchar(18) NOT NULL, 
 	[Name] varchar(80) NOT NULL, 
-	[OwnerSk] bigint NOT NULL, 
-	[AccountSk] bigint NOT NULL, 
+	[OwnerSk] int NOT NULL, 
+	[AccountSk] int NOT NULL, 
 	[CurrencyIsoCode] varchar(3) NOT NULL, 
 	[StatusSummaryTemplateInternal] varchar(80) NOT NULL, 
 	[RelatedDeliveryProgramSk] int NOT NULL, 
@@ -17,7 +17,7 @@ CREATE TABLE [dbo].[DimDeliveryProgram] (
 	[_crda_Hash] varbinary(16) NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
-	[_crda_IsActive] bit NOT NULL
+	[_crda_isDeleted] bit NOT NULL
 );
 
 
@@ -25,3 +25,7 @@ CREATE TABLE [dbo].[DimDeliveryProgram] (
 ALTER TABLE [dbo].[DimDeliveryProgram] ADD CONSTRAINT PK__dbo_DimDeliveryProgram primary key NONCLUSTERED ([DeliveryProgramSk]);
 GO
 ALTER TABLE [dbo].[DimDeliveryProgram] ADD CONSTRAINT UQ__dbo_DimDeliveryProgram unique NONCLUSTERED ([DeliveryProgramBk], [_crda_ActiveFromDate]);
+GO
+ALTER TABLE [dbo].[DimDeliveryProgram] ADD CONSTRAINT FK__dbo_DimDeliveryProgram__crda_ActiveFromDateSk_dbo_DimDate FOREIGN KEY ([_crda_ActiveFromDateSk]) REFERENCES [dbo].[DimDate]([DateSk]);
+GO
+ALTER TABLE [dbo].[DimDeliveryProgram] ADD CONSTRAINT FK__dbo_DimDeliveryProgram__crda_ActiveToDateSk_dbo_DimDate FOREIGN KEY ([_crda_ActiveToDateSk]) REFERENCES [dbo].[DimDate]([DateSk]);

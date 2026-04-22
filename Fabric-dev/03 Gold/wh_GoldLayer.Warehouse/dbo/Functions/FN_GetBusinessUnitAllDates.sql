@@ -1,4 +1,4 @@
-CREATE --OR ALTER
+CREATE  
 	FUNCTION dbo.FN_GetBusinessUnitAllDates(
 		@FutureDate DATE 
 /*	==============================================================
@@ -17,30 +17,36 @@ SELECT * FROM dbo.FN_GetBusinessUnitAllDates (@FutureDate);
 AS
 RETURN 
 
-	SELECT	PeriodStart		= [Date] , 
-			PeriodStartSk	= DateSk , 
-			PeriodEnd		= EOMONTH([Date]) , 
-			PeriodEndSk		= CAST(CONVERT(VARCHAR(8),EOMONTH([Date]), 112) AS INT) , 
+	SELECT	[Date]				AS PeriodStart	, 
+			DateSk				AS PeriodStartSk, 
+			EOMONTH([Date])		AS PeriodEnd	, 
+			CAST(CONVERT(VARCHAR(8),EOMONTH([Date]), 112) AS INT)	AS PeriodEndSk	, 
 			BU.BusinessUnitSk 
+
 	FROM	dbo.DimDate 
+
 	CROSS APPLY ( 
-		SELECT	B.BusinessUnitBk, BusinessUnitSk = B2.BusinessUnitSk , 
-				ActiveFrom	= MIN(DATEFROMPARTS(YEAR(B._crda_ActiveFromDate), MONTH(B._crda_ActiveFromDate), 1)) ,
-				ActiveTo	= IIF(
-									MAX(CAST(B._crda_ActiveToDate AS DATE)) = '90001231',
-									@FutureDate ,
-									MAX(CAST(B._crda_ActiveToDate AS DATE))
-								)
+		SELECT	B.BusinessUnitBk, 
+				B2.BusinessUnitSk AS BusinessUnitSk, 
+				MIN(DATEFROMPARTS(YEAR(B._crda_ActiveFromDate), MONTH(B._crda_ActiveFromDate), 1)) AS ActiveFrom , 
+				IIF(
+						MAX(CAST(B._crda_ActiveToDate AS DATE)) = '90001231',
+							@FutureDate ,
+								MAX(CAST(B._crda_ActiveToDate AS DATE))
+					)						AS ActiveTo 
 		FROM	dbo.DimBusinessUnit B 
-		LEFT JOIN (
-			SELECT	B1.BusinessUnitBk, B1.BusinessUnitSk
-			FROM	dbo.DimBusinessUnit B1 
-			WHERE	B1.IsCurrent = 1 
-		)	B2	ON	B2.BusinessUnitBk = B.BusinessUnitBk 
+
+		LEFT JOIN 
+				(
+					SELECT	B1.BusinessUnitBk, B1.BusinessUnitSk
+					FROM	dbo.DimBusinessUnit B1 
+					WHERE	B1.IsCurrent = 1 
+				)	B2	ON	B2.BusinessUnitBk = B.BusinessUnitBk 
+
 		WHERE B.BusinessUnitSk > 1
-		GROUP BY 
-			B.BusinessUnitBk, B2.BusinessUnitSk 
+		GROUP BY B.BusinessUnitBk, B2.BusinessUnitSk 
 	)	BU 
+
 	WHERE	DayNumberInMonth = 1 
 	AND		[Date] >= BU.ActiveFrom AND [Date] <= BU.ActiveTo
 	AND		[Date] <= @FutureDate ;

@@ -1,6 +1,6 @@
 CREATE TABLE [dbo].[DimGrade] (
 
-	[GradeSk] bigint IDENTITY NOT NULL, 
+	[GradeSk] int NOT NULL, 
 	[GradeBk] varchar(18) NOT NULL, 
 	[Name] varchar(80) NOT NULL, 
 	[CurrencyIsoCode] varchar(3) NULL, 
@@ -21,10 +21,8 @@ CREATE TABLE [dbo].[DimGrade] (
 	[IsCurrent] bit NOT NULL, 
 	[_crda_Hash] varbinary(16) NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
-	[_crda_UpdatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
-	[_crda_UpdatedDateTime] datetime2(6) NULL, 
-	[_crda_IsActive] bit NOT NULL
+	[_crda_isDeleted] bit NOT NULL
 );
 
 
