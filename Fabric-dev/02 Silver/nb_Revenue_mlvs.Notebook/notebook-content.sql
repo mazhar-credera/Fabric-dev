@@ -74,7 +74,7 @@ ALTER TABLE Kantata.HISTORY_GradeGroup          SET TBLPROPERTIES (delta.enableC
 
 -- CELL ********************
 
-CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS Internal.SalesRevenue  
+CREATE OR REPLACE MATERIALIZED LAKE VIEW Internal.SalesRevenue
 AS
 
 	WITH cteSalesOpps
@@ -173,6 +173,8 @@ AS
 			,PA.KC_IsBalancingRecord__c								AS IsBalancingRecord 
 			,FS.KimbleOne__ProbabilityCode__c						AS ProbabilityCodeBk 
 			,RD.Name												AS ProbabilityCode 
+			,PA._crda_ActiveFromDateTime 
+			,PA._crda_ActiveToDateTime
 
 
 		FROM		Kantata.HISTORY_PerformanceAnalysis	PA 
@@ -305,7 +307,10 @@ AS
 		SRC.IsBalancingRecord , 
 
 		SRC.ProbabilityCodeBk , 
-		SRC.ProbabilityCode 
+		SRC.ProbabilityCode , 
+
+		SRC._crda_ActiveFromDateTime , 
+		SRC._crda_ActiveToDateTime
 
 	FROM	cteSalesRev SRC 
 	WHERE	SRC.RN = 1 ; 

@@ -8,7 +8,7 @@ CREATE TABLE [ETL].[ProcessMap] (
     [SourceSystem]           VARCHAR (255) NOT NULL,
     [DefaultWatermarkValue]  VARCHAR (255) NOT NULL,
     [BronzeWatermarkValue]   VARCHAR (255) NOT NULL,
-    [SilverWatermarkvalue]   VARCHAR (255) NOT NULL,
+    [SilverWatermarkValue]   VARCHAR (255) NOT NULL,
     [LastExecutionId]        INT           CONSTRAINT [DF__ETL_ProcessMap_LastExecutionId] DEFAULT ((-1)) NOT NULL,
     [LastFileLoadedDateTime] DATETIME2 (7) NULL,
     [IsActive]               BIT           CONSTRAINT [DF__ETL_ProcessMap__IsActive] DEFAULT ((1)) NOT NULL,

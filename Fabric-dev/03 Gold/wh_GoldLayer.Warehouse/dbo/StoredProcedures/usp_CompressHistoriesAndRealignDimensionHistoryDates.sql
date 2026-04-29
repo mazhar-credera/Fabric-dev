@@ -1,6 +1,6 @@
 CREATE   
 	PROCEDURE dbo.usp_CompressHistoriesAndRealignDimensionHistoryDates 
-		@TableNameRoot	NVARCHAR(255) = N'Account'
+		@TableNameRoot	NVARCHAR(255) 
 	/*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 	Kantata (Kimble) Source Dimensions only
 
@@ -54,7 +54,7 @@ SET NOCOUNT ON ;
 			*
 		  , ROW_NUMBER()  
 			OVER(
-					PARTITION BY	d.', @_BusKeyCol, N'Bk 
+					PARTITION BY	d.', @_BusKeyCol, N'Bk , d._crda_ActiveFromDateTime
 					ORDER BY		d._crda_ActiveFromDateTime 
 				) AS RN  
 		  FROM #Source d 

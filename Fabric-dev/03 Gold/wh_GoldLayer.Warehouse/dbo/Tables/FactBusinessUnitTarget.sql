@@ -18,8 +18,8 @@ CREATE TABLE [dbo].[FactBusinessUnitTarget] (
 	[ResourceHolidayDays] decimal(18,3) NULL, 
 	[ResourceOtherDays] decimal(18,3) NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
-	[_crda_UpdatedDateTime] datetime2(6) NULL, 
-	[_crda_PK_JoinHash] varbinary(16) NULL
+	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
+	[_crda_PK_JoinHash] varbinary(16) NOT NULL
 );
 
 

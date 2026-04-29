@@ -1,12 +1,12 @@
 CREATE TABLE [dbo].[DimBankAccountLedgerEntry] (
 
-	[BankAccountLedgerEntrySk] bigint IDENTITY NOT NULL, 
+	[BankAccountLedgerEntrySk] int NOT NULL, 
 	[BankAccountLedgerEntryNo] int NOT NULL, 
-	[BcCompanySk] bigint NOT NULL, 
-	[BankAccountSk] bigint NOT NULL, 
-	[GlBalAccountSk] bigint NOT NULL, 
-	[GlDimensionCodeSk] bigint NOT NULL, 
-	[BcUserSk] bigint NOT NULL, 
+	[BcCompanySk] int NOT NULL, 
+	[BankAccountSk] int NOT NULL, 
+	[GlBalAccountSk] int NOT NULL, 
+	[GlDimensionCodeSk] int NOT NULL, 
+	[BcUserSk] int NOT NULL, 
 	[InvoiceNo] varchar(255) NULL, 
 	[DocumentNo] varchar(255) NULL, 
 	[ExternalDocumentNo] varchar(255) NULL, 
@@ -27,6 +27,7 @@ CREATE TABLE [dbo].[DimBankAccountLedgerEntry] (
 	[StatementNo] varchar(255) NULL, 
 	[StatementStatus] varchar(255) NULL, 
 	[TransactionNo] int NULL, 
+	[_crda_Hash] varbinary(16) NOT NULL, 
 	[_crda_CreatedExecutionId] int NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL
 );

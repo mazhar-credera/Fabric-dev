@@ -73,9 +73,7 @@ ALTER TABLE Kantata.HISTORY_ReferenceData               SET TBLPROPERTIES (delta
 
 -- CELL ********************
 
--- 
-
-CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS Internal.DemandActivity 
+CREATE OR REPLACE MATERIALIZED LAKE VIEW Internal.DemandActivity 
 AS
 
 
@@ -284,7 +282,7 @@ SELECT * FROM Internal.DemandActivity
 
 -- CELL ********************
 
-CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS Internal.DemandCapacity
+CREATE OR REPLACE MATERIALIZED LAKE VIEW Internal.DemandCapacity
 AS 
 		WITH cteConstants 
 		AS (

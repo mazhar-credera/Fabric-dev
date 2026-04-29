@@ -29,7 +29,7 @@
               },
               "policy": {
                 "timeout": "0.01:30:00",
-                "retry": 5,
+                "retry": 1,
                 "retryIntervalInSeconds": 30,
                 "secureInput": false,
                 "secureOutput": false
@@ -55,7 +55,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1 AND GroupId = 2 \nAND\t\tStagingProjection IN ('Kantata_Invoice', 'Kantata_InvoiceableItem', 'Kantata_InvoiceLine'\n    ,'Kantata_InvoiceLineItem') \n",
+              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1 AND GroupId = 2  \n/*\nAND\t\tStagingProjection IN ('Kantata_Invoice', 'Kantata_InvoiceableItem', 'Kantata_InvoiceLine'\n    ,'Kantata_InvoiceLineItem') \n*/",
               "type": "Expression"
             },
             "partitionOption": "None",

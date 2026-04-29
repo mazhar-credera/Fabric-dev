@@ -1,4 +1,4 @@
-CREATE  
+CREATE   
 	PROCEDURE dbo.usp_Update_DimResource
 	--Default Parameters
 	@ExecutionId	INT , 
@@ -131,12 +131,8 @@ BEGIN
 					Region				= LEFT(T.Region__c, 255) , 
 					TimePattern			= LEFT(P.[Name], 255) , 
 
-					_crda_Hash			= CAST(NULL AS VARBINARY(16)) , 
-					RN					= ROW_NUMBER()
-											OVER(
-													PARTITION BY	T.Id 
-													ORDER BY		T._crda_ActiveFromDateTime DESC
-												) 
+					_crda_Hash			= CAST(NULL AS VARBINARY(16))  
+
 			INTO #Source 
 			FROM		lh_SilverLayer.Kantata.HISTORY_Resource		T 
 
@@ -152,7 +148,7 @@ BEGIN
 														AND	T._crda_ActiveFromDateTime BETWEEN RU._crda_ActiveFromDateTime AND RU._crda_ActiveToDateTime 
 														AND	RU._crda_isDeleted			= 0  
 
-			LEFT JOIN	lh_SilverLayer.Kantata.History_ContractualBase C	ON	C.Id					= T.KC_ContractualBase__c  
+			LEFT JOIN	lh_SilverLayer.Kantata.HISTORY_ContractualBase C	ON	C.Id					= T.KC_ContractualBase__c  
 															AND	T._crda_ActiveFromDateTime BETWEEN C._crda_ActiveFromDateTime AND C._crda_ActiveToDateTime 
 															AND	C._crda_isDeleted		= 0  
 
@@ -255,7 +251,7 @@ BEGIN
 				,Notes
 				,LengthOfService 
 				,BillableFTE
-				,GradeSK
+				,GradeSk
 				,ResourceTypeBk
 				,ResourceType
 				,PracticeSk 

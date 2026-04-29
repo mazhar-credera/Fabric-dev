@@ -66,72 +66,169 @@ ALTER TABLE Kantata.HISTORY_Sector              SET TBLPROPERTIES (delta.enableC
 
 -- CELL ********************
 
--- 
-CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS Internal.SalesOpportunity 
+DROP MATERIALIZED LAKE VIEW IF EXISTS Internal.SalesOpportunityUnion ;
+
+
+-- METADATA ********************
+
+-- META {
+-- META   "language": "sparksql",
+-- META   "language_group": "synapse_pyspark"
+-- META }
+
+-- CELL ********************
+
+--CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS Internal.SalesOpportunityUnion
+CREATE OR REPLACE MATERIALIZED LAKE VIEW Internal.SalesOpportunityUnion
 AS
 
-	WITH cteSalesOpps
-	AS(
-			SELECT	 S.Id								AS OpportunityBk 
-					,S.CreatedDate 
-					,S.KimbleOne__ForecastStatus__c		AS ForecastStatusBk	
-					,S.KimbleOne__OpportunitySource__c	AS OpportunitySourceBk
-					,S.Sector__c							AS Sector		
-			FROM		Kantata.HISTORY_SalesOpportunity	S 
+    SELECT	  
+          S.Id								AS OpportunityBk
+        , S.CreatedDate
+        , S.KimbleOne__Account__c			AS AccountBk				
+        , S.Related_Opportunity__c			AS RelatedOpportunityBk	
+        , S.KimbleOne__OpportunityStage__c	AS OpportunityStageBk 		
+        , S.KimbleOne__OpportunitySource__c	AS OpportunitySourceBk		
+        , S.KimbleOne__MarketingCampaign__c	AS MarketingCampaignBk		
+        , S.SectorId__c						AS SectorBk 
+        , S.Sector__c						AS Sector
+        , S.Proposed_Delivery_Program__c	AS ProposedDeliveryProgramBk
+        , S.CommercialSignoff__c			AS CommercialSignoffBk 	
+        , S.Originator__c					AS OriginatorBk			
+        , S.OwnerId							AS OwnerId					
 
-			LEFT JOIN	Kantata.HISTORY_Proposal	P	ON	P.Id					= S.KimbleOne__Proposal__c 
-														AND	P._crda_ActiveToDateTime= '9999-12-31 23:59:59'
-														AND	P._crda_isDeleted		 = 0 
+        , S.LinkToProposal__c				AS LinkToProposal		
+        , S.TypeofWork__c					AS TypeofWork			
+        , S.KimbleOne__CloseDate__c			AS CloseDate			
+        , S.KimbleOne__CloseDate__c			AS ResponseRequiredDate
+        , S.KimbleOne__WonLostReason__c		AS WonLostReason		
+        , NULL								AS ClosePlanAccurate	
+        , NULL								AS StandardRateCardUsed
+        , NULL								AS OrganicGrowth		
+        , S.KimbleOne__Proposal__c			AS ProposalBk			
+        , S.KimbleOne__ForecastStatus__c	AS ForecastStatusBk	
+        , S.BidStatus__c					AS BidStatus			
+        , S.BidFramework__c					AS BidFramework		
+        , S.BidPQQDueDate__c				AS BidPQQDueDate		
+        , S.BidPQQStatus__c					AS BidPQQStatus		
+        , S._crda_ActiveFromDateTime
+        , S._crda_ActiveToDateTime 
 
-			LEFT JOIN	Kantata.HISTORY_Proposition	PP	ON	PP.Id					= P.KimbleOne__Proposition__c 
-														AND	PP._crda_ActiveToDateTime= '9999-12-31 23:59:59'
-														AND	PP._crda_isDeleted		 = 0 
+    FROM	Kantata.HISTORY_SalesOpportunity	S 
 
-			LEFT JOIN Kantata.HISTORY_ForecastStatus	F	ON	F.Id					= S.KimbleOne__ForecastStatus__c 
-														AND	F._crda_ActiveToDateTime= '9999-12-31 23:59:59'
-														AND	F._crda_isDeleted		= 0 
+    LEFT JOIN Kantata.HISTORY_ForecastStatus	F	ON	F.Id	= S.KimbleOne__ForecastStatus__c 
+                                                    AND	F._crda_ActiveToDateTime= '9999-12-31 23:59:59'
+                                                    AND	F._crda_isDeleted		 = 0 
 
-			WHERE	S._crda_isDeleted		 = 0 
-			AND		S._crda_ActiveToDateTime= '9999-12-31 23:59:59'
+    WHERE	S._crda_isDeleted		 = 0 
+--	AND		S._crda_ActiveToDateTime= '9999-12-31 23:59:59' 
 
-			UNION ALL 
+    UNION ALL 
 
-			SELECT	 O.Id						AS OpportunityBk
-					,O.CreatedDate 
-					,F.Id						AS ForecastStatusBk	
-					,CAST(NULL AS VARCHAR(18)) 	AS OpportunitySourceBk	
-					,O.KC_Sector__c				AS Sector	
-			FROM		Kantata.HISTORY_Opportunity	O 
+    SELECT	
+          O.Id 
+        , O.CreatedDate
+        , O.AccountId							AS AccountBk				
+        , CAST(NULL AS VARCHAR(18))				AS RelatedOpportunityBk 	
+        , CAST(NULL AS VARCHAR(18))				AS OpportunityStageBk 		
+        , CAST(NULL AS VARCHAR(18))				AS OpportunitySourceBk		
+        , O.CampaignId							AS MarketingCampaignBk		
+        , SC.Id									AS SectorBk	
+        , SC.Name								AS Sector 
+        , O.KC_Proposed_Delivery_Program__c		AS ProposedDeliveryProgramBk
+        , CAST(NULL AS VARCHAR(18))				AS CommercialSignoffBk		
+        , O.KC_Originator__c					AS OriginatorBk			
+        , O.OwnerId
 
-			LEFT JOIN	Kantata.HISTORY_Account		A	ON	A.Id	= O.AccountId 
-														AND	A._crda_ActiveToDateTime= '9999-12-31 23:59:59'
-														AND	A._crda_isDeleted		 = 0 
+        , O.KC_Link_To_Proposal__c				AS LinkToProposal			
+        , O.Type								AS TypeofWork				
+        , O.CloseDate 
+        , O.CloseDate							AS ResponseRequiredDate	
+        , O.Reason_Lost__c						AS WonLostReason			
+        , O.Close_Plan_Accurate__c				AS ClosePlanAccurate		
+        , O.Standard_Rate_Card_Used__c			AS StandardRateCardUsed	
+        , O.Organic_Growth__c					AS OrganicGrowth			
+        , O.KimbleOne__Proposal__c				AS ProposalBk				
+        , F.Id									AS ForecastStatusBk		
+        , NULL									AS BidStatus				
+        , NULL									AS BidFramework			
+        , NULL									AS BidPQQDueDate			
+        , NULL									AS BidPQQStatus			
+        , O._crda_ActiveFromDateTime 
+        , O._crda_ActiveToDateTime 
 
-			LEFT JOIN ( /*ForecastStatus.Name values changed Dec 2025*/
-				SELECT	Id, `Name`, _crda_ActiveToDateTime , 
-						ROW_NUMBER()OVER(
-								PARTITION BY `Name` 
-								ORDER BY _crda_ActiveToDateTime) AS RN 
-				FROM	Kantata.HISTORY_ForecastStatus F 
-				WHERE	F._crda_isDeleted = 0 
-			)										FH	ON	FH.`Name` = O.StageName 
-														AND	FH.RN = 1
+    FROM		Kantata.HISTORY_Opportunity	O 
+    LEFT JOIN	Kantata.HISTORY_Account		A	ON	A.Id	= O.AccountId 
+                                                AND	A._crda_ActiveToDateTime= '9999-12-31 23:59:59'
+                                                AND	A._crda_isDeleted		 = 1 
 
-			LEFT JOIN Kantata.HISTORY_ForecastStatus	F	ON	F.Id					= FH.Id 
-															AND	F._crda_ActiveToDateTime= '9999-12-31 23:59:59'
-															AND	F._crda_isDeleted		 = 0 
+    LEFT JOIN ( /*ForecastStatus.Name values changed Dec 2025*/
+        SELECT	Id, Name, 
+                _crda_ActiveToDateTime , 
+                ROW_NUMBER()OVER(
+                        PARTITION BY Name 
+                        ORDER BY _crda_ActiveToDateTime)    AS RN 
+        FROM	Kantata.HISTORY_ForecastStatus F 
+        WHERE	F._crda_isDeleted = 1 
+    )										FH	ON	FH.Name = O.StageName 
+                                                AND	FH.RN = 1
 
-			LEFT JOIN Kantata.HISTORY_Proposal	P	ON	P.Id					= O.KimbleOne__Proposal__c 
-													AND	P._crda_ActiveToDateTime= '9999-12-31 23:59:59'
-													AND	P._crda_isDeleted		 = 0 
+    LEFT JOIN Kantata.HISTORY_Account		AC	ON	AC.Id					= O.AccountId  
+                                                AND	AC._crda_ActiveToDateTime= '9999-12-31 23:59:59'
+                                                    AND	AC._crda_isDeleted		 = 0 
 
-			LEFT JOIN Kantata.HISTORY_Proposition	PP	ON	PP.Id					= P.KimbleOne__Proposition__c 
-													AND	PP._crda_ActiveToDateTime= '9999-12-31 23:59:59'
-													AND	PP._crda_isDeleted		 = 0 
+    LEFT JOIN Kantata.HISTORY_ForecastStatus	F	ON	F.Id					= FH.Id 
+                                                    AND	F._crda_ActiveToDateTime= '9999-12-31 23:59:59'
+                                                    AND	F._crda_isDeleted		= 0 
 
-			WHERE	O._crda_isDeleted		 = 0 
-			AND		O._crda_ActiveToDateTime= '9999-12-31 23:59:59'
-	), cteSalesOpsData
+    LEFT JOIN Kantata.HISTORY_Sector	SC	ON	SC.Name				= A.SectorName__c 
+                                            AND	SC._crda_ActiveToDateTime= '9999-12-31 23:59:59'
+                                            AND	SC._crda_isDeleted		 = 0  
+
+    WHERE	O._crda_isDeleted		 = 0  
+--	AND		O._crda_ActiveToDateTime= '9999-12-31 23:59:59' 
+
+
+-- METADATA ********************
+
+-- META {
+-- META   "language": "sparksql",
+-- META   "language_group": "synapse_pyspark"
+-- META }
+
+-- CELL ********************
+
+SELECT * FROM Internal.SalesOpportunityUnion ; 
+
+-- METADATA ********************
+
+-- META {
+-- META   "language": "sparksql",
+-- META   "language_group": "synapse_pyspark",
+-- META   "frozen": true,
+-- META   "editable": false
+-- META }
+
+-- CELL ********************
+
+DROP MATERIALIZED LAKE VIEW IF EXISTS Internal.SalesOpportunity ; 
+
+-- METADATA ********************
+
+-- META {
+-- META   "language": "sparksql",
+-- META   "language_group": "synapse_pyspark",
+-- META   "frozen": true,
+-- META   "editable": false
+-- META }
+
+-- CELL ********************
+
+
+CREATE OR REPLACE MATERIALIZED LAKE VIEW Internal.SalesOpportunity 
+AS
+
+WITH cteSalesOpsData
 	AS ( 
 	SELECT  
 		 SO.OpportunityBk			AS SalesOpportunityBk	
@@ -152,7 +249,7 @@ AS
 									+ PA.WeightedP3Only__c , 0) AS TotalRevenue	 
 
 		,COALESCE(	
-			CASE FSS.`Name`
+			CASE FSS.Name
 				WHEN '1. Lead (1%)'			THEN PA.KimbleOne__CorporateCurrencyP3ForecastRevenueCalc	* (FSS.KimbleOne__Probability__c * 0.01)	--P3
 				WHEN '2. Qualify (10%)'		THEN PA.KimbleOne__CorporateCurrencyP3ForecastRevenueCalc	* (FSS.KimbleOne__Probability__c * 0.01)	--P3		
 				WHEN '3. Solutions (25%)'	THEN PA.KimbleOne__CorporateCurrencyP3ForecastRevenueCalc	* (FSS.KimbleOne__Probability__c * 0.01)	--P3
@@ -164,7 +261,7 @@ AS
 				ELSE 0
 			END , 0)											AS WeightedRevenue
 		,COALESCE(	
-			CASE FSS.`Name`
+			CASE FSS.Name
 				WHEN '1. Lead (1%)'			THEN PA.KimbleOne__CorporateCurrencyP3ForecastRevenueCalc	--P3
 				WHEN '2. Qualify (10%)'		THEN PA.KimbleOne__CorporateCurrencyP3ForecastRevenueCalc	--P3
 				WHEN '3. Solutions (25%)'	THEN PA.KimbleOne__CorporateCurrencyP3ForecastRevenueCalc	--P3
@@ -194,13 +291,14 @@ AS
 														AND	PR._crda_ActiveToDateTime	= '9999-12-31 23:59:59'
 														AND	PR._crda_isDeleted			= 0 
 
-	INNER JOIN	cteSalesOpps						SO	ON	SO.OpportunityBk			= PR.OpportunityId 
+	INNER JOIN	Internal.salesopportunityunion		SO	ON	SO.OpportunityBk			= PR.OpportunityId 
+														AND	SO._crda_ActiveToDateTime	= '9999-12-31 23:59:59'
 
-	LEFT JOIN	Kantata.HISTORY_Sector			SC	ON	SC.`Name`					= SO.Sector
+	LEFT JOIN	Kantata.HISTORY_Sector			SC	ON	SC.Name					= SO.Sector
 													AND	SC._crda_ActiveToDateTime	= '9999-12-31 23:59:59'
 													AND	SC._crda_isDeleted			= 0 
 
-	LEFT JOIN	Kantata.HISTORY_ForecastStatus	FS	ON	FS.`Name`					= PA.DeliveryElementStatus__c 
+	LEFT JOIN	Kantata.HISTORY_ForecastStatus	FS	ON	FS.Name					= PA.DeliveryElementStatus__c 
 													AND	FS._crda_ActiveToDateTime	= '9999-12-31 23:59:59'
 													AND	FS._crda_isDeleted			= 0 
 
@@ -233,6 +331,7 @@ AS
 
 
 
+
 -- METADATA ********************
 
 -- META {
@@ -251,4 +350,146 @@ SELECT * FROM Internal.SalesOpportunity
 -- META   "language_group": "synapse_pyspark",
 -- META   "frozen": true,
 -- META   "editable": false
+-- META }
+
+-- CELL ********************
+
+
+CREATE OR REPLACE MATERIALIZED LAKE VIEW Internal.SalesOpportunityLifecycle
+AS
+
+	WITH cteSalesOpportunityLifecycle 
+	AS (
+		SELECT	 
+			 SO.OpportunityBk						AS SalesOpportunityBk		
+			,SO._crda_ActiveFromDateTime			AS SalesOpportunitytDateTime
+			,AC.KimbleOne__BusinessUnit__c			AS AccountBusinessUnitBk	
+			,AC.Id									AS AccountBk				
+			,PS.KimbleOne__BusinessUnit__c			AS ProposalBusinessUnitBk	
+			,SO.ProposalBk							AS ProposalBk				
+			,SO.RelatedOpportunityBk				AS RelatedSalesOpportunityBk
+			,SO.ForecastStatusBk					AS ForecastStatusBk		
+			,SO.OpportunityStageBk					AS OpportunityStageBk		
+			,SO.OpportunitySourceBk					AS OpportunitySourceBk	
+			,SO.SectorBk							AS SectorBk				
+			,PS.KimbleOne__Proposition__c			AS PropositionBk			
+			,SO.MarketingCampaignBk					AS MarketingCampaignBk	
+			,SO.ProposedDeliveryProgramBk			AS ProposedDeliveryProgramBk
+			,SO.OriginatorBk						AS OriginatorBk			
+			,SO.CommercialSignoffBk					AS CommercialSignOffBk	
+			,SO.OwnerId								AS SalesOpportunityOwnerBk
+			,PS.OwnerId								AS ProposalOwnerBk		
+			,SO.CloseDate							AS CloseDate				
+			,PS.KimbleOne__AcceptanceDate__c		AS AcceptanceDate			
+			,SO.ResponseRequiredDate				AS ResponseRequiredDate	
+			,PS.earliestStartDate__c				AS EarliestStartDate		
+			,PS.latestEndDate__c					AS LatestEndDate			
+			,PS.KimbleOne__DeliveryStartDate__c		AS DeliveryStartDate		
+			,COALESCE(PS.CurrencyIsoCode , 'ZZZ')		AS CurrencyIsoCode		
+			,COALESCE(SO.WonLostReason , '')			AS WonLostReason			
+			,SO.BidStatus							AS BidStatus				
+			,SO.BidFramework						AS BidFramework	
+			,CAST(SO.BidPQQDueDate AS DATE)			AS BidPQQDueDate	
+			,SO.BidPQQStatus						AS BidPQQStatus	
+			,COALESCE(PS.KimbleOne__ContractRevenue__c , 0)				AS ContractRevenue	
+			,COALESCE(PS.KimbleOne__ContractMargin__c , 0)				AS ContractMargin	
+			,COALESCE(PS.KimbleOne__ContractCost__c , 0)				AS ContractCost	
+			,COALESCE(PS.KimbleOne__ContractMarginAmount__c , 0)		AS ContractMarginAmount	
+			,COALESCE(PS.KimbleOne__ContractMargin__c , 0)				AS ContractMarginPercentage
+			,COALESCE(PS.KimbleOne__WeightedContractRevenue__c , 0)		AS WeightedContractRevenue
+			,IF(COALESCE(CAST(PS.KimbleOne__ForecastAtDetailedLevel__c AS INT), 0 ) = 0, 0 , 1)	AS IsForecastedAtDetailedLevel 
+			,COALESCE(PS.KimbleOne__DetailedLevelContractCost__c , 0)					AS DetailedLevelContractCost	
+			,COALESCE(PS.KimbleOne__DetailedLevelContractRevenue__c , 0)				AS DetailedLevelContractRevenue	
+			,COALESCE(PS.KimbleOne__DetailedLevelWeightedContractRevenue__c , 0)		AS DetailedLevelWeightedContractRevenue	
+			,COALESCE(PS.KimbleOne__HighLevelContractCost__c , 0)						AS HighLevelContractCost	
+			,COALESCE(PS.KimbleOne__HighLevelContractRevenue__c , 0)					AS HighLevelContractRevenue	
+			,COALESCE(PS.KimbleOne__HighLevelWeightedContractRevenue__c , 0)			AS HighLevelWeightedContractRevenue
+			,COALESCE(PS.KimbleOne__ProposalCost__c , 0)				AS ProposalCost		
+			,COALESCE(PS.KimbleOne__ProposalExpensesCost__c , 0)		AS ProposalExpenseCost	
+			,COALESCE(PS.KimbleOne__ProposalMarginAmount__c , 0)		AS ProposalMarginAmount	
+			,COALESCE(PS.KimbleOne__ProposalMargin__c , 0)				AS ProposalMarginPercentage
+			,COALESCE(PS.KimbleOne__ProposalUsageCost__c , 0)			AS ProposalUsageCost	
+			,COALESCE(PS.KimbleOne__Discount__c , 0)					AS DiscountAmount		
+			,COALESCE(PS.KimbleOne__DiscountPercentage__c , 0)			AS DiscountPercentage	
+			,IF(COALESCE(CAST(PS.DMW_Element_is_WAR__c AS INT), 0 ) = 0, 0, 1)	AS DMWElementIsWAR	
+			,ROW_NUMBER() 
+					OVER (
+						PARTITION BY	SO.OpportunityBk, SO._crda_ActiveFromDateTime 
+						ORDER BY		SO.OpportunityBk, SO._crda_ActiveFromDateTime 
+						)						AS RN 
+
+
+		FROM	Internal.salesopportunityunion			 SO	
+
+		LEFT JOIN	Kantata.HISTORY_Account	AC	ON	AC.Id = SO.AccountBk 
+												AND	AC._crda_ActiveToDateTime = '9999-12-31 23:59:59' 
+												AND	AC._crda_isDeleted = 0 
+
+		LEFT  JOIN	Kantata.HISTORY_Proposal	PS	ON	PS.OpportunityId = SO.OpportunityBk  
+													AND	PS._crda_ActiveToDateTime = '9999-12-31 23:59:59' 
+													AND	PS._crda_isDeleted = 0 
+	) 
+	SELECT 
+		 SRC.SalesOpportunityBk
+		,SRC.SalesOpportunitytDateTime 
+		,SRC.AccountBusinessUnitBk
+		,SRC.AccountBk
+		,SRC.ProposalBusinessUnitBk 
+		,SRC.ProposalBk
+		,SRC.RelatedSalesOpportunityBk
+		,SRC.ForecastStatusBk
+		,SRC.OpportunityStageBk
+		,SRC.OpportunitySourceBk
+		,SRC.SectorBk
+		,SRC.PropositionBk
+		,SRC.MarketingCampaignBk
+		,SRC.ProposedDeliveryProgramBk
+		,SRC.OriginatorBk
+		,SRC.CommercialSignOffBk
+		,SRC.SalesOpportunityOwnerBk
+		,SRC.ProposalOwnerBk
+		,SRC.CloseDate
+		,SRC.AcceptanceDate
+		,SRC.ResponseRequiredDate
+		,SRC.EarliestStartDate
+		,SRC.LatestEndDate
+		,SRC.DeliveryStartDate
+		,SRC.CurrencyIsoCode
+		,SRC.WonLostReason
+		,SRC.BidStatus
+		,SRC.BidFramework
+		,SRC.BidPQQDueDate
+		,SRC.BidPQQStatus
+		,SRC.ContractRevenue
+		,SRC.ContractMargin
+		,SRC.ContractCost
+		,SRC.ContractMarginAmount
+		,SRC.ContractMarginPercentage
+		,SRC.WeightedContractRevenue
+		,SRC.IsForecastedAtDetailedLevel
+		,SRC.DetailedLevelContractCost
+		,SRC.DetailedLevelContractRevenue
+		,SRC.DetailedLevelWeightedContractRevenue
+		,SRC.HighLevelContractCost
+		,SRC.HighLevelContractRevenue
+		,SRC.HighLevelWeightedContractRevenue
+		,SRC.ProposalCost
+		,SRC.ProposalExpenseCost
+		,SRC.ProposalMarginAmount
+		,SRC.ProposalMarginPercentage
+		,SRC.ProposalUsageCost
+		,SRC.DiscountAmount
+		,SRC.DiscountPercentage
+		,SRC.DMWElementIsWAR
+
+	FROM cteSalesOpportunityLifecycle SRC 
+	WHERE	RN = 1 
+	ORDER BY SalesOpportunityBk, SalesOpportunitytDateTime ;
+
+
+-- METADATA ********************
+
+-- META {
+-- META   "language": "sparksql",
+-- META   "language_group": "synapse_pyspark"
 -- META }

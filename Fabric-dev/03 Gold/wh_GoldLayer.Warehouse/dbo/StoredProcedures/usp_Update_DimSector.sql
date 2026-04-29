@@ -36,18 +36,18 @@ BEGIN
 			TRUNCATE TABLE dbo.DimSector ; 
 
 			INSERT INTO [dbo].DimSector ( 
-				SectorSk, SectorBk, [Name], CurrencyIsoCode, StartDate, EndDate, 
+				SectorSk, SectorBk, [Name], CurrencyIsoCode, StartDate, EndDate, SectorGroups, 
 					_crda_ActiveFromDate, _crda_ActiveToDate, _crda_ActiveFromDateSk, _crda_ActiveToDateSk, IsCurrent 
 						,_crda_Hash,_crda_CreatedExecutionId, _crda_CreatedDateTime, _crda_isDeleted 
 			) 
-			SELECT SectorSk, SectorBk, [Name], CurrencyIsoCode, StartDate, EndDate,
+			SELECT SectorSk, SectorBk, [Name], CurrencyIsoCode, StartDate, EndDate, SectorGroups, 
 					_crda_ActiveFromDate, _crda_ActiveToDate, _crda_ActiveFromDateSk, _crda_ActiveToDateSk, IsCurrent 
 						,_crda_Hash,_crda_CreatedExecutionId, _crda_CreatedDateTime, _crda_isDeleted 
 			FROM	(VALUES	(	
-					-1 , 'UnknownRecord', 'UnknownRecord', 'ZZZ', '20000101', '20000101', 
+					-1 , 'UnknownRecord', 'UnknownRecord', 'ZZZ', '20000101', '20000101', '', 
 							'20000101', '9999-12-31 23:59:59', 20000101, 99991231, 1
 								,0x00 , @_ExecutionId, GETUTCDATE(), 0  ) 
-					)	AS T(	SectorSk, SectorBk, [Name], CurrencyIsoCode, StartDate, EndDate , 
+					)	AS T(	SectorSk, SectorBk, [Name], CurrencyIsoCode, StartDate, EndDate , SectorGroups, 
 									_crda_ActiveFromDate, _crda_ActiveToDate, _crda_ActiveFromDateSk, _crda_ActiveToDateSk, IsCurrent 
 										,_crda_Hash,_crda_CreatedExecutionId, _crda_CreatedDateTime, _crda_isDeleted 
 			) 
@@ -62,6 +62,13 @@ BEGIN
 					T.CurrencyIsoCode , 
 					StartDate	= T.StartDate__c , 
 					EndDate		= ISNULL(T.EndDate__c , '99991231') , 
+					case
+						when [Name]='Public Sector'		then 'PS' 
+						when ([Name]='Insurance' OR [Name]='Financial Services')	then 'FSI' 
+						when ([Name]='Oil, Gas & Utilities' OR [Name]='Commercial') then 'E&C' 
+						when [Name]='Portfolio'			then 'PF' 
+						else 'Not Specified' 
+					end AS SectorGroups , 
 					_crda_ActiveFromDateTime= CONVERT(DATETIME2(6), T._crda_ActiveFromDateTime) , 
 					_crda_ActiveToDateTime	= CONVERT(DATETIME2(6), T._crda_ActiveToDateTime), 
 					AD._crda_Hash 
@@ -113,7 +120,7 @@ BEGIN
 				SRC.CurrencyIsoCode , 
 				SRC.EndDate , 
 				SRC.StartDate , 
-				case when [Name]='Public Sector' then 'PS' when [Name]='Insurance' OR [Name]='Financial Services' then 'FSI' when [Name]='Oil, Gas & Utilities' OR [Name]='Commercial' then 'E&C' when [Name]='Portfolio' then 'PF' else 'Not Specified' end 
+				SRC.SectorGroups 
 
 				,SRC._crda_ActiveFromDateTime 
 				,SRC._crda_ActiveToDateTime 

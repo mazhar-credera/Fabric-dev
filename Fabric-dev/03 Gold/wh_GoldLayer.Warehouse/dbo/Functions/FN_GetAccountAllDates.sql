@@ -17,30 +17,35 @@ SELECT * FROM dbo.FN_GetAccountAllDates (@FutureDate) ORDER BY AccountSk, Period
 AS
 RETURN 
 
+	WITH cteAccountDates
+	AS(
+		SELECT	DA.AccountBk	AS cteAccountBk, 
+				B2.AccountSk	AS AccountSk , 
+				MIN(DATEFROMPARTS(YEAR(DA._crda_ActiveFromDate), MONTH(DA._crda_ActiveFromDate), 1)) AS ActiveFrom , 
+				IIF(
+						MAX(CAST(DA._crda_ActiveToDate AS DATE)) = '90001231',
+						@FutureDate ,
+						MAX(CAST(DA._crda_ActiveToDate AS DATE))
+					)												AS ActiveTo 
+		FROM	dbo.DimAccount DA 
+
+		LEFT JOIN 
+				(
+					SELECT	B1.AccountBk, B1.AccountSk
+					FROM	dbo.DimAccount B1 
+					WHERE	B1.IsCurrent = 1 
+				)	B2	ON	B2.AccountBk = DA.AccountBk 
+
+		WHERE	DA.AccountSk > 1
+		GROUP BY DA.AccountBk, B2.AccountSk 
+	) 
 	SELECT	[Date]				AS PeriodStart	, 
 			DateSk				AS PeriodStartSk, 
 			EOMONTH([Date])		AS PeriodEnd	, 
 			CAST(CONVERT(VARCHAR(8),EOMONTH([Date]), 112) AS INT) AS PeriodEndSk, 
-			BU.AccountSk 
+			BU.AccountSk		AS AccountSk 
 	FROM	dbo.DimDate 
-	CROSS APPLY ( 
-		SELECT	B.AccountBk, AccountSk = B2.AccountSk , 
-				MIN(DATEFROMPARTS(YEAR(B._crda_ActiveFromDate), MONTH(B._crda_ActiveFromDate), 1)) AS ActiveFrom , 
-				IIF(
-						MAX(CAST(B._crda_ActiveToDate AS DATE)) = '90001231',
-						@FutureDate ,
-						MAX(CAST(B._crda_ActiveToDate AS DATE))
-					)												AS ActiveTo 
-		FROM	dbo.DimAccount B 
-		LEFT JOIN (
-			SELECT	B1.AccountBk, B1.AccountSk
-			FROM	dbo.DimAccount B1 
-			WHERE	B1.IsCurrent = 1 
-		)	B2	ON	B2.AccountBk = B.AccountBk 
-		WHERE B.AccountSk > 1
-		GROUP BY 
-			B.AccountBk, B2.AccountSk 
-	)	BU 
+	CROSS APPLY cteAccountDates	BU 
 	WHERE	DayNumberInMonth = 1 
 	AND		[Date] >= BU.ActiveFrom AND [Date] <= BU.ActiveTo
 	AND		[Date] <= @FutureDate ;

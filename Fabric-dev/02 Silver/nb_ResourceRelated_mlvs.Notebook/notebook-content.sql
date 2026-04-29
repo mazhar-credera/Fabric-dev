@@ -73,7 +73,7 @@ ALTER TABLE Kantata.HISTORY_Account             SET TBLPROPERTIES (delta.enableC
 -- CELL ********************
 
 
-CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS Internal.ResourceMonthlyTargetDays  
+CREATE OR REPLACE MATERIALIZED LAKE VIEW Internal.ResourceMonthlyTargetDays  
 AS
 
 
@@ -204,7 +204,7 @@ SELECT * FROM Internal.ResourceMonthlyTargetDays
 
 -- CELL ********************
 
-CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS Internal.ResourceUsage  
+CREATE OR REPLACE MATERIALIZED LAKE VIEW Internal.ResourceUsage  
 AS
 
 
@@ -238,6 +238,7 @@ AS(
 					PARTITION BY	PA.KimbleOne__Resource__c, TP.KimbleOne__StartDate__c, PA.Id  
 					ORDER BY		PA.KimbleOne__Resource__c, TP.KimbleOne__StartDate__c 
 				) AS RN 
+			,PA._crda_ActiveFromDateTime 
 
 	FROM		Kantata.HISTORY_PerformanceAnalysis	PA
 
@@ -297,7 +298,8 @@ SELECT
 	,SRC.ResourceBusinessUnitBk
 	,SRC.P1ForecastAmount
 	,SRC.P2ForecastAmount
-	,SRC.P3ForecastAmount
+	,SRC.P3ForecastAmount 
+	,SRC._crda_ActiveFromDateTime 
 
 FROM	cteSrc SRC 
 WHERE	SRC.RN = 1 ; 
@@ -328,7 +330,7 @@ SELECT * FROM Internal.ResourceUsage
 
 -- CELL ********************
 
-CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS Internal.ResourceAbsence  
+CREATE OR REPLACE MATERIALIZED LAKE VIEW Internal.ResourceAbsence  
 AS
 
 
@@ -500,7 +502,7 @@ SELECT * FROM Internal.ResourceAbsence
 
 -- CELL ********************
 
-CREATE MATERIALIZED LAKE VIEW IF NOT EXISTS Internal.ResourceAccountHistory  
+CREATE OR REPLACE MATERIALIZED LAKE VIEW Internal.ResourceAccountHistory  
 AS
 
 

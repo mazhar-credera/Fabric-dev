@@ -1,13 +1,18 @@
 CREATE TABLE [dbo].[DimSharePointUser] (
 
-	[SharePointUserSk] bigint IDENTITY NOT NULL, 
+	[SharePointUserSk] int NOT NULL, 
 	[SharePointUserBk] int NOT NULL, 
 	[Email] varchar(255) NULL, 
 	[DisplayName] varchar(255) NULL, 
 	[SharePointId] varchar(255) NULL, 
+	[_crda_ActiveFromDate] datetime2(6) NOT NULL, 
+	[_crda_ActiveToDate] datetime2(6) NOT NULL, 
+	[_crda_ActiveFromDateSk] int NOT NULL, 
+	[_crda_ActiveToDateSk] int NOT NULL, 
+	[IsCurrent] bit NOT NULL, 
 	[_crda_Hash] varbinary(16) NOT NULL, 
 	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
-	[_crda_UpdatedDateTime] datetime2(6) NULL
+	[_crda_CreatedExecutionId] int NOT NULL
 );
 
 

@@ -17,15 +17,8 @@ SELECT * FROM dbo.FN_GetBusinessUnitAllDates (@FutureDate);
 AS
 RETURN 
 
-	SELECT	[Date]				AS PeriodStart	, 
-			DateSk				AS PeriodStartSk, 
-			EOMONTH([Date])		AS PeriodEnd	, 
-			CAST(CONVERT(VARCHAR(8),EOMONTH([Date]), 112) AS INT)	AS PeriodEndSk	, 
-			BU.BusinessUnitSk 
-
-	FROM	dbo.DimDate 
-
-	CROSS APPLY ( 
+	WITH cteBusinessUnitDates
+	AS(
 		SELECT	B.BusinessUnitBk, 
 				B2.BusinessUnitSk AS BusinessUnitSk, 
 				MIN(DATEFROMPARTS(YEAR(B._crda_ActiveFromDate), MONTH(B._crda_ActiveFromDate), 1)) AS ActiveFrom , 
@@ -45,8 +38,17 @@ RETURN
 
 		WHERE B.BusinessUnitSk > 1
 		GROUP BY B.BusinessUnitBk, B2.BusinessUnitSk 
-	)	BU 
+	)
+	SELECT	D.[Date]			AS PeriodStart	, 
+			D.DateSk			AS PeriodStartSk, 
+			EOMONTH(D.[Date])		AS PeriodEnd	, 
+			CAST(CONVERT(VARCHAR(8),EOMONTH(D.[Date]), 112) AS INT)	AS PeriodEndSk	, 
+			BU.BusinessUnitSk	AS BusinessUnitSk 
 
-	WHERE	DayNumberInMonth = 1 
-	AND		[Date] >= BU.ActiveFrom AND [Date] <= BU.ActiveTo
-	AND		[Date] <= @FutureDate ;
+	FROM	dbo.DimDate		D
+
+	CROSS APPLY cteBusinessUnitDates BU 
+
+	WHERE	D.DayNumberInMonth = 1 
+	AND		D.[Date] >= BU.ActiveFrom AND D.[Date] <= BU.ActiveTo
+	AND		D.[Date] <= @FutureDate ;

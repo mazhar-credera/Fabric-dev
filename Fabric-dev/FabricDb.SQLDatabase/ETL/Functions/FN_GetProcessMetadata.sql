@@ -4,20 +4,20 @@ CREATE
 /*
 SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Resource', 'pl_IngestSalesforce')
 SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Resource', 'pl_LoadSilverFromBronze')
-SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_DimDate', '[Internal].[usp_Update_DimDate]')
+SELECT * FROM ETL.FN_GetProcessMetadata('Internal_DimDate', '[Internal].[usp_Update_DimDate]')
 */
 ) RETURNS TABLE
 AS RETURN
 
 	SELECT 
 		 PM.ProcessId 
-		,p.StagingProjection
+		,P.StagingProjection
 		,PM.ProcessPath 
-		,p.IngestPattern
+		,P.IngestPattern
 		,P.PrimaryKeys
 		,PrimaryKeysJson				= CONCAT('["',P.PrimaryKeys,'"]')
-		,p.DeltaLakeSourceFolder 
-		,DeltaLakeBronzeFolder			= p.DeltaLakeSourceFolder
+		,P.DeltaLakeSourceFolder 
+		,DeltaLakeBronzeFolder			= P.DeltaLakeSourceFolder
 		,objNames.DeltaLakeSilverFolder	
 		,P.ApiEndPoint
 		,P.SourceFormat
@@ -29,7 +29,7 @@ AS RETURN
 		,P.BronzeDataLoadWatermarkColumn
 		,objNames.BronzeTableName
 		,BronzeTablePath				= CONCAT(P.TableSchema,'/',objNames.BronzeTableName)
-		,ObjNames.BronzeTableShortcut
+		,objNames.BronzeTableShortcut
 		,BronzeTableShortcutPath		= REPLACE(objNames.BronzeTableShortcut, '.', '/')
 		,objNames.BronzeKantataIdTableName
 		,fqObjNames.BronzeTableShortcutFqname
@@ -47,19 +47,19 @@ AS RETURN
 				'' + (
 					SELECT STRING_AGG(
 						CAST(
-							pc.ColumnName AS NVARCHAR(MAX)
+							PC.ColumnName AS NVARCHAR(MAX)
 						), ',') 
-					FROM ETL.KantataColumnMetaData pc
-					WHERE	PC.StagingProjection = p.StagingProjection
+					FROM ETL.KantataColumnMetaData PC
+					WHERE	PC.StagingProjection = P.StagingProjection
 				  ) 
 		,KantataHashColumns	= 
 				'' + (
 					SELECT STRING_AGG(
 						CAST(
-							pc.ColumnName AS NVARCHAR(MAX)
+							PC.ColumnName AS NVARCHAR(MAX)
 						), ',') 
-					FROM ETL.KantataColumnMetaData pc
-					WHERE	PC.StagingProjection =  p.StagingProjection 
+					FROM ETL.KantataColumnMetaData PC
+					WHERE	PC.StagingProjection =  P.StagingProjection 
 					AND		PC.ColumnName NOT IN ('Id','LastModifiedDate','SystemModstamp','LastModifiedDateTime','Last_Modified_DateTime'
 													,'CreatedById','LastModifiedById','Last_Modified_Date__c','LastActivityDate','LastViewedDate', 'LengthOfService__c' --Kimble_Resource
 														,'_crda_SourceFileName', '_crda_SourceExecutionId', '_crda_SourceExecutionDateTime')
@@ -74,8 +74,8 @@ AS RETURN
 								) +
 								']'
 							)
-					FROM ETL.KantataColumnMetaData pc
-					WHERE	PC.StagingProjection =  p.StagingProjection 
+					FROM ETL.KantataColumnMetaData PC
+					WHERE	PC.StagingProjection =  P.StagingProjection 
 					AND		PC.ColumnName NOT IN ('Id','LastModifiedDate','SystemModstamp','LastModifiedDateTime','Last_Modified_DateTime'
 													,'CreatedById','LastModifiedById','Last_Modified_Date__c','LastActivityDate','LastViewedDate', 'LengthOfService__c' --Kimble_Resource
 														,'_crda_SourceFileName', '_crda_SourceExecutionId', '_crda_SourceExecutionDateTime')
@@ -85,51 +85,51 @@ AS RETURN
 					WHEN 'Parquet' THEN '{"type": "TabularTranslator","mappings": [' + (
 					SELECT STRING_AGG(
 						CAST(
-							'{"source":{"name": "' + pc.ColumnName + '"}' 
-								+ ',"sink": {"name": "' + pc.[ColumnName] + '"}}'
+							'{"source":{"name": "' + PC.ColumnName + '"}' 
+								+ ',"sink": {"name": "' + PC.[ColumnName] + '"}}'
 							AS NVARCHAR(MAX)
 						), ',') 
-					FROM ETL.KantataColumnMetaData pc
-					WHERE	PC.StagingProjection =  p.StagingProjection
+					FROM ETL.KantataColumnMetaData PC
+					WHERE	PC.StagingProjection =  P.StagingProjection
 				  ) + ',{"source":{"name":"_crda_SourceFileName"},"sink":{"name": "_crda_SourceFileName"}}'
 					+ ',{"source":{"name":"_crda_SourceExecutionId"},"sink":{"name": "_crda_SourceExecutionId"}}'
 					+ ',{"source":{"name":"_crda_SourceExecutionDateTime"},"sink":{"name": "_crda_SourceExecutionDateTime"}}'
 					+ ']'
 					+ ',"typeConversion": true,"typeConversionSettings":{"allowDataTruncation": false,"treatBooleanAsNumber": false}}' 
 				END 
-		,SharePointDomain			= IIF(p.TableSchema = 'SharePoint', SP.SharePointDomain , NULL)
-		,SharePointSite				= IIF(p.TableSchema = 'SharePoint', SP.SharePointSite  , NULL)
-		,SharePointOnlineListName	= IIF(p.TableSchema = 'SharePoint', SP.SharePointOnlineListName , NULL)
+		,SharePointDomain			= IIF(P.TableSchema = 'SharePoint', SP.SharePointDomain , NULL)
+		,SharePointSite				= IIF(P.TableSchema = 'SharePoint', SP.SharePointSite  , NULL)
+		,SharePointOnlineListName	= IIF(P.TableSchema = 'SharePoint', SP.SharePointOnlineListName , NULL)
 	FROM Meta.Process P
 	LEFT JOIN ETL.ProcessMap			PM	ON PM.StagingProjection = P.StagingProjection AND PM.ProcessPath = @ProcessPath
 	LEFT JOIN ETL.SilverTransformations ST	ON ST.StagingProjection = P.StagingProjection 
 	  CROSS APPLY (
 		SELECT 
-			  BronzeTableName					= P.TableNameRoot
-			, BronzeKantataIdTableName			= IIF(p.TableSchema = 'Kantata', 
-													CONCAT(TableNameRoot, '_Id') 
-													, NULL) 
-			, BronzeTableShortcut				= CONCAT('Bronze',p.TableSchema,'.',P.TableNameRoot) 
-			, SilverTableName					= CONCAT(p.TableSchema,'.','HISTORY_',P.TableNameRoot) 
-			, DeltaLakeSilverFolder				= REPLACE(REPLACE(P.DeltaLakeSourceFolder, P.TableNameRoot, CONCAT('HISTORY_',P.TableNameRoot) ), 'bronze', 'silver')
+			  BronzeTableName				= P.TableNameRoot
+			, BronzeKantataIdTableName		= IIF(P.TableSchema = 'Kantata', 
+												CONCAT(TableNameRoot, '_Id') 
+												, NULL) 
+			, BronzeTableShortcut			= CONCAT('Bronze',P.TableSchema,'.',P.TableNameRoot) 
+			, SilverTableName				= CONCAT(P.TableSchema,'.','HISTORY_',P.TableNameRoot) 
+			, DeltaLakeSilverFolder			= REPLACE(REPLACE(P.DeltaLakeSourceFolder, P.TableNameRoot, CONCAT('HISTORY_',P.TableNameRoot) ), 'bronze', 'silver')
 	  ) objNames
 	  CROSS APPLY (
 		SELECT 
-			  BronzeTableFqName				= CONCAT('lh_BronzeLayer.', p.TableSchema, '.', objNames.BronzeTableName )
-			, BronzeKantataIdTableFqName	= IIF(p.TableSchema = 'Kantata', 
-													CONCAT('lh_BronzeLayer.',p.TableSchema, '.', objNames.BronzeKantataIdTableName) 
+			  BronzeTableFqName				= CONCAT('lh_BronzeLayer.', P.TableSchema, '.', objNames.BronzeTableName )
+			, BronzeKantataIdTableFqName	= IIF(P.TableSchema = 'Kantata', 
+													CONCAT('lh_BronzeLayer.',P.TableSchema, '.', objNames.BronzeKantataIdTableName) 
 													, NULL) 
-			, BronzeTableShortcutFqname		= CONCAT('lh_SilverLayer.','Bronze',p.TableSchema,'.',P.TableNameRoot) 
+			, BronzeTableShortcutFqname		= CONCAT('lh_SilverLayer.','Bronze',P.TableSchema,'.',P.TableNameRoot) 
 			, SilverTableFqName				= CONCAT('lh_SilverLayer.', objNames.SilverTableName) 
 	  ) fqObjNames 
 	  OUTER APPLY (
 		SELECT 
-			 SharePointDomain		 = MAX(IIF(D.ordinal = 1, D.[value], NULL))
-			,SharePointSite			 = MAX(IIF(D.ordinal = 2, D.[value], NULL))
-			,SharePointOnlineListName= MAX(IIF(D.ordinal = 3, D.[value], NULL))
+			 SharePointDomain				= MAX(IIF(D.ordinal = 1, D.[value], NULL))
+			,SharePointSite					= MAX(IIF(D.ordinal = 2, D.[value], NULL))
+			,SharePointOnlineListName		= MAX(IIF(D.ordinal = 3, D.[value], NULL))
 		FROM string_split(P.ApiEndPoint, '\', 1) D
 	  ) SP  
-	WHERE	p.StagingProjection = @stagingProjection 
+	WHERE	P.StagingProjection = @stagingProjection 
 	AND		P.IsActive = 1
 	UNION ALL
 	SELECT 

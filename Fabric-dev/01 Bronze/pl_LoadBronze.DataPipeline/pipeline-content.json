@@ -84,7 +84,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1 AND GroupId = 1 \nAND\t\tStagingProjection IN ('Kantata_Invoice', 'Kantata_InvoiceableItem', 'Kantata_InvoiceLine'\n    ,'Kantata_InvoiceLineItem') \n",
+              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1 AND GroupId = 1 \n/*\nAND\t\tStagingProjection IN ('Kantata_Invoice', 'Kantata_InvoiceableItem', 'Kantata_InvoiceLine'\n    ,'Kantata_InvoiceLineItem') \n*/",
               "type": "Expression"
             },
             "partitionOption": "None",
