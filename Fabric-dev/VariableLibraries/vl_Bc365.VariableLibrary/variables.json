@@ -26,10 +26,10 @@
       "value": "<tenantid>/oauth2/v2.0/token?resource=https://api.businesscentral.dynamics.com"
     },
     {
-      "name": "Bc365Client",
+      "name": "cnBc365CWebConnectionId",
       "note": "",
       "type": "String",
-      "value": "31635a9c-9a36-4edf-9dc2-ce83f58509ca"
+      "value": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
     }
   ]
 }

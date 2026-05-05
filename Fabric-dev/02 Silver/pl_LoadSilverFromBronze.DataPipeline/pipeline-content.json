@@ -194,7 +194,7 @@
                     },
                     "UpdatedWatermark": {
                       "value": {
-                        "value": "@if(\n    greater(json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).recordsAfterDedup, 0),\n    json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).silverWatermark,\n    '2000-01-01'\n)",
+                        "value": "@if(\n    greater(json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).recordsAfterDedup, 0),\n    json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).silverWatermark,\n    activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue\n)",
                         "type": "Expression"
                       },
                       "type": "String"
@@ -424,10 +424,6 @@
       }
     ],
     "parameters": {
-      "ExecutionId": {
-        "type": "int",
-        "defaultValue": 1073
-      },
       "StagingProjection": {
         "type": "string",
         "defaultValue": "Kantata_Proposal"

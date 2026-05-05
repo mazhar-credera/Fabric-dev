@@ -13,7 +13,6 @@
               "type": "InvokePipeline",
               "typeProperties": {
                 "parameters": {
-                  "ExecutionId": 1073,
                   "StagingProjection": {
                     "value": "@item().StagingProjection",
                     "type": "Expression"
@@ -55,7 +54,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT\tProcessId, StagingProjection \nFROM\tEtl.ProcessMap \nWHERE\tIsActive = 1 AND GroupId = 2  \n/*\nAND\t\tStagingProjection IN ('Kantata_Invoice', 'Kantata_InvoiceableItem', 'Kantata_InvoiceLine'\n    ,'Kantata_InvoiceLineItem') \n*/",
+              "value": "SELECT\tSourceSystem, ProcessId, StagingProjection \nFROM\tETL.ProcessMap P \nWHERE\tIsActive = 1 AND GroupId = 2 \n\nAND\t\tStagingProjection IN ('Kantata_Resource', 'Kantata_Account', 'Kantata_ActivityAssignment'\n    ,'Kantata_DeliveryElement') \n",
               "type": "Expression"
             },
             "partitionOption": "None",

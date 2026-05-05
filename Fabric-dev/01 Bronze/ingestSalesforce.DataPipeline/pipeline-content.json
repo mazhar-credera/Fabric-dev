@@ -517,7 +517,7 @@
               },
               "ErrorMessage": {
                 "value": {
-                  "value": "@activity('IngestSalesforce').error.message",
+                  "value": "IngestSalesforce: @{activity('IngestSalesforce').error.message}",
                   "type": "Expression"
                 },
                 "type": "String"
@@ -586,7 +586,7 @@
               },
               "ErrorMessage": {
                 "value": {
-                  "value": "@activity('IngestSalesforceIds').error.message",
+                  "value": "IngestSalesforceIds: @{activity('IngestSalesforceIds').error.message}",
                   "type": "Expression"
                 },
                 "type": "String"
@@ -741,7 +741,7 @@
                     },
                     "ErrorMessage": {
                       "value": {
-                        "value": "@activity('nb_BronzeKantataDeltaAppend').output.result.exitValue",
+                        "value": "nb_BronzeKantataDeltaAppend: @{activity('nb_BronzeKantataDeltaAppend').output.result.exitValue}",
                         "type": "Expression"
                       },
                       "type": "String"
@@ -820,10 +820,6 @@
       }
     ],
     "parameters": {
-      "ExecutionId": {
-        "type": "int",
-        "defaultValue": 1073
-      },
       "StagingProjection": {
         "type": "string",
         "defaultValue": "Kantata_ActivityAssignment"
