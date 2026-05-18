@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "DataPipeline",
+    "displayName": "pl_IngestSalesforce_20260518"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "a5e36a20-9e17-8df7-452b-1420b3f8709f"
+  }
+}

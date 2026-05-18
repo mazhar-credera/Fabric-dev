@@ -621,20 +621,7 @@ try:
             # Force SQL endpoint metadata refresh
             spark.sql(f"REFRESH TABLE {pSilverTableName}")
 
-            # ── 4.11 Calculate Silver Watermark ──────────────────────────
-            log("STEP 11: Calculating Silver Watermark for Pipeline")
-                
-            # Query the table we just updated
-            wm_df = spark.sql(f"""
-                SELECT COALESCE(MAX({pWatermarkColumnName}), '{pBronzeDataLoadWatermarkValue}') AS SilverWatermark
-                FROM {pSilverTableName}
-            """)
-                
-            silver_watermark = str(wm_df.collect()[0][0])
-            log(f"  Silver Watermark identified: {silver_watermark}")
-
-
-            # ── 4.12 Mark IS_DELETED_COL as True for deleted Ids from Source ──────────────────────────
+            # ── 4.11 Mark IS_DELETED_COL as True for deleted Ids from Source ──────────────────────────
             log("STEP 12: Mark IS_DELETED_COL as True for deleted Ids from Source")
             if pTargetSchema == 'Kantata':
                 merge_condition = " AND ".join([f"TGT.{pk} = SRC.{pk}" for pk in primary_keys])
@@ -651,16 +638,28 @@ try:
                 log(f"  SQL for Mark IS_DELETED_COL : {sql}")
                 spark.sql(sql)
 
-            # All paths through the else block succeeded
-            execution_status = "SUCCESS"
+        # ── 4.13 Calculate Silver Watermark ──────────────────────────
+        log("STEP 13: Calculating Silver Watermark for Pipeline")
+            
+        # Query the table we just updated
+        wm_df = spark.sql(f"""
+            SELECT COALESCE(MAX({pWatermarkColumnName}), '{pBronzeDataLoadWatermarkValue}') AS SilverWatermark
+            FROM {pSilverTableName}
+        """)
+            
+        silver_watermark = str(wm_df.collect()[0][0])
+        log(f"  Silver Watermark identified: {silver_watermark}")
 
-            log("=" * 70)
-            log(f"Bronze → Silver SCD2 Notebook – COMPLETE | Status: {execution_status}")
-            log(f"  Silver table : {pSilverTableName}")
-            log(f"  silver_watermark : {silver_watermark}")
-            log(f"  Records read from bronze (post-wm filter): {watermark_filtered_count:,}")
-            log(f"  Records after deduplication              : {deduped_count:,}")
-            log("=" * 70)
+        # All paths succeeded
+        execution_status = "SUCCESS"
+
+        log("=" * 70)
+        log(f"Bronze → Silver SCD2 Notebook – COMPLETE | Status: {execution_status}")
+        log(f"  Silver table : {pSilverTableName}")
+        log(f"  silver_watermark : {silver_watermark}")
+        log(f"  Records read from bronze (post-wm filter): {watermark_filtered_count:,}")
+        log(f"  Records after deduplication              : {deduped_count:,}")
+        log("=" * 70)
 
 # =============================================================================
 # SECTION 5 – ERROR HANDLING

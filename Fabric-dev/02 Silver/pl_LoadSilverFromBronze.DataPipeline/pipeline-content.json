@@ -160,7 +160,7 @@
         "type": "IfCondition",
         "typeProperties": {
           "expression": {
-            "value": "@not(equals(json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).status,'FAILURE'))",
+            "value": "@and(\n    equals(activity('nb_LoadSilverDeltaTables').output.status, 'Succeeded'),\n    not(equals(json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).status, 'FAILURE'))\n)",
             "type": "Expression"
           },
           "ifTrueActivities": [
@@ -277,7 +277,7 @@
                     },
                     "ErrorMessage": {
                       "value": {
-                        "value": "@{json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).error_msg}",
+                        "value": "@if(\n    equals(activity('nb_LoadSilverDeltaTables').output.status, 'Failed'),\n    'SYSTEM TIMEOUT: The notebook was killed by the timeout limit.',\n    json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).error_msg\n)",
                         "type": "Expression"
                       },
                       "type": "String"
@@ -330,7 +330,7 @@
           {
             "activity": "nb_LoadSilverDeltaTables",
             "dependencyConditions": [
-              "Succeeded"
+              "Completed"
             ]
           }
         ]

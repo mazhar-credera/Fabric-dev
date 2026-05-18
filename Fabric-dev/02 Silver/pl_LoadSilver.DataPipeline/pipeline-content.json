@@ -4,6 +4,7 @@
       {
         "type": "ForEach",
         "typeProperties": {
+          "batchCount": 25,
           "items": {
             "value": "@activity('GetStagingProjections').output.value",
             "type": "Expression"
@@ -54,7 +55,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT\tSourceSystem, ProcessId, StagingProjection \nFROM\tETL.ProcessMap P \nWHERE\tIsActive = 1 AND GroupId = 2 \n\nAND\t\tStagingProjection IN ('Kantata_Resource', 'Kantata_Account', 'Kantata_ActivityAssignment'\n    ,'Kantata_DeliveryElement') \n",
+              "value": "SELECT\tSourceSystem, ProcessId, StagingProjection \nFROM\tETL.ProcessMap P \nWHERE\tIsActive = 1 AND GroupId = 2 \n/*\nAND\t\tStagingProjection IN ('Kantata_Resource', 'Kantata_Account', 'Kantata_ActivityAssignment'\n    ,'Kantata_DeliveryElement') \n*/",
               "type": "Expression"
             },
             "partitionOption": "None",
