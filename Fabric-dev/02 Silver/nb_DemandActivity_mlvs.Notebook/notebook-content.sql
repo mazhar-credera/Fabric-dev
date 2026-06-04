@@ -371,11 +371,12 @@ AS
 							)
 					)
 			AND		COALESCE(RD.KimbleOne__Domain__c , '')= 'AssignmentDemandStatus'
+			/*
 			AND		NOT (
 						COALESCE(HR.Name,'') LIKE '#Generic Associate%' 
 							OR COALESCE(HR.Name,'') LIKE '#Generic Partner%' 
 								OR COALESCE(HR.Name,'') LIKE '#Generic Nearshore%'
-						) 
+						) 20260517 ADO PR 829 #1169*/ 
 				/*Exclude leavers*/	
 			AND		COALESCE(HR.Provisional_End_Date__c, HR.KimbleOne__EndDate__c, C.FutureDate)	> C.Today 
 		) 
