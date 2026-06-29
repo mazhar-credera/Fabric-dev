@@ -164,6 +164,10 @@ AS
 			,COALESCE(PA.KimbleOne__CorporateCurrencyP3ForecastCost__c, 0)			AS CorporateCurrencyP3ForecastCost 
 
 
+			,CASE WHEN (PA.KimbleOne__DomainClass__c <> 'a0dD00000076nKRIAY' /*Expenses*/ 
+							OR PA.KimbleOne__DomainClass__c IS NULL)
+					THEN 1 ELSE 0 END								AS ExpensesFlag 
+			,RA.KC_DMW_Activity_Type__c								AS DmwActivityType 									
 			,CASE WHEN FSE.Id IS NULL 
 					THEN FS.KimbleOne__Probability__c 
 						ELSE FSE.KimbleOne__Probability__c END		AS ProbabilityFactor 
@@ -240,6 +244,10 @@ AS
 															AND GG._crda_ActiveToDateTime	= '9999-12-31 23:59:59'
 															AND	GG._crda_isDeleted	= 0 
 
+		LEFT JOIN	Kantata.HISTORY_ResourcedActivity	RA	ON	RA.Id	= PA.KimbleOne__ResourcedActivity__c 
+															AND	RA._crda_ActiveToDateTime = '9999-12-31 23:59:59'
+															AND	RA._crda_isDeleted = 0 
+
 		WHERE	PA._crda_ActiveToDateTime = '9999-12-31 23:59:59' 
 		AND		(PA.KimbleOne__DomainClass__c <> 'a0dD00000076nKRIAY' /*Expenses*/
 						OR PA.KimbleOne__DomainClass__c IS NULL) 
@@ -300,6 +308,8 @@ AS
 		SRC.CorporateCurrencyP2ForecastCost , 
 		SRC.CorporateCurrencyP3ForecastCost , 
 
+		SRC.ExpensesFlag ,
+		SRC.DmwActivityType ,
 		SRC.ProbabilityFactor , 
 		SRC.ElementProduct ,
 		SRC.IsNewBusiness , 

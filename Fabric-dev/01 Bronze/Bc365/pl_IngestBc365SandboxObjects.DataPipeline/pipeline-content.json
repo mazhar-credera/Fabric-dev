@@ -2,128 +2,116 @@
   "properties": {
     "activities": [
       {
-        "name": "Until_All_Pages_Read",
         "type": "Until",
-        "state": "Inactive",
-        "onInactiveMarkAs": "Succeeded",
-        "dependsOn": [],
         "typeProperties": {
           "expression": {
             "value": "@equals(variables('NextPageUrl'), null)",
             "type": "Expression"
           },
+          "timeout": "0.12:00:00",
           "activities": [
             {
-              "name": "Get BC_Data_Page",
               "type": "WebActivity",
-              "state": "Inactive",
-              "onInactiveMarkAs": "Succeeded",
-              "dependsOn": [],
-              "policy": {
-                "timeout": "0.00:30:00",
-                "retry": 0,
-                "retryIntervalInSeconds": 30,
-                "secureOutput": false,
-                "secureInput": true
-              },
               "typeProperties": {
                 "method": "GET",
+                "relativeUrl": {
+                  "value": "/@{pipeline().libraryVariables.vl_Bc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/v2.0/companies(@{pipeline().parameters.CompanyId})/@{pipeline().parameters.ObjectApiName}",
+                  "type": "Expression"
+                },
                 "headers": {
                   "Authorization": {
                     "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
                     "type": "Expression"
                   },
                   "Accept": "application/json"
-                },
-                "relativeUrl": {
-                  "value": "/@{pipeline().libraryVariables.vl_Bc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/v2.0/companies(@{pipeline().parameters.CompanyId})/@{pipeline().parameters.ObjectApiName}",
-                  "type": "Expression"
                 }
               },
               "externalReferences": {
                 "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
-              }
+              },
+              "policy": {
+                "timeout": "0.00:30:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": true,
+                "secureOutput": false
+              },
+              "name": "Get BC_Data_Page",
+              "state": "Inactive",
+              "onInactiveMarkAs": "Succeeded",
+              "dependsOn": []
             }
-          ],
-          "timeout": "0.12:00:00"
-        }
-      },
-      {
-        "name": "Set_Initial_Request_Url",
-        "type": "SetVariable",
+          ]
+        },
+        "name": "Until_All_Pages_Read",
         "state": "Inactive",
         "onInactiveMarkAs": "Succeeded",
-        "dependsOn": [],
-        "policy": {
-          "secureOutput": false,
-          "secureInput": false
-        },
+        "dependsOn": []
+      },
+      {
+        "type": "SetVariable",
         "typeProperties": {
           "variableName": "NextPageUrl",
           "value": {
             "value": "/@{pipeline().libraryVariables.vl_Bc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/v2.0/companies(@{pipeline().parameters.CompanyId})/@{pipeline().parameters.ObjectApiName}",
             "type": "Expression"
           }
-        }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Set_Initial_Request_Url",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": []
       },
       {
-        "name": "Get Bc365 Token",
         "type": "WebActivity",
-        "dependsOn": [],
-        "policy": {
-          "timeout": "0.00:10:00",
-          "retry": 0,
-          "retryIntervalInSeconds": 30,
-          "secureOutput": true,
-          "secureInput": true
-        },
         "typeProperties": {
           "method": "POST",
-          "headers": {
-            "Content-Type": "application/x-www-form-urlencoded"
-          },
           "relativeUrl": {
             "value": "@{pipeline().libraryVariables.vl_Bc365_Bc365TenantId}/oauth2/v2.0/token",
             "type": "Expression"
           },
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
           "body": {
-            "value": "@concat(\n    'grant_type=client_credentials'\n    ,'&scope=https://api.businesscentral.dynamics.com/.default'\n    ,'&client_id='\n    ,pipeline().libraryVariables.vl_Bc365_Bc365ClientId\n    ,'&client_secret='\n    ,encodeUriComponent(pipeline().libraryVariables.vl_Bc365_Bc365SandboxSec)\n)",
+            "value": "@concat(\n    'grant_type=client_credentials'\n    ,'&scope=https://api.businesscentral.dynamics.com/.default'\n    ,'&client_id='\n    ,pipeline().libraryVariables.vl_Bc365_Bc365ClientIdSandbox\n    ,'&client_secret='\n    ,encodeUriComponent(pipeline().libraryVariables.vl_Bc365_Bc365SandboxSec)\n)",
             "type": "Expression"
           }
         },
         "externalReferences": {
           "connection": "96e1e28e-089c-4fb4-998f-97fdd4f70d53"
-        }
-      },
-      {
-        "name": "Get Bc365 Data",
-        "type": "Copy",
-        "state": "Inactive",
-        "onInactiveMarkAs": "Succeeded",
-        "dependsOn": [
-          {
-            "activity": "SetFileName",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
-          },
-          {
-            "activity": "SetFolderPath",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
-          }
-        ],
+        },
         "policy": {
-          "timeout": "0.01:00:00",
+          "timeout": "0.00:10:00",
           "retry": 0,
           "retryIntervalInSeconds": 30,
-          "secureOutput": false,
-          "secureInput": false
+          "secureInput": true,
+          "secureOutput": true
         },
+        "name": "Get Bc365 Token",
+        "dependsOn": []
+      },
+      {
+        "type": "Copy",
         "typeProperties": {
           "source": {
             "type": "RestSource",
+            "requestMethod": "GET",
+            "additionalHeaders": {
+              "Authorization": {
+                "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
+                "type": "Expression"
+              }
+            },
+            "paginationRules": {
+              "AbsoluteUrl": "$['@odata.nextLink']"
+            },
+            "httpRequestTimeout": "00:01:40",
+            "requestInterval": "00.00:00:00.010",
             "additionalColumns": [
               {
                 "name": "CompanyName",
@@ -161,79 +149,66 @@
                 }
               }
             ],
-            "httpRequestTimeout": "00:01:40",
-            "requestInterval": "00.00:00:00.010",
-            "requestMethod": "GET",
-            "additionalHeaders": {
-              "Authorization": {
-                "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
-                "type": "Expression"
-              }
-            },
-            "paginationRules": {
-              "AbsoluteUrl": "$['@odata.nextLink']"
-            },
             "datasetSettings": {
-              "annotations": [],
               "type": "RestResource",
               "typeProperties": {
                 "relativeUrl": {
-                  "value": "/@{pipeline().libraryVariables.vl_Bc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/v2.0/companies('@{pipeline().parameters.CompanyId}')/@{pipeline().parameters.ObjectApiName}?$filter=lastModifiedDateTime gt @{pipeline().parameters.LastRunDate}",
+                  "value": "/@{pipeline().libraryVariables.vl_Bc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox}/api/CrederaLtd/@{pipeline().parameters.ParentApiObject}/v2.0/companies(@{pipeline().parameters.CompanyId})/@{pipeline().parameters.Api20Name}",
                   "type": "Expression"
                 }
               },
               "schema": [],
               "externalReferences": {
                 "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
-              }
+              },
+              "annotations": []
             }
           },
           "sink": {
             "type": "ParquetSink",
-            "storeSettings": {
-              "type": "LakehouseWriteSettings",
-              "copyBehavior": "FlattenHierarchy"
-            },
             "formatSettings": {
               "type": "ParquetWriteSettings",
               "enableVertiParquet": true
             },
+            "storeSettings": {
+              "type": "AzureBlobStorageWriteSettings",
+              "copyBehavior": "FlattenHierarchy"
+            },
             "datasetSettings": {
-              "annotations": [],
-              "connectionSettings": {
-                "name": "lh_BronzeLayer",
-                "properties": {
-                  "annotations": [],
-                  "type": "Lakehouse",
-                  "typeProperties": {
-                    "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419",
-                    "artifactId": "c6eb7c0f-f0ac-4fc4-87c1-13b09e22841c",
-                    "rootFolder": "Files"
-                  },
-                  "externalReferences": {
-                    "connection": "c443cedf-3748-491a-9b83-f9c686e9a243"
-                  }
-                }
-              },
               "type": "Parquet",
               "typeProperties": {
                 "location": {
                   "type": "LakehouseLocation",
-                  "fileName": {
-                    "value": "@variables('FileName')",
-                    "type": "Expression"
-                  },
                   "folderPath": {
                     "value": "@variables('FolderPath')",
+                    "type": "Expression"
+                  },
+                  "fileName": {
+                    "value": "@variables('FileName')",
                     "type": "Expression"
                   }
                 },
                 "compressionCodec": "snappy"
               },
-              "schema": []
+              "schema": [],
+              "connectionSettings": {
+                "name": "lh_BronzeLayer",
+                "properties": {
+                  "type": "Lakehouse",
+                  "typeProperties": {
+                    "artifactId": "9e22841c-13b0-87c1-4fc4-f0acc6eb7c0f",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000",
+                    "rootFolder": "Files"
+                  },
+                  "externalReferences": {
+                    "connection": "c443cedf-3748-491a-9b83-f9c686e9a243"
+                  },
+                  "annotations": []
+                }
+              },
+              "annotations": []
             }
           },
-          "enableStaging": false,
           "translator": {
             "type": "TabularTranslator",
             "typeConversion": true,
@@ -246,35 +221,48 @@
               "treatStructAsString": false,
               "flattenColumnDelimiter": "."
             }
-          }
-        }
-      },
-      {
-        "name": "SetFileName",
-        "type": "SetVariable",
+          },
+          "enableStaging": false
+        },
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": true,
+          "secureOutput": false
+        },
+        "name": "Get Bc365 Data",
         "dependsOn": [
           {
-            "activity": "Get Bc365 Token",
+            "activity": "SetFileName",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "SetFolderPath",
             "dependencyConditions": [
               "Succeeded"
             ]
           }
-        ],
-        "policy": {
-          "secureOutput": false,
-          "secureInput": false
-        },
+        ]
+      },
+      {
+        "type": "SetVariable",
         "typeProperties": {
           "variableName": "FileName",
           "value": {
             "value": "@concat(replace(replace(substring(utcnow(),8,11),':',''),'T','-'), '.parquet')",
             "type": "Expression"
           }
-        }
-      },
-      {
-        "name": "SetFolderPath",
-        "type": "SetVariable",
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "SetFileName",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
         "dependsOn": [
           {
             "activity": "Get Bc365 Token",
@@ -282,22 +270,24 @@
               "Succeeded"
             ]
           }
-        ],
-        "policy": {
-          "secureOutput": false,
-          "secureInput": false
-        },
+        ]
+      },
+      {
+        "type": "SetVariable",
         "typeProperties": {
           "variableName": "FolderPath",
           "value": {
-            "value": "@{concat(replace(pipeline().parameters.DeltaLakeSourceFolder,'{CompanyName}', pipeline().parameters.CompanyName),'/',replace(substring(utcNow(),0,7),'-','/'))}",
+            "value": "@{concat(\n    replace(\n        replace(pipeline().parameters.DeltaLakeSourceFolder,'{CompanyName}', pipeline().parameters.CompanyName),\n        '{Api20Name}', pipeline().parameters.Api20Name)\n    ,'/'\n    ,replace(substring(utcNow(),0,7),'-','/'))\n}",
             "type": "Expression"
           }
-        }
-      },
-      {
-        "name": "Get BC_Data",
-        "type": "WebActivity",
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "SetFolderPath",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
         "dependsOn": [
           {
             "activity": "Get Bc365 Token",
@@ -305,31 +295,83 @@
               "Succeeded"
             ]
           }
-        ],
-        "policy": {
-          "timeout": "0.00:30:00",
-          "retry": 0,
-          "retryIntervalInSeconds": 30,
-          "secureOutput": false,
-          "secureInput": false
-        },
+        ]
+      },
+      {
+        "type": "WebActivity",
         "typeProperties": {
           "method": "GET",
+          "relativeUrl": {
+            "value": "/@{pipeline().libraryVariables.vl_Bc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/v2.0/companies('@{pipeline().parameters.CompanyId}')/@{pipeline().parameters.ObjectApiName}",
+            "type": "Expression"
+          },
           "headers": {
             "Authorization": {
               "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
               "type": "Expression"
             },
             "Accept": "application/json"
-          },
-          "relativeUrl": {
-            "value": "/@{pipeline().libraryVariables.vl_Bc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/v2.0/companies('@{pipeline().parameters.CompanyId}')/@{pipeline().parameters.ObjectApiName}",
-            "type": "Expression"
           }
         },
         "externalReferences": {
           "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
-        }
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Get BC_Data",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "WebActivity",
+        "typeProperties": {
+          "method": "GET",
+          "relativeUrl": {
+            "value": "/@{pipeline().libraryVariables.vl_Bc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox}/api/CrederaLtd/@{pipeline().parameters.ParentApiObject}/v2.0/companies(@{pipeline().parameters.CompanyId})/@{pipeline().parameters.Api20Name}",
+            "type": "Expression"
+          },
+          "headers": {
+            "Authorization": {
+              "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
+              "type": "Expression"
+            },
+            "Accept": "application/json"
+          }
+        },
+        "externalReferences": {
+          "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Get BC_APIv2_Data",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
       }
     ],
     "parameters": {
@@ -339,7 +381,7 @@
       },
       "CompanyName": {
         "type": "string",
-        "defaultValue": "Credera Ltd"
+        "defaultValue": "CrederaLtd"
       },
       "ObjectApiName": {
         "type": "string",
@@ -351,22 +393,19 @@
       },
       "DeltaLakeSourceFolder": {
         "type": "string",
-        "defaultValue": "raw/bronze/BC/{CompanyName}/ChartofAccounts"
+        "defaultValue": "raw/bronze/BC/{CompanyName}/{Api20Name}"
       },
       "_crda_SourceExecutionId": {
         "type": "string",
         "defaultValue": "-1073"
-      }
-    },
-    "variables": {
-      "NextPageUrl": {
-        "type": "String"
       },
-      "FileName": {
-        "type": "String"
+      "Api20Name": {
+        "type": "string",
+        "defaultValue": "salesCrMemoLines"
       },
-      "FolderPath": {
-        "type": "String"
+      "ParentApiObject": {
+        "type": "string",
+        "defaultValue": "Sales"
       }
     },
     "libraryVariables": {
@@ -389,6 +428,27 @@
         "type": "String",
         "variableName": "Bc365SandboxSec",
         "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365ClientIdSandbox": {
+        "type": "String",
+        "variableName": "Bc365ClientIdSandbox",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365UkEnvSandbox": {
+        "type": "String",
+        "variableName": "Bc365UkEnvSandbox",
+        "libraryName": "vl_Bc365"
+      }
+    },
+    "variables": {
+      "NextPageUrl": {
+        "type": "String"
+      },
+      "FileName": {
+        "type": "String"
+      },
+      "FolderPath": {
+        "type": "String"
       }
     }
   }
