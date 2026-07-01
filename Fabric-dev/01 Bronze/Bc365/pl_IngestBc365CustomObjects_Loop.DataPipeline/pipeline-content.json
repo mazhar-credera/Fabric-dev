@@ -1,0 +1,185 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "SELECT\tS.CompanyName, S.ApiGroup, S.ApiEntitySetName, C.CompanyId,C.BcEnvironment\nFROM\tETL.BcSourceConfig  S \nINNER JOIN ETL.BcCompanyName C\tON C.CompanyName = S.CompanyName\n--WHERE\tS.IsEnabled = 1\n",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "1b6c1880_1181_4c0c_8e27_543a300c58dc",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": false
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "GetBc365Objects",
+        "dependsOn": []
+      },
+      {
+        "type": "ForEach",
+        "typeProperties": {
+          "items": {
+            "value": "@activity('GetBc365Objects').output.value",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "type": "InvokePipeline",
+              "typeProperties": {
+                "parameters": {
+                  "ApiEntitySetName": {
+                    "value": "@item().ApiEntitySetName",
+                    "type": "Expression"
+                  },
+                  "ApiGroup": {
+                    "value": "@item().ApiGroup",
+                    "type": "Expression"
+                  },
+                  "ApiPublisher": {
+                    "value": "CrederaLtd",
+                    "type": "Expression"
+                  },
+                  "CompanyId": {
+                    "value": "@item().CompanyId",
+                    "type": "Expression"
+                  },
+                  "CompanyName": {
+                    "value": "@item().CompanyName",
+                    "type": "Expression"
+                  },
+                  "lastModifiedDateTime": {
+                    "value": "@pipeline().parameters.lastModifiedDateTime",
+                    "type": "Expression"
+                  },
+                  "DeltaLakeSourceFolder": {
+                    "value": "raw/bronze/BC/{CompanyName}/{ApiEntitySetName}",
+                    "type": "Expression"
+                  },
+                  "_crda_SourceExecutionId": {
+                    "value": "-1073",
+                    "type": "Expression"
+                  },
+                  "BcEnvironment": {
+                    "value": "@item().BcEnvironment",
+                    "type": "Expression"
+                  }
+                },
+                "waitOnCompletion": true,
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "pipelineId": "189eabef-ac5e-9765-4627-171718176898",
+                "operationType": "InvokeFabricPipeline"
+              },
+              "externalReferences": {
+                "connection": "1a2c4c71-4ef2-4838-bd3a-2f14c381d214"
+              },
+              "policy": {
+                "timeout": "0.01:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "pl_IngestBc365CustomObjects",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "ForEach1",
+        "dependsOn": [
+          {
+            "activity": "GetBc365Objects",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "lastModifiedDateTime": {
+        "type": "string",
+        "defaultValue": "2020-01-01T00:00:00Z"
+      },
+      "DeltaLakeSourceFolder": {
+        "type": "string",
+        "defaultValue": "raw/bronze/BC/{CompanyName}/{ApiEntitySetName}"
+      },
+      "_crda_SourceExecutionId": {
+        "type": "int",
+        "defaultValue": -1073
+      }
+    },
+    "libraryVariables": {
+      "vl_Bc365_Bc365UkEnvSandbox": {
+        "type": "String",
+        "variableName": "Bc365UkEnvSandbox",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365ClientIdSandbox": {
+        "type": "String",
+        "variableName": "Bc365ClientIdSandbox",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365TenantId": {
+        "type": "String",
+        "variableName": "Bc365TenantId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_FabricObjects_cnFabricDbConnectionId": {
+        "type": "String",
+        "variableName": "cnFabricDbConnectionId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_WorkspaceId": {
+        "type": "String",
+        "variableName": "WorkspaceId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_FabricDbId": {
+        "type": "String",
+        "variableName": "FabricDbId",
+        "libraryName": "vl_FabricObjects"
+      }
+    },
+    "variables": {
+      "FileName": {
+        "type": "String"
+      },
+      "FolderPath": {
+        "type": "String"
+      },
+      "new": {
+        "type": "String"
+      }
+    }
+  }
+}
