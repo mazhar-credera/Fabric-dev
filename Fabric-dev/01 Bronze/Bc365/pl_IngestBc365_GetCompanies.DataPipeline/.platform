@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "DataPipeline",
+    "displayName": "pl_IngestBc365_GetCompanies"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "f373b49e-c9cd-b940-4fb6-06111478d7c5"
+  }
+}

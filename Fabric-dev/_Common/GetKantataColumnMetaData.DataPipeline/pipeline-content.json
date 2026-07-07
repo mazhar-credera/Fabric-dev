@@ -146,7 +146,7 @@
                     "rootFolder": "Tables"
                   },
                   "externalReferences": {
-                    "connection": "1be520da-b501-45e2-94f4-548d7afc445a"
+                    "connection": "c443cedf-3748-491a-9b83-f9c686e9a243"
                   },
                   "annotations": []
                 }
@@ -167,15 +167,15 @@
               },
               "schema": [],
               "connectionSettings": {
-                "name": "FabricDb",
+                "name": "5b17b122_e79a_4e29_afa2_1d295bf656d4",
                 "properties": {
                   "type": "FabricSqlDatabase",
                   "typeProperties": {
-                    "artifactId": "e8820c1e-7730-9945-4e3e-a6c80840fd25",
-                    "workspaceId": "00000000-0000-0000-0000-000000000000"
+                    "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                    "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
                   },
                   "externalReferences": {
-                    "connection": "a7a1bf77-e967-4eda-9115-55d4db06497f"
+                    "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
                   },
                   "annotations": []
                 }
@@ -309,7 +309,7 @@
                   "rootFolder": "Files"
                 },
                 "externalReferences": {
-                  "connection": "1be520da-b501-45e2-94f4-548d7afc445a"
+                  "connection": "c443cedf-3748-491a-9b83-f9c686e9a243"
                 },
                 "annotations": []
               }
@@ -356,15 +356,15 @@
             "type": "FabricSqlDatabaseTable",
             "schema": [],
             "connectionSettings": {
-              "name": "FabricDb",
+              "name": "61b1f767_45de_48d3_b2f1_feaeae53af39",
               "properties": {
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
-                  "artifactId": "e8820c1e-7730-9945-4e3e-a6c80840fd25",
-                  "workspaceId": "00000000-0000-0000-0000-000000000000"
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
                 },
                 "externalReferences": {
-                  "connection": "a7a1bf77-e967-4eda-9115-55d4db06497f"
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
                 },
                 "annotations": []
               }
@@ -459,6 +459,21 @@
         "type": "String",
         "variableName": "SalesforceOAuthClientId",
         "libraryName": "vl_SrcSalesforceKantata"
+      },
+      "vl_FabricObjects_FabricDbId": {
+        "type": "String",
+        "variableName": "FabricDbId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_WorkspaceId": {
+        "type": "String",
+        "variableName": "WorkspaceId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_cnFabricDbConnectionId": {
+        "type": "String",
+        "variableName": "cnFabricDbConnectionId",
+        "libraryName": "vl_FabricObjects"
       }
     },
     "variables": {
