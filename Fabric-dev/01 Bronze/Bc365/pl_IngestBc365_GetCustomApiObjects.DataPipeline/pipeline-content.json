@@ -1,0 +1,250 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "WebActivity",
+        "typeProperties": {
+          "method": "POST",
+          "relativeUrl": {
+            "value": "@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/oauth2/v2.0/token",
+            "type": "Expression"
+          },
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "body": {
+            "value": "@concat(\n    'grant_type=client_credentials'\n    ,'&scope=https://api.businesscentral.dynamics.com/.default'\n    ,'&client_id='\n    ,pipeline().libraryVariables.vl_Bc365_Bc365ClientId\n    ,'&client_secret='\n    ,encodeUriComponent(pipeline().libraryVariables.vl_Bc365_Bc365ProdSec)\n)",
+            "type": "Expression"
+          }
+        },
+        "externalReferences": {
+          "connection": "96e1e28e-089c-4fb4-998f-97fdd4f70d53"
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": true,
+          "secureOutput": true
+        },
+        "name": "Get Bc365 Token",
+        "dependsOn": []
+      },
+      {
+        "type": "WebActivity",
+        "typeProperties": {
+          "method": "GET",
+          "relativeUrl": {
+            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox}/api/v2.0/companies?$filter=@{activity('Get CompanyNames').output.firstRow.CompanyName}",
+            "type": "Expression"
+          },
+          "headers": {
+            "Authorization": {
+              "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
+              "type": "Expression"
+            },
+            "Accept": "application/json"
+          }
+        },
+        "externalReferences": {
+          "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": true,
+          "secureOutput": false
+        },
+        "name": "Get Companies",
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "Get CompanyNames",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "ForEach",
+        "typeProperties": {
+          "items": {
+            "value": "@activity('Get Companies').output.value",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "type": "InvokePipeline",
+              "typeProperties": {
+                "parameters": {
+                  "ApiEntitySetName": "vendors",
+                  "ApiGroup": "Vendor",
+                  "ApiPublisher": "CrederaLtd",
+                  "CompanyId": "3abc695f-7d28-ec11-8f45-0022481b4f2e",
+                  "CompanyName": "Credera Ltd",
+                  "lastModifiedDateTime": "2020-01-01T00:00:00Z",
+                  "DeltaLakeSourceFolder": "raw/bronze/BC/{CompanyName}/{ApiEntitySetName}",
+                  "_crda_SourceExecutionId": -1073,
+                  "BcEnvironment": "Sandbox"
+                },
+                "waitOnCompletion": true,
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "pipelineId": "189eabef-ac5e-9765-4627-171718176898",
+                "operationType": "InvokeFabricPipeline"
+              },
+              "externalReferences": {
+                "connection": "1a2c4c71-4ef2-4838-bd3a-2f14c381d214"
+              },
+              "policy": {
+                "timeout": "0.1:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "pl_IngestBc365CustomObjects",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "ForEachCompany",
+        "dependsOn": [
+          {
+            "activity": "Get Companies",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "SELECT\n\tCompanyName = STRING_AGG(CONCAT('name eq ', CHAR(39), CompanyName, CHAR(39)),\n\t\t\t\t\t' or ')\nFROM\tETL.BcCompanyName \nWHERE\tIsEnabled = 1;\n",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "4d22d9c9_3601_4e62_93a5_fc093584d025",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Get CompanyNames",
+        "dependsOn": []
+      }
+    ],
+    "parameters": {
+      "ObjectApiName": {
+        "type": "string",
+        "defaultValue": "Chart_of_Accounts"
+      },
+      "ObjectApiName2": {
+        "type": "string",
+        "defaultValue": "accounts"
+      },
+      "CompanyNameHtml": {
+        "type": "string",
+        "defaultValue": "Credera%20Ltd"
+      },
+      "CompanyName": {
+        "type": "string",
+        "defaultValue": "Credera Ltd"
+      }
+    },
+    "libraryVariables": {
+      "vl_Bc365_Bc365TokenUri": {
+        "type": "String",
+        "variableName": "Bc365TenantId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_SrcBc365_Bc365TenantId": {
+        "type": "String",
+        "variableName": "Bc365TenantId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365ClientId": {
+        "type": "String",
+        "variableName": "Bc365ClientId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365UkEnv": {
+        "type": "String",
+        "variableName": "Bc365UkEnv",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_cnBc365CWebConnectionId": {
+        "type": "String",
+        "variableName": "cnBc365CWebConnectionId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365ProdSec": {
+        "type": "String",
+        "variableName": "Bc365ProdSec",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365UkEnvSandbox": {
+        "type": "String",
+        "variableName": "Bc365UkEnvSandbox",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_FabricObjects_cnFabricDbConnectionId": {
+        "type": "String",
+        "variableName": "cnFabricDbConnectionId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_WorkspaceId": {
+        "type": "String",
+        "variableName": "WorkspaceId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_FabricDbId": {
+        "type": "String",
+        "variableName": "FabricDbId",
+        "libraryName": "vl_FabricObjects"
+      }
+    },
+    "variables": {
+      "LastRunDate": {
+        "type": "String",
+        "defaultValue": "2025-01-01T00:00:00Z"
+      },
+      "NextPageUrl": {
+        "type": "String"
+      }
+    }
+  }
+}
