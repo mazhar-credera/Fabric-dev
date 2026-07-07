@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "DataPipeline",
+    "displayName": "GetBc365ColumnMetaData"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "6e60ca60-9d13-9253-4aa8-14445fc5014e"
+  }
+}

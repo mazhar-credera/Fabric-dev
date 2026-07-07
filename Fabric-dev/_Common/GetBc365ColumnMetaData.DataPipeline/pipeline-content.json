@@ -1,0 +1,303 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "Get Bc365 Token",
+        "type": "WebActivity",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": true
+        },
+        "typeProperties": {
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "relativeUrl": {
+            "value": "@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/oauth2/v2.0/token",
+            "type": "Expression"
+          },
+          "body": {
+            "value": "@concat(\n    'grant_type=client_credentials'\n    ,'&scope=https://api.businesscentral.dynamics.com/.default'\n    ,'&client_id='\n    ,pipeline().libraryVariables.vl_Bc365_Bc365ClientId\n    ,'&client_secret='\n    ,encodeUriComponent(pipeline().libraryVariables.vl_Bc365_Bc365ProdSec)\n)",
+            "type": "Expression"
+          }
+        },
+        "externalReferences": {
+          "connection": "96e1e28e-089c-4fb4-998f-97fdd4f70d53"
+        }
+      },
+      {
+        "name": "ForEach1",
+        "type": "ForEach",
+        "dependsOn": [
+          {
+            "activity": "Get ApiGroups",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('Get ApiGroups').output.value",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "name": "Get ApiMetaData",
+              "type": "WebActivity",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "0.00:30:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": true
+              },
+              "typeProperties": {
+                "method": "GET",
+                "headers": {
+                  "Authorization": {
+                    "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
+                    "type": "Expression"
+                  },
+                  "Accept": "application/json"
+                },
+                "relativeUrl": {
+                  "value": "@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox}/api/@{pipeline().parameters.ApiPublisher}/@{item().ApiGroup}/v2.0/$metadata\n",
+                  "type": "Expression"
+                }
+              },
+              "externalReferences": {
+                "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+              }
+            },
+            {
+              "name": "Populate Raw Temp Table",
+              "type": "Lookup",
+              "dependsOn": [
+                {
+                  "activity": "Get ApiMetaData",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ],
+              "policy": {
+                "timeout": "0.00:10:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": false
+              },
+              "typeProperties": {
+                "source": {
+                  "type": "FabricSqlDatabaseSource",
+                  "sqlReaderQuery": {
+                    "value": "INSERT INTO ETL.Bc365ColumnMetadataRaw\n(\n    MetadataXML, \n    ApiPublisher ,\n    ApiGroup ,\n    ApiVersion \n)\nVALUES\n(\n    '@{string(activity('Get ApiMetaData').output.Response)}'\n    ,'@{pipeline().parameters.ApiPublisher}'\n    ,'@{item().ApiGroup}'\n    ,'v2.0'\n);\n\nSelect RetVal = 1;",
+                    "type": "Expression"
+                  },
+                  "queryTimeout": "02:00:00",
+                  "partitionOption": "None"
+                },
+                "firstRowOnly": false,
+                "datasetSettings": {
+                  "annotations": [],
+                  "connectionSettings": {
+                    "name": "4d22d9c9_3601_4e62_93a5_fc093584d025",
+                    "properties": {
+                      "annotations": [],
+                      "type": "FabricSqlDatabase",
+                      "typeProperties": {
+                        "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId",
+                        "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId"
+                      },
+                      "externalReferences": {
+                        "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                      }
+                    }
+                  },
+                  "type": "FabricSqlDatabaseTable",
+                  "schema": [],
+                  "typeProperties": {}
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Get ApiGroups",
+        "type": "Lookup",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "Truncate table ETL.Bc365ColumnMetadataRaw;\n\nSELECT\tS.ApiGroup FROM\tETL.BcSourceConfig S GROUP BY S.ApiGroup;\n",
+              "type": "Expression"
+            },
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "firstRowOnly": false,
+          "datasetSettings": {
+            "annotations": [],
+            "connectionSettings": {
+              "name": "4d22d9c9_3601_4e62_93a5_fc093584d025",
+              "properties": {
+                "annotations": [],
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId",
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                }
+              }
+            },
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "typeProperties": {}
+          }
+        }
+      },
+      {
+        "name": "Shred XML And Populate",
+        "type": "Lookup",
+        "dependsOn": [
+          {
+            "activity": "ForEach1",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "TRUNCATE TABLE ETL.Bc365ColumnMetadata;\n\nWITH XMLNAMESPACES\n(\n    'http://docs.oasis-open.org/odata/ns/edm' AS edm\n),\n\nEntityProperties AS\n(\n    SELECT\n          R.ApiPublisher\n        , R.ApiGroup\n        , E.value('@Name','varchar(255)') AS EntityName\n        , P.value('@Name','varchar(255)') AS ColumnName\n        , REPLACE(P.value('@Type','varchar(255)'), 'Edm.', '') AS DataType\n        , CAST\n          (\n              CASE\n                  WHEN P.value('@Nullable','varchar(10)') = 'false'\n                  THEN 0\n                  ELSE 1\n              END\n              AS bit\n          ) AS IsNullable\n    FROM    ETL.Bc365ColumnMetadataRaw R\n    CROSS APPLY R.MetadataXML.nodes('//edm:EntityType') T(E)\n    CROSS APPLY E.nodes('edm:Property') X(P)\n),\n\nEntityKeys AS\n(\n    SELECT\n          R.ApiPublisher\n        , R.ApiGroup\n        , E.value('@Name','varchar(255)') AS EntityName\n        , K.value('@Name','varchar(255)') AS ColumnName\n    FROM ETL.Bc365ColumnMetadataRaw R\n    CROSS APPLY R.MetadataXML.nodes('//edm:EntityType') T(E)\n    CROSS APPLY E.nodes('edm:Key/edm:PropertyRef') X(K)\n),\n\nEntitySets AS\n(\n    SELECT\n          R.ApiPublisher\n        , R.ApiGroup\n        , ES.value('@Name','varchar(255)') AS ApiEntitySetName\n        , RIGHT\n          (\n              ES.value('@EntityType','varchar(500)'),\n              CHARINDEX\n              (\n                  '.',\n                  REVERSE(ES.value('@EntityType','varchar(500)'))\n              ) - 1\n          ) AS EntityName\n    FROM ETL.Bc365ColumnMetadataRaw R\n    CROSS APPLY R.MetadataXML.nodes('//edm:EntitySet') X(ES)\n)\nINSERT INTO ETL.Bc365ColumnMetadata\n(\n    ApiPublisher , \n    ApiGroup , \n    EntityName , \n    ApiEntitySetName , \n    ColumnName , \n    DataType , \n    IsNullable , \n    IsKeyColumn \n)\nSELECT\n      P.ApiPublisher\n    , P.ApiGroup\n    , P.EntityName\n    , S.ApiEntitySetName\n    , P.ColumnName\n    , P.DataType\n    , P.IsNullable\n    , CAST\n      (\n          CASE\n              WHEN K.ColumnName IS NULL THEN 0\n              ELSE 1\n          END\n          AS bit\n      ) AS IsKeyColumn\nFROM EntityProperties P\nLEFT JOIN EntitySets S\n       ON  S.ApiPublisher  = P.ApiPublisher\n       AND S.ApiGroup   = P.ApiGroup\n       AND S.EntityName = P.EntityName\nLEFT JOIN EntityKeys K\n       ON  K.ApiPublisher  = P.ApiPublisher\n       AND K.ApiGroup   = P.ApiGroup\n       AND K.EntityName = P.EntityName\n       AND K.ColumnName = P.ColumnName\nORDER BY P.ApiGroup, S.ApiEntitySetName, P.ColumnName;",
+              "type": "Expression"
+            },
+            "queryTimeout": "02:00:00",
+            "partitionOption": "None"
+          },
+          "firstRowOnly": false,
+          "datasetSettings": {
+            "annotations": [],
+            "connectionSettings": {
+              "name": "4d22d9c9_3601_4e62_93a5_fc093584d025",
+              "properties": {
+                "annotations": [],
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId",
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                }
+              }
+            },
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "typeProperties": {}
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "ApiPublisher": {
+        "type": "string",
+        "defaultValue": "CrederaLtd"
+      }
+    },
+    "variables": {
+      "LastRunDate": {
+        "type": "String",
+        "defaultValue": "2025-01-01T00:00:00Z"
+      },
+      "NextPageUrl": {
+        "type": "String"
+      }
+    },
+    "libraryVariables": {
+      "vl_Bc365_Bc365TokenUri": {
+        "type": "String",
+        "variableName": "Bc365TenantId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_SrcBc365_Bc365TenantId": {
+        "type": "String",
+        "variableName": "Bc365TenantId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365ClientId": {
+        "type": "String",
+        "variableName": "Bc365ClientId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365UkEnv": {
+        "type": "String",
+        "variableName": "Bc365UkEnv",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_cnBc365CWebConnectionId": {
+        "type": "String",
+        "variableName": "cnBc365CWebConnectionId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365ProdSec": {
+        "type": "String",
+        "variableName": "Bc365ProdSec",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365UkEnvSandbox": {
+        "type": "String",
+        "variableName": "Bc365UkEnvSandbox",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_FabricObjects_cnFabricDbConnectionId": {
+        "type": "String",
+        "variableName": "cnFabricDbConnectionId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_WorkspaceId": {
+        "type": "String",
+        "variableName": "WorkspaceId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_FabricDbId": {
+        "type": "String",
+        "variableName": "FabricDbId",
+        "libraryName": "vl_FabricObjects"
+      }
+    }
+  }
+}
