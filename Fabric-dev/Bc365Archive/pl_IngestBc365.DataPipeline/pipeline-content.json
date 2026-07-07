@@ -33,8 +33,6 @@
       {
         "name": "Get Companies",
         "type": "WebActivity",
-        "state": "Inactive",
-        "onInactiveMarkAs": "Succeeded",
         "dependsOn": [
           {
             "activity": "Get Bc365 Token",
@@ -60,7 +58,7 @@
             "Accept": "application/json"
           },
           "relativeUrl": {
-            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/v2.0/companies?$filter=id%20ne%2001d3fdd3-071c-ec11-bb76-000d3a245f47%20and%20id%20ne%203a0f6e77-7d28-ec11-8f45-0022481b4f2e%20and%20id%20ne%200193d23c-4103-f011-9346-7c1e5278c255",
+            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox}/api/v2.0/companies?$filter=name eq 'BrightGen' or name eq 'Consolidation' or name eq 'Credera Ltd' or name eq 'Omnicom' or name eq 'The DMW Group Holdings Ltd.' or name eq 'The DMW Group Management Ltd.'",
             "type": "Expression"
           }
         },
@@ -149,7 +147,7 @@
             "Accept": "application/json"
           },
           "relativeUrl": {
-            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/v2.0/$metadata",
+            "value": "/62ddbf61-ad82-4b79-9855-cc2a5fdb684c/Sandbox/api/CrederaLtd/Vendor/v2.0/$metadata",
             "type": "Expression"
           }
         },
@@ -263,7 +261,7 @@
             "Accept": "application/json"
           },
           "relativeUrl": {
-            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/v1.0/",
+            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/v2.0/",
             "type": "Expression"
           }
         },
@@ -312,6 +310,8 @@
       {
         "name": "Test ConnectionId",
         "type": "WebActivity",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
         "dependsOn": [
           {
             "activity": "Get Bc365 Token",
@@ -402,6 +402,11 @@
       "vl_Bc365_Bc365ProdSec": {
         "type": "String",
         "variableName": "Bc365ProdSec",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365UkEnvSandbox": {
+        "type": "String",
+        "variableName": "Bc365UkEnvSandbox",
         "libraryName": "vl_Bc365"
       }
     }
