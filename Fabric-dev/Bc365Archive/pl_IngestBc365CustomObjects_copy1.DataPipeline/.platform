@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "DataPipeline",
+    "displayName": "pl_IngestBc365CustomObjects_copy1"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "859e9907-4bf4-b110-4db7-e91839ba1cb4"
+  }
+}
