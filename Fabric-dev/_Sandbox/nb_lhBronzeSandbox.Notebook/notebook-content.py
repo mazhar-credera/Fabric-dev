@@ -26,7 +26,7 @@
 # MAGIC /*drop table if exists Kantata.ActivityAssignment
 # MAGIC drop table if exists Kantata.ResourcedActivity 
 # MAGIC drop table if exists Kantata.ActivityAssignmentDemand */
-# MAGIC drop table if exists Kantata.Resource
+# MAGIC /*drop table if exists Kantata.Resource*/
 
 
 # METADATA ********************
@@ -34,44 +34,40 @@
 # META {
 # META   "language": "sparksql",
 # META   "language_group": "synapse_pyspark",
-# META   "frozen": false,
-# META   "editable": true
+# META   "frozen": true,
+# META   "editable": false
 # META }
 
 # CELL ********************
 
-parquet_path = "Files/raw/bronze/Kantata/Resource"
+parquet_path = "Files/raw/bronze/BC/Credera%20Ltd"
 
-# First, list the files to confirm what you're deleting
-print("Files to be deleted:")
-notebookutils.fs.ls("Files/raw/bronze/Kantata/Resource")
+# 1. Check if the folder exists before interacting with it
+if notebookutils.fs.exists(parquet_path):
+    print(f"Folder found. Listing files to be deleted in '{parquet_path}':")
+    
+    files = notebookutils.fs.ls(parquet_path)
+    for file in files:
+        print(f" - {file.name}")
+    
+    # 2. Delete the folder and its contents recursively
+    print("\nDeleting folder...")
+    notebookutils.fs.rm(parquet_path, recurse=True)
+    print("Deletion complete!")
+else:
+    print(f"Notice: The path '{parquet_path}' does not exist. Nothing to delete.")
 
-# Delete (choose the appropriate level)
-notebookutils.fs.rm("Files/raw/bronze/Kantata/Resource", recurse=True)
-
-print("Deletion complete!")
-
-# Verify it's gone
-try:
-    notebookutils.fs.ls("Files/raw/bronze/Kantata/Resource")
-except:
-    print("Folder successfully deleted")
+# 3. Final Verification
+if not notebookutils.fs.exists(parquet_path):
+    print("Verification: Folder successfully confirmed as absent.")
+else:
+    print("Alert: Folder deletion failed; the path still exists.")
 
 # METADATA ********************
 
 # META {
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark",
-# META   "frozen": false,
-# META   "editable": true
-# META }
-
-# CELL ********************
-
-
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
+# META   "frozen": true,
+# META   "editable": false
 # META }
