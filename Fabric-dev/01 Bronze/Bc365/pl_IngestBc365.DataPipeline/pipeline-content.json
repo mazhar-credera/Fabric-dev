@@ -92,7 +92,7 @@
           },
           "activities": [
             {
-              "name": "pl_IngestBc365CustomObjects",
+              "name": "pl_IngestBc365_GetCustomApiObjects",
               "type": "InvokePipeline",
               "dependsOn": [],
               "policy": {
@@ -105,18 +105,21 @@
               "typeProperties": {
                 "waitOnCompletion": true,
                 "operationType": "InvokeFabricPipeline",
-                "pipelineId": "18176898-1717-4627-9765-ac5e189eabef",
+                "pipelineId": "67743ace-b31b-4a04-b259-b57584c44f77",
                 "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419",
                 "parameters": {
-                  "ApiEntitySetName": "vendors",
-                  "ApiGroup": "Vendor",
-                  "ApiPublisher": "CrederaLtd",
-                  "CompanyId": "3abc695f-7d28-ec11-8f45-0022481b4f2e",
-                  "CompanyName": "Credera Ltd",
-                  "lastModifiedDateTime": "2020-01-01T00:00:00Z",
-                  "DeltaLakeSourceFolder": "raw/bronze/BC/{CompanyName}/{ApiEntitySetName}",
-                  "_crda_SourceExecutionId": -1073,
-                  "BcEnvironment": "Sandbox"
+                  "CompanyName": {
+                    "value": "@item().CompanyName",
+                    "type": "Expression"
+                  },
+                  "ProcessPath": {
+                    "value": "@pipeline().PipelineName",
+                    "type": "Expression"
+                  },
+                  "CompanyId": {
+                    "value": "@item().CompanyId",
+                    "type": "Expression"
+                  }
                 }
               },
               "externalReferences": {
@@ -170,24 +173,6 @@
         }
       }
     ],
-    "parameters": {
-      "ObjectApiName": {
-        "type": "string",
-        "defaultValue": "Chart_of_Accounts"
-      },
-      "ObjectApiName2": {
-        "type": "string",
-        "defaultValue": "accounts"
-      },
-      "CompanyNameHtml": {
-        "type": "string",
-        "defaultValue": "Credera%20Ltd"
-      },
-      "CompanyName": {
-        "type": "string",
-        "defaultValue": "Credera Ltd"
-      }
-    },
     "variables": {
       "LastRunDate": {
         "type": "String",
