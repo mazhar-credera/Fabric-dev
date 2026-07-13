@@ -103,7 +103,7 @@
                     },
                     "UpdatedWatermark": {
                       "value": {
-                        "value": "@{activity('nb_BronzeKantataDeltaAppend').output.result.exitValue}",
+                        "value": "@formatDateTime(activity('nb_BronzeKantataDeltaAppend').output.result.exitValue, 'yyyy-MM-dd HH:mm:ss')",
                         "type": "Expression"
                       },
                       "type": "String"

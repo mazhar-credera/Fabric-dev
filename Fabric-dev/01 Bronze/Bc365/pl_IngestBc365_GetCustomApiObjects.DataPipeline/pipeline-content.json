@@ -2,59 +2,59 @@
   "properties": {
     "activities": [
       {
-        "name": "ForEachApiEndPoint",
         "type": "ForEach",
-        "dependsOn": [
-          {
-            "activity": "Get ApiEndPoints",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
-          }
-        ],
         "typeProperties": {
+          "batchCount": 15,
           "items": {
             "value": "@activity('Get ApiEndPoints').output.value",
             "type": "Expression"
           },
           "activities": [
             {
-              "name": "pl_IngestBc365CustomObjects",
               "type": "InvokePipeline",
-              "state": "Inactive",
-              "onInactiveMarkAs": "Succeeded",
-              "dependsOn": [],
+              "typeProperties": {
+                "parameters": {
+                  "CompanyId": {
+                    "value": "@pipeline().parameters.CompanyId",
+                    "type": "Expression"
+                  },
+                  "CompanyName": {
+                    "value": "@item().CompanyName",
+                    "type": "Expression"
+                  },
+                  "StagingProjection": {
+                    "value": "@variables('StagingProjection')",
+                    "type": "Expression"
+                  },
+                  "ParentPipelineName": {
+                    "value": "@pipeline().parameters.ParentPipeline",
+                    "type": "Expression"
+                  },
+                  "CleansedCompanyName": {
+                    "value": "@item().CleanedCompanyName",
+                    "type": "Expression"
+                  },
+                  "oauthToken": {
+                    "value": "@pipeline().parameters.oauthToken",
+                    "type": "Expression"
+                  }
+                },
+                "waitOnCompletion": true,
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "pipelineId": "7641f09a-a8ae-b22b-4bf4-2beeafe441c1",
+                "operationType": "InvokeFabricPipeline"
+              },
+              "externalReferences": {
+                "connection": "1a2c4c71-4ef2-4838-bd3a-2f14c381d214"
+              },
               "policy": {
                 "timeout": "0.1:00:00",
                 "retry": 0,
                 "retryIntervalInSeconds": 30,
-                "secureOutput": false,
-                "secureInput": false
+                "secureInput": true,
+                "secureOutput": false
               },
-              "typeProperties": {
-                "waitOnCompletion": true,
-                "operationType": "InvokeFabricPipeline",
-                "pipelineId": "18176898-1717-4627-9765-ac5e189eabef",
-                "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419",
-                "parameters": {
-                  "ApiEntitySetName": "vendors",
-                  "ApiGroup": "Vendor",
-                  "ApiPublisher": "CrederaLtd",
-                  "CompanyId": "3abc695f-7d28-ec11-8f45-0022481b4f2e",
-                  "CompanyName": "Credera Ltd",
-                  "lastModifiedDateTime": "2020-01-01T00:00:00Z",
-                  "DeltaLakeSourceFolder": "raw/bronze/BC/{CompanyName}/{ApiEntitySetName}",
-                  "_crda_SourceExecutionId": -1073,
-                  "BcEnvironment": "Sandbox"
-                }
-              },
-              "externalReferences": {
-                "connection": "1a2c4c71-4ef2-4838-bd3a-2f14c381d214"
-              }
-            },
-            {
-              "name": "Get MetaData",
-              "type": "Lookup",
+              "name": "pl_IngestBc365Objects",
               "dependsOn": [
                 {
                   "activity": "Set StagingProjection",
@@ -62,77 +62,38 @@
                     "Succeeded"
                   ]
                 }
-              ],
-              "policy": {
-                "timeout": "0.00:10:00",
-                "retry": 0,
-                "retryIntervalInSeconds": 30,
-                "secureOutput": false,
-                "secureInput": false
-              },
-              "typeProperties": {
-                "source": {
-                  "type": "FabricSqlDatabaseSource",
-                  "sqlReaderQuery": {
-                    "value": "SELECT\t* \nFROM\tETL.FN_GetProcessMetadata('@{variables('StagingProjection')}', '@{pipeline().parameters.ProcessPath}')\n",
-                    "type": "Expression"
-                  },
-                  "queryTimeout": "02:00:00",
-                  "partitionOption": "None"
-                },
-                "firstRowOnly": true,
-                "datasetSettings": {
-                  "annotations": [],
-                  "connectionSettings": {
-                    "name": "4d22d9c9_3601_4e62_93a5_fc093584d025",
-                    "properties": {
-                      "annotations": [],
-                      "type": "FabricSqlDatabase",
-                      "typeProperties": {
-                        "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId",
-                        "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId"
-                      },
-                      "externalReferences": {
-                        "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
-                      }
-                    }
-                  },
-                  "type": "FabricSqlDatabaseTable",
-                  "schema": [],
-                  "typeProperties": {}
-                }
-              }
+              ]
             },
             {
-              "name": "Set StagingProjection",
               "type": "SetVariable",
-              "dependsOn": [],
-              "policy": {
-                "secureOutput": false,
-                "secureInput": false
-              },
               "typeProperties": {
                 "variableName": "StagingProjection",
                 "value": {
                   "value": "@concat(\n\t'BC_',\n\titem().CleanedCompanyName,\n\t'_',\n\titem().ApiEntitySetName\n)",
                   "type": "Expression"
                 }
-              }
+              },
+              "policy": {
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "Set StagingProjection",
+              "dependsOn": []
             }
           ]
-        }
+        },
+        "name": "ForEachApiEndPoint",
+        "dependsOn": [
+          {
+            "activity": "Get ApiEndPoints",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
       },
       {
-        "name": "Get ApiEndPoints",
         "type": "Lookup",
-        "dependsOn": [],
-        "policy": {
-          "timeout": "0.00:10:00",
-          "retry": 0,
-          "retryIntervalInSeconds": 30,
-          "secureOutput": false,
-          "secureInput": false
-        },
         "typeProperties": {
           "source": {
             "type": "FabricSqlDatabaseSource",
@@ -140,31 +101,39 @@
               "value": "SELECT\tB.CompanyName, B.ApiGroup, B.ApiEntitySetName ,\n\t\tCleanedCompanyName = REPLACE(REPLACE(B.CompanyName, ' ', ''), '.', '')\nFROM\tETL.BcSourceConfig B\nWHERE\tB.IsEnabled = 1 \nAND \tB.CompanyName = '@{pipeline().parameters.CompanyName}'",
               "type": "Expression"
             },
-            "queryTimeout": "02:00:00",
-            "partitionOption": "None"
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
           },
-          "firstRowOnly": false,
           "datasetSettings": {
-            "annotations": [],
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
             "connectionSettings": {
               "name": "4d22d9c9_3601_4e62_93a5_fc093584d025",
               "properties": {
-                "annotations": [],
                 "type": "FabricSqlDatabase",
                 "typeProperties": {
-                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId",
-                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId"
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
                 },
                 "externalReferences": {
                   "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
-                }
+                },
+                "annotations": []
               }
             },
-            "type": "FabricSqlDatabaseTable",
-            "schema": [],
-            "typeProperties": {}
-          }
-        }
+            "annotations": []
+          },
+          "firstRowOnly": false
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Get ApiEndPoints",
+        "dependsOn": []
       }
     ],
     "parameters": {
@@ -172,7 +141,7 @@
         "type": "string",
         "defaultValue": "Credera Ltd"
       },
-      "ProcessPath": {
+      "ParentPipeline": {
         "type": "string",
         "defaultValue": "pl_IngestBc365"
       },
@@ -182,11 +151,6 @@
       },
       "oauthToken": {
         "type": "string"
-      }
-    },
-    "variables": {
-      "StagingProjection": {
-        "type": "String"
       }
     },
     "libraryVariables": {
@@ -239,6 +203,11 @@
         "type": "String",
         "variableName": "FabricDbId",
         "libraryName": "vl_FabricObjects"
+      }
+    },
+    "variables": {
+      "StagingProjection": {
+        "type": "String"
       }
     }
   }
