@@ -4,6 +4,8 @@
       {
         "name": "Get Bc365 Token",
         "type": "WebActivity",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
         "dependsOn": [],
         "policy": {
           "timeout": "0.00:10:00",
@@ -33,6 +35,8 @@
       {
         "name": "Get Companies",
         "type": "WebActivity",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
         "dependsOn": [
           {
             "activity": "Get Bc365 Token",
@@ -344,6 +348,22 @@
         "externalReferences": {
           "connection": "@pipeline().libraryVariables.vl_Bc365_cnBc365CWebConnectionId"
         }
+      },
+      {
+        "name": "Set FormatDateTime",
+        "type": "SetVariable",
+        "dependsOn": [],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "variableName": "FormatDateTime",
+          "value": {
+            "value": "@formatDateTime('2026-27-04 09:10:59', 'yyyy-MM-ddTHH:mm:ssZ')",
+            "type": "Expression"
+          }
+        }
       }
     ],
     "parameters": {
@@ -365,9 +385,8 @@
       }
     },
     "variables": {
-      "LastRunDate": {
-        "type": "String",
-        "defaultValue": "2025-01-01T00:00:00Z"
+      "FormatDateTime": {
+        "type": "String"
       },
       "NextPageUrl": {
         "type": "String"
