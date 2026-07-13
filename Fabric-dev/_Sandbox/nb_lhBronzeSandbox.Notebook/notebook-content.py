@@ -40,7 +40,7 @@
 
 # CELL ********************
 
-parquet_path = "Files/raw/bronze/BC/Credera%20Ltd"
+parquet_path = "Files/raw/bronze/BC"
 
 # 1. Check if the folder exists before interacting with it
 if notebookutils.fs.exists(parquet_path):
@@ -68,6 +68,6 @@ else:
 # META {
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark",
-# META   "frozen": true,
-# META   "editable": false
+# META   "frozen": false,
+# META   "editable": true
 # META }
