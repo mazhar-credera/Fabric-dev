@@ -258,7 +258,7 @@
         "typeProperties": {
           "method": "GET",
           "relativeUrl": {
-            "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiPublisher,'/',\n    variables('ApiGroup'),'/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiVersion,'/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    variables('ApiEndPoint'),\n    '?$filter=',\n    activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName,' gt ',\n    formatDateTime(activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue, 'yyyy-MM-ddTHH:mm:ssZ'),\n    ' and ',\n    activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName, ' le ', formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ'),\n    '&$select=id&$top=1'\n)",
+            "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiPublisher,'/',\n    variables('ApiGroup'),'/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiVersion,'/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    variables('ApiEndPoint'),\n    variables('ApiFilter'),\n    '&$select=id&$top=1'\n)",
             "type": "Expression"
           },
           "headers": {
@@ -312,6 +312,12 @@
           },
           {
             "activity": "SetFileName",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "Set ApiFilter",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -375,13 +381,20 @@
                         "value": "@pipeline().parameters.CompanyName",
                         "type": "Expression"
                       }
+                    },
+                    {
+                      "name": "BcCompanyId",
+                      "value": {
+                        "value": "@pipeline().parameters.CompanyId",
+                        "type": "Expression"
+                      }
                     }
                   ],
                   "datasetSettings": {
                     "type": "RestResource",
                     "typeProperties": {
                       "relativeUrl": {
-                        "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiPublisher,'/',\n    variables('ApiGroup'),'/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiVersion,'/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    variables('ApiEndPoint'),\n    '?$filter=',\n    activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName,' gt ',\n    formatDateTime(activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue, 'yyyy-MM-ddTHH:mm:ssZ'),\n    ' and ',\n    activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName, ' le ', formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')\n)",
+                        "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiPublisher,'/',\n    variables('ApiGroup'),'/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiVersion,'/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    variables('ApiEndPoint'),\n    variables('ApiFilter')\n)",
                         "type": "Expression"
                       }
                     },
@@ -399,7 +412,8 @@
                     "enableVertiParquet": true
                   },
                   "storeSettings": {
-                    "type": "AzureBlobStorageWriteSettings"
+                    "type": "AzureBlobStorageWriteSettings",
+                    "copyBehavior": "FlattenHierarchy"
                   },
                   "datasetSettings": {
                     "type": "Parquet",
@@ -617,13 +631,6 @@
                       }
                     },
                     {
-                      "name": "_crda_SourceFileName",
-                      "value": {
-                        "value": "@string(concat(variables('FolderPath'),'/',variables('FileName')))",
-                        "type": "Expression"
-                      }
-                    },
-                    {
                       "name": "_crda_SourceExecutionId",
                       "value": {
                         "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
@@ -636,13 +643,20 @@
                         "value": "@pipeline().parameters.CompanyName",
                         "type": "Expression"
                       }
+                    },
+                    {
+                      "name": "BcCompanyId",
+                      "value": {
+                        "value": "@pipeline().parameters.CompanyId",
+                        "type": "Expression"
+                      }
                     }
                   ],
                   "datasetSettings": {
                     "type": "RestResource",
                     "typeProperties": {
                       "relativeUrl": {
-                        "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiPublisher,'/',\n    variables('ApiGroup'),'/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiVersion,'/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    variables('ApiEndPoint'),\n    '?$select=id'\n)",
+                        "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiPublisher,'/',\n    variables('ApiGroup'),'/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiVersion,'/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    variables('ApiEndPoint'),\n    '?$select=id,lastModifiedDateTime'\n)",
                         "type": "Expression"
                       }
                     },
@@ -760,6 +774,57 @@
                   "activity": "IngestBc365IdsOnly",
                   "dependencyConditions": [
                     "Failed"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Lookup",
+              "typeProperties": {
+                "source": {
+                  "type": "FabricSqlDatabaseSource",
+                  "sqlReaderQuery": {
+                    "value": "UPDATE  Meta.Process \nSET     IngestFirstTime = 1 \nwhere StagingProjection = '@{pipeline().parameters.StagingProjection}';\n\nSELECT Retval = 1;",
+                    "type": "Expression"
+                  },
+                  "partitionOption": "None",
+                  "queryTimeout": "02:00:00"
+                },
+                "datasetSettings": {
+                  "type": "FabricSqlDatabaseTable",
+                  "schema": [],
+                  "connectionSettings": {
+                    "name": "ed40e362_520d_4b3c_9f01_2801a19ed10b",
+                    "properties": {
+                      "type": "FabricSqlDatabase",
+                      "typeProperties": {
+                        "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                        "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                      },
+                      "externalReferences": {
+                        "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                      },
+                      "annotations": []
+                    }
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.00:10:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "Upd  IngestFirstTime",
+              "state": "Inactive",
+              "onInactiveMarkAs": "Succeeded",
+              "dependsOn": [
+                {
+                  "activity": "pl_BronzeKantataDeltaAppend",
+                  "dependencyConditions": [
+                    "Succeeded"
                   ]
                 }
               ]
@@ -921,6 +986,29 @@
             ]
           }
         ]
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "ApiFilter",
+          "value": {
+            "value": "@concat(\n    '?$filter=',\n    if(\n        equals(activity('FN_GetProcessMetadata').output.firstRow.IngestFirstTime, 0),\n        concat(\n            activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName, \n            ' gt ', \n            formatDateTime(activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue, 'yyyy-MM-ddTHH:mm:ssZ'),\n            ' and ',\n            activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName, \n            ' le ', \n            formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')\n        ),\n        concat(\n            activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName, \n            ' le ', \n            formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')\n        )\n    )\n)",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Set ApiFilter",
+        "dependsOn": [
+          {
+            "activity": "usp_InsertExecutionLog",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
       }
     ],
     "parameters": {
@@ -998,6 +1086,9 @@
         "type": "Integer"
       },
       "PipelineParams": {
+        "type": "String"
+      },
+      "ApiFilter": {
         "type": "String"
       }
     }

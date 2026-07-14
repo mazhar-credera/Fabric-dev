@@ -28,7 +28,14 @@
           "secureOutput": false
         },
         "name": "Get Bc365 Token",
-        "dependsOn": []
+        "dependsOn": [
+          {
+            "activity": "usp_InsertExecutionLog",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
       },
       {
         "type": "WebActivity",
@@ -88,7 +95,6 @@
                     "value": "@item().name",
                     "type": "Expression"
                   },
-                  "ProcessPath": null,
                   "CompanyId": {
                     "value": "@item().id",
                     "type": "Expression"
@@ -172,7 +178,174 @@
           "secureOutput": false
         },
         "name": "Get CompanyNames",
+        "dependsOn": [
+          {
+            "activity": "usp_InsertExecutionLog",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderStoredProcedureName": "[ETL].[usp_InsertExecutionLog]",
+            "storedProcedureParameters": {
+              "BatchId": {
+                "value": "1",
+                "type": "Int32"
+              },
+              "ProcessId": {
+                "value": {
+                  "value": "-1",
+                  "type": "Expression"
+                },
+                "type": "Int32"
+              },
+              "ExternalHandlerId": {
+                "value": {
+                  "value": "@pipeline().Pipeline",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "PipelineName": {
+                "value": {
+                  "value": "@pipeline().PipelineName",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "WorkspaceId": {
+                "value": {
+                  "value": "@pipeline().DataFactory",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "LogDescription": {
+                "value": {
+                  "value": "Getting BC365 Companies",
+                  "type": "Expression"
+                },
+                "type": "String"
+              }
+            },
+            "partitionOption": "None",
+            "queryTimeout": "00:10:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "7bedc8e0_64f8_48fc_8965_0d8cecf1a00d",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": true
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "usp_InsertExecutionLog",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
         "dependsOn": []
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderStoredProcedureName": "[ETL].[usp_UpdateExecutionLog_Success]",
+            "storedProcedureParameters": {
+              "ExecutionId": {
+                "value": {
+                  "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                  "type": "Expression"
+                },
+                "type": "Int32"
+              },
+              "Status": {
+                "value": {
+                  "value": "Done",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "InitialWatermark": {
+                "type": "String"
+              },
+              "UpdatedWatermark": {
+                "type": "String"
+              },
+              "ProcessId": {
+                "value": {
+                  "value": "-1",
+                  "type": "Expression"
+                },
+                "type": "Int32"
+              }
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "7c196295_15f2_4441_8dd9_e8fdf0a411b7",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "usp_UpdateExecutionLog_Success",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "ForEachCompany",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
       }
     ],
     "libraryVariables": {

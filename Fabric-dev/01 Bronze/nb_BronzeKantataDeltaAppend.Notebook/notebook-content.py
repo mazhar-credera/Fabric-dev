@@ -104,6 +104,7 @@ def add_missing_columns(df_new, existing_schema):
 # MAIN
 # ============================================================
 final_output = None
+df_clean = None  # <-- Initialize this so we can track if cleaning occurred
 try:
     print("=" * 60)
     print("Schema-drift-safe delta append")
@@ -111,9 +112,63 @@ try:
     print(f"  Target : {pTargetSchema}.{pTargetTable}")
     print("=" * 60)
 
+    # --- Remove the "value." prefix from the column names
+        # --- Issue only with BC parquet files 
+    if pTargetSchema == 'BC':
+        # 1. Force the parameter to be a clean string to prevent any 'set' errors
+        folder_str = str(pDeltaLakeFolder).strip()
+
+        # 2. Dynamically construct your paths
+        original_path = f"Files/{folder_str}/{pParquetFile}"
+
+        # This strips 'raw/bronze/' from the start and prepends 'tmp/'
+        clean_suffix = folder_str.removeprefix("raw/bronze/").lstrip("/")
+        temp_folder_path = f"Files/tmp/{clean_suffix}"
+        temp_file_path = f"{temp_folder_path}/{pParquetFile}_temp"
+
+        # 3. Read the Parquet file
+        df = spark.read.parquet(original_path)
+
+        # 4. Apply the column rename map
+        rename_map = {
+            col_name: col_name[6:] 
+            for col_name in df.columns 
+            if col_name.startswith("value.")
+        }
+        df_clean = df.withColumnsRenamed(rename_map)
+
+        # 5. Write the clean data to the temp folder
+        df_clean.coalesce(1).write.mode("overwrite").parquet(temp_file_path)
+
+        # 6. Swap the files using Fabric Utilities (mssparkutils)
+        temp_files = mssparkutils.fs.ls(temp_file_path)
+        actual_parquet_file = [f.path for f in temp_files if f.name.endswith(".parquet")][0]
+
+        # Safely delete the uncleaned original file
+        mssparkutils.fs.rm(original_path, recurse=True)
+
+        # Move the clean file to replace the original file
+        mssparkutils.fs.mv(actual_parquet_file, original_path)
+
+        # Clean up the temporary directory
+        mssparkutils.fs.rm(temp_folder_path, recurse=True)
+        
+        # --- FIX 1: Clear Spark's schema cache for files
+        spark.catalog.clearCache()
+
+        print(f"Successfully cleaned and replaced: {original_path}")
+
+
     # --- 1. Read incoming parquet ---
     print("\n[1/5] Reading source parquet...")
-    df_new = spark.read.parquet(PARQUET_PATH)
+    
+    # --- FIX 2: Use the already-loaded clean DataFrame to bypass disk read and schema caching bugs
+    if df_clean is not None:
+        print("  Re-using already cleaned DataFrame from memory...")
+        df_new = df_clean
+    else:
+        df_new = spark.read.parquet(PARQUET_PATH)
+        
     print(f"  Rows   : {df_new.count()}")
     print(f"  Columns: {df_new.schema.fieldNames()}")
 

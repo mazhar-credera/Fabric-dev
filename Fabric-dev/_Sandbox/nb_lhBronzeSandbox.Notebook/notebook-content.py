@@ -27,6 +27,18 @@
 # MAGIC drop table if exists Kantata.ResourcedActivity 
 # MAGIC drop table if exists Kantata.ActivityAssignmentDemand */
 # MAGIC /*drop table if exists Kantata.Resource*/
+# MAGIC /*
+# MAGIC SELECT CONCAT(
+# MAGIC     'DROP TABLE IF EXISTS ',
+# MAGIC     table_schema,
+# MAGIC     '.',
+# MAGIC     table_name,
+# MAGIC     ';'
+# MAGIC ) AS drop_statement
+# MAGIC FROM information_schema.tables
+# MAGIC WHERE table_schema = 'BC';
+# MAGIC */
+# MAGIC 
 
 
 # METADATA ********************
@@ -40,7 +52,27 @@
 
 # CELL ********************
 
-parquet_path = "Files/raw/bronze/BC"
+#spark.catalog.listTables("BC")
+
+tables = spark.sql("SHOW TABLES IN BC").collect()
+
+for row in tables:
+    table_name = row.tableName
+    sql = f"DROP TABLE IF EXISTS BC.{table_name}"
+    print(sql)
+    spark.sql(sql)
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+parquet_path = "Files/raw/bronze/Bc"
 
 # 1. Check if the folder exists before interacting with it
 if notebookutils.fs.exists(parquet_path):
