@@ -11,6 +11,7 @@ AS
 RETURN 
     SELECT PM.ProcessId,
            P.StagingProjection,
+           IngestFirstTime  = COALESCE(P.IngestFirstTime, 0) ,
            PM.ProcessPath,
            P.IngestPattern,
            P.PrimaryKeys,
@@ -69,42 +70,160 @@ RETURN
                  WHERE  P.StagingProjection LIKE '%' + PC.ApiEntitySetName
                         AND PC.ColumnName NOT IN ('id', 'lastModifiedDateTime')) ,
 
-           KantataHashColumnsJson   = 
-                (SELECT JSON_QUERY('[' 
-                            + STRING_AGG('"' 
-                                + REPLACE(CAST (ColumnName AS NVARCHAR (MAX)), '"', '\"') 
-                                    + '"', ',') + ']') 
+            KantataHashColumnsJson = 
+                (SELECT JSON_QUERY(
+                            CONCAT(
+                                '[', 
+                                STRING_AGG(
+                                    CAST(
+                                        CONCAT('"', REPLACE(PC.ColumnName, '"', '\"'), '"') 
+                                        AS NVARCHAR(MAX)
+                                    ), 
+                                    ','
+                                ), 
+                                ']'
+                            )
+                        ) 
                  FROM   ETL.KantataColumnMetaData AS PC
                  WHERE  PC.StagingProjection = P.StagingProjection
-                        AND PC.ColumnName NOT IN ('Id', 'LastModifiedDate', 'SystemModstamp', 'LastModifiedDateTime', 'Last_Modified_DateTime', 
-                                                    'CreatedById', 'LastModifiedById', 'Last_Modified_Date__c', 'LastActivityDate', 'LastViewedDate', 'LengthOfService__c'  /*Kimble_Resource*/
-                                                            , '_crda_SourceFileName', '_crda_SourceExecutionId', '_crda_SourceExecutionDateTime')
-                                                 ) ,
-           
-           Bc365HashColumnsJson = 
-                (SELECT JSON_QUERY('[' 
-                        + STRING_AGG('"' 
-                            + REPLACE(CAST (ColumnName AS NVARCHAR (MAX)), '"', '\"') 
-                                + '"', ',') + ']')
-                 FROM   ETL.Bc365ColumnMetadata AS PC
-                 WHERE  P.StagingProjection LIKE '%' + PC.ApiEntitySetName
-                        AND PC.ColumnName NOT IN ('id', 'lastModifiedDateTime')) ,
+                        AND PC.ColumnName NOT IN (
+                            'Id', 'LastModifiedDate', 'SystemModstamp', 'LastModifiedDateTime', 'Last_Modified_DateTime', 
+                            'CreatedById', 'LastModifiedById', 'Last_Modified_Date__c', 'LastActivityDate', 'LastViewedDate', 'LengthOfService__c' /*Kimble_Resource*/
+                            ,'_crda_SourceFileName', '_crda_SourceExecutionId', '_crda_SourceExecutionDateTime'
+                        )
+                ),           
 
-           KantataColumnMapping = 
+            Bc365HashColumnsJson = 
+                (SELECT JSON_QUERY(
+                            CONCAT(
+                                '[', 
+                                STRING_AGG(
+                                    CAST(
+                                        CONCAT('"', REPLACE(PC.ColumnName, '"', '\"'), '"') 
+                                        AS NVARCHAR(MAX)
+                                    ), 
+                                    ','
+                                ), 
+                                ']'
+                            )
+                        )
+                    FROM   ETL.Bc365ColumnMetadata AS PC
+                    WHERE  P.StagingProjection LIKE CONCAT('%', PC.ApiEntitySetName)
+                        AND PC.ColumnName NOT IN ('id', 'lastModifiedDateTime')
+                ),
+
+            KantataColumnMapping = 
                     CASE SourceFormat WHEN 'Parquet' THEN '{"type": "TabularTranslator","mappings": [' 
                             + (SELECT STRING_AGG(
                                         CAST ('{"source":{"name": "' + PC.ColumnName + '"}' 
                                             + ',"sink": {"name": "' + PC.[ColumnName] + '"}}' AS NVARCHAR (MAX)), ',')
-                               FROM   ETL.KantataColumnMetaData AS PC
-                               WHERE  PC.StagingProjection = P.StagingProjection) 
+                                FROM   ETL.KantataColumnMetaData AS PC
+                                WHERE  PC.StagingProjection = P.StagingProjection) 
                             + ',{"source":{"name":"_crda_SourceFileName"},"sink":{"name": "_crda_SourceFileName"}}' 
                             + ',{"source":{"name":"_crda_SourceExecutionId"},"sink":{"name": "_crda_SourceExecutionId"}}' 
                             + ',{"source":{"name":"_crda_BronzeLoadDateTime"},"sink":{"name": "_crda_BronzeLoadDateTime"}}' 
                             + ']' 
                             + ',"typeConversion": true,"typeConversionSettings":{"allowDataTruncation": false,"treatBooleanAsNumber": false}}' 
-                   END,
+                    END,
 
-/*         Bc365IngestColumnMapping   = 
+
+            Bc365IngestColumnMapping = 
+                CASE SourceFormat WHEN 'Parquet' THEN 
+                    CONCAT(
+                        '{"type": "TabularTranslator","mappings": [',
+                        ( 
+                            SELECT STRING_AGG(
+                                        CAST(
+                                            CONCAT(
+                                                --'{"source":{"path": "$[', CHAR(39),PC.ColumnName, CHAR(39),']"}',
+                                                '{"source":{"path": "' + PC.ColumnName + '"}',
+                                                ',"sink": {"name": "', PC.[ColumnName], '", "type": "',
+                                                CASE
+                                                    WHEN PC.DataType LIKE 'Microsoft.NAV.%' THEN 'String'
+                                                    --WHEN PC.DataType = 'Decimal' THEN 'Double'
+                                                    ELSE PC.DataType
+                                                END, 
+                                                '"}}'
+                                            ) 
+                                        AS NVARCHAR(MAX)), 
+                                        ','
+                                    )
+                            FROM ETL.Bc365ColumnMetadata AS PC
+                            WHERE P.TableNameRoot = PC.ApiEntitySetName
+                        ),
+                        ']',
+                        ',"typeConversion": true,"typeConversionSettings":{"allowDataTruncation": false,"treatBooleanAsNumber": false}',
+                        CASE 
+                            WHEN NULLIF(p.SourceCollectionReference, '') IS NULL THEN ''
+                            ELSE CONCAT(
+                                ',"collectionReference":"$[''', 
+                                REPLACE(REPLACE(p.SourceCollectionReference, '.', ''']['''), '[0]'']', '''][0]'), 
+                                ''']"'
+                            )
+                        END,
+                        ',"mapComplexValuesToString":true}'
+                    )
+                END,
+
+/*
+            Bc365IngestColumnMapping = 
+                CASE SourceFormat WHEN 'Parquet' THEN 
+                    CONCAT(
+                        '{"typeConversion": true,"typeConversionSettings":{"allowDataTruncation": false,"treatBooleanAsNumber": false}',
+                        CASE 
+                            WHEN NULLIF(p.SourceCollectionReference, '') IS NULL THEN ''
+                            ELSE CONCAT(
+                                ',"collectionReference":"$[''', 
+                                REPLACE(REPLACE(p.SourceCollectionReference, '.', ''']['''), '[0]'']', '''][0]'), 
+                                ''']"'
+                            )
+                        END,
+                        ',"mapComplexValuesToString":true}'
+                    )
+                END,
+*/
+            Bc365Ingest_IdsOnly_ColumnMapping = 
+                CASE SourceFormat WHEN 'Parquet' THEN 
+                    CONCAT(
+                        '{"type": "TabularTranslator"',
+                        CASE 
+                            WHEN NULLIF(p.SourceCollectionReference, '') IS NULL THEN ''
+                            ELSE CONCAT(
+                                ',"collectionReference":"$[''', 
+                                REPLACE(REPLACE(p.SourceCollectionReference, '.', ''']['''), '[0]'']', '''][0]'), 
+                                ''']"'
+                            )
+                        END,
+                        ',"mapComplexValuesToString":true',
+                        ',"mappings": [',
+                        ( 
+                            SELECT STRING_AGG(
+                                       CAST(
+                                           CONCAT(
+                                               --'{"source":{"path": "$[', CHAR(39),PC.ColumnName, CHAR(39),']"}',
+                                                '{"source":{"path": "[' + PC.ColumnName + ']"}',
+                                               ',"sink": {"name": "', PC.[ColumnName], '", "type": "',
+                                               CASE
+                                                   WHEN PC.DataType LIKE 'Microsoft.NAV.%' THEN 'String'
+                                                   --WHEN PC.DataType = 'Decimal' THEN 'Double'
+                                                   ELSE PC.DataType
+                                               END, 
+                                               '"}}'
+                                           ) 
+                                       AS NVARCHAR(MAX)), 
+                                       ','
+                                   )
+                            FROM    ETL.Bc365ColumnMetadata AS PC
+                            WHERE   P.TableNameRoot = PC.ApiEntitySetName
+                            AND     PC.ColumnName = 'id'
+                        ),
+                        ']',
+                        ',"typeConversion": true,"typeConversionSettings":{"allowDataTruncation": false,"treatBooleanAsNumber": false}}'
+                    )
+                 END,
+
+/*
+           Bc365IngestColumnMapping   = 
                     CASE SourceFormat WHEN 'Parquet' THEN '{"type": "TabularTranslator","mappings": [' 
                             + ( SELECT STRING_AGG(CAST ('{"source":{"name": "' + PC.ColumnName + '"}' + ',"sink": {"name": "' + PC.[ColumnName] + '"}}' AS NVARCHAR (MAX)), ',')
                                 FROM   ETL.Bc365ColumnMetadata AS PC
@@ -138,83 +257,7 @@ RETURN
                             + REPLACE(REPLACE(NULLIF (p.SourceCollectionReference, ''), '.', ''']['''), '[0]'']', '''][0]') + ''']"', '') 
                             + ',"mapComplexValuesToString":true}' 
                      END,
-*/
-            Bc365IngestColumnMapping = 
-                CASE SourceFormat WHEN 'Parquet' THEN 
-                    CONCAT(
-                        '{"type": "TabularTranslator","mappings": [',
-                        ( 
-                            SELECT STRING_AGG(
-                                       CAST(
-                                           CONCAT(
-                                               '{"source":{"path": "', PC.ColumnName, '"}',
-                                               ',"sink": {"name": "', PC.[ColumnName], '", "type": "',
-                                               CASE
-                                                   WHEN PC.DataType LIKE 'Microsoft.NAV.%' THEN 'String'
-                                                   --WHEN PC.DataType = 'Decimal' THEN 'Double'
-                                                   ELSE PC.DataType
-                                               END, 
-                                               '"}}'
-                                           ) 
-                                       AS NVARCHAR(MAX)), 
-                                       ','
-                                   )
-                            FROM ETL.Bc365ColumnMetadata AS PC
-                            WHERE P.TableNameRoot = PC.ApiEntitySetName
-                        ),
-                        ']',
-                        ',"typeConversion": true,"typeConversionSettings":{"allowDataTruncation": false,"treatBooleanAsNumber": false}',
-                        CASE 
-                            WHEN NULLIF(p.SourceCollectionReference, '') IS NULL THEN ''
-                            ELSE CONCAT(
-                                ',"collectionReference":"$[''', 
-                                REPLACE(REPLACE(p.SourceCollectionReference, '.', ''']['''), '[0]'']', '''][0]'), 
-                                ''']"'
-                            )
-                        END,
-                        ',"mapComplexValuesToString":true}'
-                    )
-                END,
 
-            Bc365Ingest_IdsOnly_ColumnMapping = 
-                CASE SourceFormat WHEN 'Parquet' THEN 
-                    CONCAT(
-                        '{"type": "TabularTranslator","mappings": [',
-                        ( 
-                            SELECT STRING_AGG(
-                                       CAST(
-                                           CONCAT(
-                                               '{"source":{"path": "', PC.ColumnName, '"}',
-                                               ',"sink": {"name": "', PC.[ColumnName], '", "type": "',
-                                               CASE
-                                                   WHEN PC.DataType LIKE 'Microsoft.NAV.%' THEN 'String'
-                                                   --WHEN PC.DataType = 'Decimal' THEN 'Double'
-                                                   ELSE PC.DataType
-                                               END, 
-                                               '"}}'
-                                           ) 
-                                       AS NVARCHAR(MAX)), 
-                                       ','
-                                   )
-                            FROM    ETL.Bc365ColumnMetadata AS PC
-                            WHERE   P.TableNameRoot = PC.ApiEntitySetName
-                            AND     PC.ColumnName = 'id'
-                        ),
-                        ']',
-                        ',"typeConversion": true,"typeConversionSettings":{"allowDataTruncation": false,"treatBooleanAsNumber": false}',
-                        CASE 
-                            WHEN NULLIF(p.SourceCollectionReference, '') IS NULL THEN ''
-                            ELSE CONCAT(
-                                ',"collectionReference":"$[''', 
-                                REPLACE(REPLACE(p.SourceCollectionReference, '.', ''']['''), '[0]'']', '''][0]'), 
-                                ''']"'
-                            )
-                        END,
-                        ',"mapComplexValuesToString":true}'
-                    )
-                 END,
-
-/*
             Bc365IngestColumnMapping = 
                 CASE SourceFormat WHEN 'Parquet' THEN 
                     CONCAT(
@@ -347,6 +390,7 @@ RETURN
     UNION ALL
     SELECT PM.ProcessId,
            PM.StagingProjection,
+           NULL AS IngestFirstTime , 
            PM.ProcessPath,
            NULL AS IngestPattern,
            NULL AS PrimaryKeys,
