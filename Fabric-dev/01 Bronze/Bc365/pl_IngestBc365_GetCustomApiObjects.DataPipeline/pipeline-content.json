@@ -23,7 +23,7 @@
                     "type": "Expression"
                   },
                   "StagingProjection": {
-                    "value": "@variables('StagingProjection')",
+                    "value": "@concat(\n\t'BC_',\n\titem().CleanedCompanyName,\n\t'_',\n\titem().ApiEntitySetName\n)",
                     "type": "Expression"
                   },
                   "ParentPipelineName": {
@@ -55,29 +55,6 @@
                 "secureOutput": false
               },
               "name": "pl_IngestBc365Objects",
-              "dependsOn": [
-                {
-                  "activity": "Set StagingProjection",
-                  "dependencyConditions": [
-                    "Succeeded"
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "SetVariable",
-              "typeProperties": {
-                "variableName": "StagingProjection",
-                "value": {
-                  "value": "@concat(\n\t'BC_',\n\titem().CleanedCompanyName,\n\t'_',\n\titem().ApiEntitySetName\n)",
-                  "type": "Expression"
-                }
-              },
-              "policy": {
-                "secureInput": false,
-                "secureOutput": false
-              },
-              "name": "Set StagingProjection",
               "dependsOn": []
             }
           ]
@@ -86,6 +63,12 @@
         "dependsOn": [
           {
             "activity": "Get ApiEndPoints",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "Set PipelineParams",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -133,6 +116,23 @@
           "secureOutput": false
         },
         "name": "Get ApiEndPoints",
+        "dependsOn": []
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "PipelineParams",
+          "value": {
+            "value": "CompanyId: @{pipeline().parameters.CompanyId}\nCompanyName: @{pipeline().parameters.CompanyName}\nParentPipeline: @{pipeline().parameters.ParentPipeline}",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Set PipelineParams",
+        "description": "Incoming prams are secured so will not show in the monitor, so this variable is for debugging",
         "dependsOn": []
       }
     ],
@@ -207,6 +207,9 @@
     },
     "variables": {
       "StagingProjection": {
+        "type": "String"
+      },
+      "PipelineParams": {
         "type": "String"
       }
     }

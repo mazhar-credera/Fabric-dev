@@ -147,8 +147,88 @@ RETURN
                             SELECT STRING_AGG(
                                        CAST(
                                            CONCAT(
-                                               '{"source":{"name": "', PC.ColumnName, '"}',
+                                               '{"source":{"path": "', PC.ColumnName, '"}',
                                                ',"sink": {"name": "', PC.[ColumnName], '", "type": "',
+                                               CASE
+                                                   WHEN PC.DataType LIKE 'Microsoft.NAV.%' THEN 'String'
+                                                   --WHEN PC.DataType = 'Decimal' THEN 'Double'
+                                                   ELSE PC.DataType
+                                               END, 
+                                               '"}}'
+                                           ) 
+                                       AS NVARCHAR(MAX)), 
+                                       ','
+                                   )
+                            FROM ETL.Bc365ColumnMetadata AS PC
+                            WHERE P.TableNameRoot = PC.ApiEntitySetName
+                        ),
+                        ']',
+                        ',"typeConversion": true,"typeConversionSettings":{"allowDataTruncation": false,"treatBooleanAsNumber": false}',
+                        CASE 
+                            WHEN NULLIF(p.SourceCollectionReference, '') IS NULL THEN ''
+                            ELSE CONCAT(
+                                ',"collectionReference":"$[''', 
+                                REPLACE(REPLACE(p.SourceCollectionReference, '.', ''']['''), '[0]'']', '''][0]'), 
+                                ''']"'
+                            )
+                        END,
+                        ',"mapComplexValuesToString":true}'
+                    )
+                END,
+
+            Bc365Ingest_IdsOnly_ColumnMapping = 
+                CASE SourceFormat WHEN 'Parquet' THEN 
+                    CONCAT(
+                        '{"type": "TabularTranslator","mappings": [',
+                        ( 
+                            SELECT STRING_AGG(
+                                       CAST(
+                                           CONCAT(
+                                               '{"source":{"path": "', PC.ColumnName, '"}',
+                                               ',"sink": {"name": "', PC.[ColumnName], '", "type": "',
+                                               CASE
+                                                   WHEN PC.DataType LIKE 'Microsoft.NAV.%' THEN 'String'
+                                                   --WHEN PC.DataType = 'Decimal' THEN 'Double'
+                                                   ELSE PC.DataType
+                                               END, 
+                                               '"}}'
+                                           ) 
+                                       AS NVARCHAR(MAX)), 
+                                       ','
+                                   )
+                            FROM    ETL.Bc365ColumnMetadata AS PC
+                            WHERE   P.TableNameRoot = PC.ApiEntitySetName
+                            AND     PC.ColumnName = 'id'
+                        ),
+                        ']',
+                        ',"typeConversion": true,"typeConversionSettings":{"allowDataTruncation": false,"treatBooleanAsNumber": false}',
+                        CASE 
+                            WHEN NULLIF(p.SourceCollectionReference, '') IS NULL THEN ''
+                            ELSE CONCAT(
+                                ',"collectionReference":"$[''', 
+                                REPLACE(REPLACE(p.SourceCollectionReference, '.', ''']['''), '[0]'']', '''][0]'), 
+                                ''']"'
+                            )
+                        END,
+                        ',"mapComplexValuesToString":true}'
+                    )
+                 END,
+
+/*
+            Bc365IngestColumnMapping = 
+                CASE SourceFormat WHEN 'Parquet' THEN 
+                    CONCAT(
+                        '{"type": "TabularTranslator","mappings": [',
+                        ( 
+                            SELECT STRING_AGG(
+                                       CAST(
+                                           CONCAT(
+                                               '{"source":{"path": "', 
+                                               -- Inject '$' for root properties if no collectionReference exists
+                                               CASE WHEN NULLIF(P.SourceCollectionReference, '') IS NULL THEN '$' ELSE '' END,
+                                               '[''', PC.ColumnName, ''']"},"sink": {"name": "', 
+                                               PC.ColumnName, 
+                                               '", "type": "',
                                                CASE
                                                    WHEN PC.DataType LIKE 'Microsoft.NAV.%' THEN 'String'
                                                    WHEN PC.DataType = 'Decimal' THEN 'Double'
@@ -164,6 +244,39 @@ RETURN
                         ),
                         ']',
                         CASE 
+                            WHEN NULLIF(P.SourceCollectionReference, '') IS NULL THEN ''
+                            ELSE CONCAT(
+                                ',"collectionReference":"$[''', 
+                                REPLACE(REPLACE(P.SourceCollectionReference, '.', ''']['''), '[0]'']', '''][0]'), 
+                                ''']"'
+                            )
+                        END,
+                        ',"mapComplexValuesToString":true}'
+                    )
+                END,
+*/
+/*
+        Bc365IngestColumnMapping = 
+            CASE SourceFormat WHEN 'Parquet' THEN 
+                CONCAT(
+                    '{"type": "TabularTranslator"',
+                    CASE 
+                        WHEN NULLIF(p.SourceCollectionReference, '') IS NULL THEN ''
+                        ELSE CONCAT(
+                            ',"collectionReference":"$[''', 
+                            REPLACE(REPLACE(p.SourceCollectionReference, '.', ''']['''), '[0]'']', '''][0]'), 
+                            ''']"'
+                        )
+                    END,
+                    ',"mapComplexValuesToString":true}'
+                )
+            END,
+
+            Bc365IngestColumnMapping = 
+                CASE SourceFormat WHEN 'Parquet' THEN 
+                    CONCAT(
+                        '{"type": "TabularTranslator","mappings": []', -- Kept an empty array to prevent KeyNotFoundException
+                        CASE 
                             WHEN NULLIF(p.SourceCollectionReference, '') IS NULL THEN ''
                             ELSE CONCAT(
                                 ',"collectionReference":"$[''', 
@@ -174,12 +287,12 @@ RETURN
                         ',"mapComplexValuesToString":true}'
                     )
                 END,
-
-
-           Bc365Ingest_IdsOnly_ColumnMapping   = 
+*/
+/*
+            Bc365Ingest_IdsOnly_ColumnMapping   = 
                     CASE SourceFormat WHEN 'Parquet' THEN '{"type": "TabularTranslator","mappings": [' 
                             + ( SELECT STRING_AGG(
-                                            CAST (  '{"source":{"name": "' + PC.ColumnName + '"}' 
+                                            CAST (  '{"source":{"path": "[' + PC.ColumnName + ']"}' 
                                                     + ',"sink": {"name": "' + PC.[ColumnName] + '", "type": "' 
                                                         + CASE
                                                             WHEN PC.DataType LIKE 'Microsoft.NAV.%' THEN 'String'
@@ -189,13 +302,14 @@ RETURN
                                             AS NVARCHAR (MAX)), ','
                                        )
                                 FROM    ETL.Bc365ColumnMetadata AS PC
-                                WHERE P.TableNameRoot = PC.ApiEntitySetName
+                                WHERE   P.TableNameRoot = PC.ApiEntitySetName
                                 AND     PC.ColumnName = 'id') 
                             + ']' 
                             + COALESCE (',"collectionReference":"$[''' 
                             + REPLACE(REPLACE(NULLIF (p.SourceCollectionReference, ''), '.', ''']['''), '[0]'']', '''][0]') + ''']"', '') 
                             + ',"mapComplexValuesToString":true}' 
                      END,
+*/
 
            SharePointDomain = IIF (P.TableSchema = 'SharePoint', SP.SharePointDomain, NULL),
            SharePointSite   = IIF (P.TableSchema = 'SharePoint', SP.SharePointSite, NULL),

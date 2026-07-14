@@ -75,7 +75,6 @@
       {
         "type": "ForEach",
         "typeProperties": {
-          "batchCount": 5,
           "items": {
             "value": "@activity('Get Companies').output.value",
             "type": "Expression"
@@ -139,7 +138,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT\n\tCompanyName = STRING_AGG(CONCAT('name eq ', CHAR(39), CompanyName, CHAR(39)),\n\t\t\t\t\t' or ')\nFROM\tETL.BcCompanyName \nWHERE\tIsEnabled = 1\nAND \tCompanyName = 'Credera Ltd';\n",
+              "value": "SELECT\n\tCompanyName = STRING_AGG(CONCAT('name eq ', CHAR(39), CompanyName, CHAR(39)),\n\t\t\t\t\t' or ')\nFROM\tETL.BcCompanyName \nWHERE\tIsEnabled = 1\nAND \tCompanyName = 'Credera Ltd'; /*Test*/\n",
               "type": "Expression"
             },
             "partitionOption": "None",

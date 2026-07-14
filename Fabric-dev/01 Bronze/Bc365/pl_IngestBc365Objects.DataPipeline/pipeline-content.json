@@ -175,6 +175,12 @@
             "dependencyConditions": [
               "Succeeded"
             ]
+          },
+          {
+            "activity": "Set PipelineParams",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
           }
         ]
       },
@@ -839,6 +845,82 @@
             ]
           }
         ]
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "PipelineParams",
+          "value": {
+            "value": "StagingProjection: @{pipeline().parameters.StagingProjection}\nCleansedCompanyName: @{pipeline().parameters.CleansedCompanyName}\nCompanyId: @{pipeline().parameters.CompanyId}\nCompanyName: @{pipeline().parameters.CompanyName}\nParentPipelineName: @{pipeline().parameters.ParentPipelineName}\n",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Set PipelineParams",
+        "description": "Incoming prams are secured so will not show in the monitor, so this variable is for debugging",
+        "dependsOn": []
+      },
+      {
+        "type": "SqlServerStoredProcedure",
+        "typeProperties": {
+          "storedProcedureName": "[ETL].[usp_UpdateExecutionLog_Failure]",
+          "storedProcedureParameters": {
+            "ExecutionId": {
+              "value": {
+                "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                "type": "Expression"
+              },
+              "type": "Int32"
+            },
+            "ProcessId": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                "type": "Expression"
+              },
+              "type": "Int32"
+            },
+            "ErrorMessage": {
+              "value": {
+                "value": "IngestBc365/wbCountRows: @{activity('wbCountRows').error.message}",
+                "type": "Expression"
+              },
+              "type": "String"
+            }
+          }
+        },
+        "connectionSettings": {
+          "name": "2d5c3f41_5a07_43da_8a59_566db48bcbf0",
+          "properties": {
+            "type": "FabricSqlDatabase",
+            "typeProperties": {
+              "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+              "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+            },
+            "externalReferences": {
+              "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "wbCountRows Failure",
+        "dependsOn": [
+          {
+            "activity": "wbCountRows",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ]
       }
     ],
     "parameters": {
@@ -863,8 +945,7 @@
         "defaultValue": "CrederaLtd"
       },
       "oauthToken": {
-        "type": "string",
-        "defaultValue": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImFGa21LVkZjLTRXVjZzWENCdk5aa1hJNTA1WSIsImtpZCI6ImFGa21LVkZjLTRXVjZzWENCdk5aa1hJNTA1WSJ9.eyJhdWQiOiJodHRwczovL2FwaS5idXNpbmVzc2NlbnRyYWwuZHluYW1pY3MuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvNjJkZGJmNjEtYWQ4Mi00Yjc5LTk4NTUtY2MyYTVmZGI2ODRjLyIsImlhdCI6MTc4MzY3OTUyNywibmJmIjoxNzgzNjc5NTI3LCJleHAiOjE3ODM2ODM0MjcsImFpbyI6ImsyRmdZT0FLMnA2c3lXYzZWZVhTMzN6TEF5V2l4ZGticHMxN2RubW01TUZMcVI5aVd5UUEiLCJhcHBpZCI6IjVlNWI2MGNhLThkZDQtNGJlZS05M2E3LTQ2YTVkMzhiMTM2NSIsImFwcGlkYWNyIjoiMSIsImlkcCI6Imh0dHBzOi8vc3RzLndpbmRvd3MubmV0LzYyZGRiZjYxLWFkODItNGI3OS05ODU1LWNjMmE1ZmRiNjg0Yy8iLCJpZHR5cCI6ImFwcCIsIm9pZCI6ImNjNmExZmQ1LWUxYWItNDhhZS1hMGNiLTk0MzA5NDNhYWM5YiIsInJoIjoiMS5BWUVBWWJfZFlvS3RlVXVZVmN3cVg5dG9URDN2Ylpsc3MxTkJoZ2VtX1R3QnVKOEFBQUNCQUEuIiwicm9sZXMiOlsiQXV0b21hdGlvbi5SZWFkV3JpdGUuQWxsIiwiQVBJLlJlYWRXcml0ZS5BbGwiXSwic3ViIjoiY2M2YTFmZDUtZTFhYi00OGFlLWEwY2ItOTQzMDk0M2FhYzliIiwidGlkIjoiNjJkZGJmNjEtYWQ4Mi00Yjc5LTk4NTUtY2MyYTVmZGI2ODRjIiwidXRpIjoidG5yRDRvNlJoVU9PYkZMeG9ENnVBQSIsInZlciI6IjEuMCIsInhtc19hY3RfZmN0IjoiOSAzIiwieG1zX2Z0ZCI6Illpb2JyZHFPNjZyZ0h5QndLazl2NWY1M1JmSzE2b2tzR1pTQ01Xc0VPWlVCYzNkbFpHVnVZeTFrYzIxeiIsInhtc19pZHJlbCI6IjcgOCIsInhtc19yZCI6IjAuQVVvQXRmOEtCZ2dDRWdLQkFSSVVDQWtTRUlWemwtbWZBcFpMb2ttWDV3STRFNWtTRkFnSUVoQTk3MjJaYkxOVFFZWUhwdjA4QWJpZkVoUUlDeElRcEJHVmZrOGQ5TXZsN0dYc3NsMmgxZyIsInhtc19zdWJfZmN0IjoiMyA5In0.D3RHF3YjGLaQePuW-NUWGy-j1QFjDQM0m1jrtPU_MwkAs5wrKpZwnfysD9IjqzVMoITLL3dV5pXXuyDFfA1NO6dbcvkb_lbQuERBMnY1ZHkC5yEM99kmFBEkTYEk3SiCbIJvdxVIiV_dCdcn9VwsLo7U_0ZaLGE65tc8IgksxnX9LLVhbeTh-OWd1dWEgut0JzVE8WB6XQKT_kv0b4lsCP5uzO2pMd0ZD5j97UyHOTVw_fywFhZ_gIX3q0GZvdJN_mHFI3cDitpz2wH_atwaIvB6gUlWp_7Uf9p0iCVzISg_UweRWybaVlQO96tyxCUFwuBIfdcoyoTsKjCYc-oYNg"
+        "type": "string"
       }
     },
     "libraryVariables": {
@@ -915,6 +996,9 @@
       },
       "CountRows": {
         "type": "Integer"
+      },
+      "PipelineParams": {
+        "type": "String"
       }
     }
   }
