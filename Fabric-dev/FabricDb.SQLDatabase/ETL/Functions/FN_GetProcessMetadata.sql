@@ -2,7 +2,7 @@ CREATE
     FUNCTION ETL.FN_GetProcessMetadata
 (@stagingProjection VARCHAR (512), @ProcessPath VARCHAR (512) /*
 SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Resource', 'pl_IngestSalesforce')
-SELECT * FROM ETL.FN_GetProcessMetadata('BC_BrightGen_bankAccountLedgerEntries', 'pl_IngestBc365')
+SELECT * FROM ETL.FN_GetProcessMetadata('BC_BrightGen_custLedgerEntries', 'pl_IngestBc365')
 SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Resource', 'pl_LoadSilverFromBronze')
 SELECT * FROM ETL.FN_GetProcessMetadata('Internal_DimDate', '[Internal].[usp_Update_DimDate]')
 */)
@@ -152,7 +152,7 @@ RETURN
                             WHERE P.TableNameRoot = PC.ApiEntitySetName
                         ),
                         ']',
-                        ',"typeConversion": true,"typeConversionSettings":{"allowDataTruncation": false,"treatBooleanAsNumber": false}',
+                        ',"typeConversion": false,"typeConversionSettings":{"allowDataTruncation": false,"treatBooleanAsNumber": false}',
                         CASE 
                             WHEN NULLIF(p.SourceCollectionReference, '') IS NULL THEN ''
                             ELSE CONCAT(
@@ -161,7 +161,7 @@ RETURN
                                 ''']"'
                             )
                         END,
-                        ',"mapComplexValuesToString":true}'
+                        ',"mapComplexValuesToString":false}'
                     )
                 END,
 
@@ -194,14 +194,14 @@ RETURN
                                 ''']"'
                             )
                         END,
-                        ',"mapComplexValuesToString":true',
+                        ',"mapComplexValuesToString":false',
                         ',"mappings": [',
                         ( 
                             SELECT STRING_AGG(
                                        CAST(
                                            CONCAT(
                                                --'{"source":{"path": "$[', CHAR(39),PC.ColumnName, CHAR(39),']"}',
-                                                '{"source":{"path": "[' + PC.ColumnName + ']"}',
+                                                '{"source":{"path": "' + PC.ColumnName + '"}',
                                                ',"sink": {"name": "', PC.[ColumnName], '", "type": "',
                                                CASE
                                                    WHEN PC.DataType LIKE 'Microsoft.NAV.%' THEN 'String'
@@ -215,10 +215,10 @@ RETURN
                                    )
                             FROM    ETL.Bc365ColumnMetadata AS PC
                             WHERE   P.TableNameRoot = PC.ApiEntitySetName
-                            AND     PC.ColumnName = 'id'
+                            AND     PC.ColumnName IN ('id', 'lastModifiedDateTime') 
                         ),
                         ']',
-                        ',"typeConversion": true,"typeConversionSettings":{"allowDataTruncation": false,"treatBooleanAsNumber": false}}'
+                        ',"typeConversion": false,"typeConversionSettings":{"allowDataTruncation": false,"treatBooleanAsNumber": false}}'
                     )
                  END,
 
@@ -346,7 +346,7 @@ RETURN
                                        )
                                 FROM    ETL.Bc365ColumnMetadata AS PC
                                 WHERE   P.TableNameRoot = PC.ApiEntitySetName
-                                AND     PC.ColumnName = 'id') 
+                            AND     PC.ColumnName IN ('id', 'lastModifiedDateTime') 
                             + ']' 
                             + COALESCE (',"collectionReference":"$[''' 
                             + REPLACE(REPLACE(NULLIF (p.SourceCollectionReference, ''), '.', ''']['''), '[0]'']', '''][0]') + ''']"', '') 
