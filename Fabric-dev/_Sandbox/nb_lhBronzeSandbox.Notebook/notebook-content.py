@@ -67,7 +67,9 @@ for row in tables:
 
 # META {
 # META   "language": "python",
-# META   "language_group": "synapse_pyspark"
+# META   "language_group": "synapse_pyspark",
+# META   "frozen": true,
+# META   "editable": false
 # META }
 
 # CELL ********************
@@ -100,6 +102,55 @@ else:
 # META {
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark",
-# META   "frozen": false,
-# META   "editable": true
+# META   "frozen": true,
+# META   "editable": false
+# META }
+
+# CELL ********************
+
+# Load the table and filter out the old NULL rows
+TARGET_PATH = "Tables/BC/bankAccounts"
+
+df_check = spark.read.format("delta").load(TARGET_PATH)
+df_check.filter(df_check.id.isNotNull()).show(10)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark",
+# META   "frozen": true,
+# META   "editable": false
+# META }
+
+# CELL ********************
+
+# This will show you the clean rows that were successfully appended!
+display(spark.sql("SELECT * FROM BC.salesInvoiceHeaders WHERE id IS NOT NULL LIMIT 10"))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark",
+# META   "frozen": true,
+# META   "editable": false
+# META }
+
+# CELL ********************
+
+df = spark.read.parquet(
+    "Files/raw/bronze/BC/custLedgerEntries"
+)
+df.printSchema()
+
+display(
+    mssparkutils.fs.ls("Files/raw/bronze/BC/custLedgerEntries")
+)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
 # META }

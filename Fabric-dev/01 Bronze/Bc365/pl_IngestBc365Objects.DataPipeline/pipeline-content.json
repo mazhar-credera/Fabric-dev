@@ -487,7 +487,7 @@
                   },
                   "ErrorMessage": {
                     "value": {
-                      "value": "IngestBc365: @{activity('IngestBc365CustomObject').error.message}",
+                      "value": "IngestBc365/IngestBc365CustomObject: @{activity('IngestBc365CustomObject').error.message}",
                       "type": "Expression"
                     },
                     "type": "String"
@@ -740,7 +740,7 @@
                   },
                   "ErrorMessage": {
                     "value": {
-                      "value": "IngestBc365: @{activity('IngestBc365IdsOnly').error.message}",
+                      "value": "IngestBc365/IngestBc365IdsOnly: @{activity('IngestBc365IdsOnly').error.message}",
                       "type": "Expression"
                     },
                     "type": "String"
@@ -818,8 +818,6 @@
                 "secureOutput": false
               },
               "name": "Upd  IngestFirstTime",
-              "state": "Inactive",
-              "onInactiveMarkAs": "Succeeded",
               "dependsOn": [
                 {
                   "activity": "pl_BronzeKantataDeltaAppend",
