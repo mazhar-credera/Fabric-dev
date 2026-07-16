@@ -357,7 +357,7 @@
                     {
                       "name": "_crda_BronzeLoadDateTime",
                       "value": {
-                        "value": "@utcNow()",
+                        "value": "@formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')",
                         "type": "Expression"
                       }
                     },
@@ -571,8 +571,8 @@
                   }
                 },
                 "waitOnCompletion": true,
-                "workspaceId": "00000000-0000-0000-0000-000000000000",
-                "pipelineId": "b3a1730e-0839-be6d-4a88-a2d84da15bc5",
+                "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419",
+                "pipelineId": "4da15bc5-a2d8-4a88-be6d-0839b3a1730e",
                 "operationType": "InvokeFabricPipeline"
               },
               "externalReferences": {
@@ -586,6 +586,8 @@
                 "secureOutput": false
               },
               "name": "pl_BronzeKantataDeltaAppend",
+              "state": "Inactive",
+              "onInactiveMarkAs": "Succeeded",
               "dependsOn": [
                 {
                   "activity": "IngestBc365CustomObject",
@@ -626,7 +628,7 @@
                     {
                       "name": "_crda_BronzeLoadDateTime",
                       "value": {
-                        "value": "@utcNow()",
+                        "value": "@formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')",
                         "type": "Expression"
                       }
                     },
@@ -818,6 +820,8 @@
                 "secureOutput": false
               },
               "name": "Upd  IngestFirstTime",
+              "state": "Inactive",
+              "onInactiveMarkAs": "Succeeded",
               "dependsOn": [
                 {
                   "activity": "pl_BronzeKantataDeltaAppend",
@@ -826,6 +830,227 @@
                   ]
                 }
               ]
+            },
+            {
+              "type": "Copy",
+              "typeProperties": {
+                "source": {
+                  "type": "RestSource",
+                  "requestMethod": "GET",
+                  "additionalHeaders": {
+                    "Authorization": {
+                      "value": "Bearer @{pipeline().parameters.oauthToken}",
+                      "type": "Expression"
+                    },
+                    "Prefer": {
+                      "value": "odata.maxpagesize=500",
+                      "type": "Expression"
+                    }
+                  },
+                  "paginationRules": {
+                    "AbsoluteUrl": "$['@odata.nextLink']"
+                  },
+                  "httpRequestTimeout": "00:01:40",
+                  "requestInterval": "00.00:00:00.010",
+                  "additionalColumns": [
+                    {
+                      "name": "_crda_BronzeLoadDateTime",
+                      "value": {
+                        "value": "@utcNow()",
+                        "type": "Expression"
+                      }
+                    },
+                    {
+                      "name": "_crda_SourceExecutionId",
+                      "value": {
+                        "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                        "type": "Expression"
+                      }
+                    },
+                    {
+                      "name": "BcCompanyName",
+                      "value": {
+                        "value": "@pipeline().parameters.CompanyName",
+                        "type": "Expression"
+                      }
+                    },
+                    {
+                      "name": "BcCompanyId",
+                      "value": {
+                        "value": "@pipeline().parameters.CompanyId",
+                        "type": "Expression"
+                      }
+                    }
+                  ],
+                  "datasetSettings": {
+                    "type": "RestResource",
+                    "typeProperties": {
+                      "relativeUrl": {
+                        "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiPublisher,'/',\n    variables('ApiGroup'),'/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiVersion,'/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    variables('ApiEndPoint'),\n    '?$select=id,lastModifiedDateTime'\n)",
+                        "type": "Expression"
+                      }
+                    },
+                    "schema": [],
+                    "externalReferences": {
+                      "connection": "36368ccb-9289-4dcb-90d6-73f2a278976a"
+                    },
+                    "annotations": []
+                  }
+                },
+                "sink": {
+                  "type": "LakehouseTableSink",
+                  "tableActionOption": "OverwriteSchema",
+                  "applyVOrder": false,
+                  "partitionOption": "None",
+                  "datasetSettings": {
+                    "type": "LakehouseTable",
+                    "typeProperties": {
+                      "schema": {
+                        "value": "@activity('FN_GetProcessMetadata').output.firstRow.TableSchema",
+                        "type": "Expression"
+                      },
+                      "table": {
+                        "value": "@activity('FN_GetProcessMetadata').output.firstRow.BronzeBc365IdTableName",
+                        "type": "Expression"
+                      }
+                    },
+                    "schema": [],
+                    "connectionSettings": {
+                      "name": "lh_BronzeLayer",
+                      "properties": {
+                        "type": "Lakehouse",
+                        "typeProperties": {
+                          "artifactId": "c6eb7c0f-f0ac-4fc4-87c1-13b09e22841c",
+                          "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419",
+                          "rootFolder": "Tables"
+                        },
+                        "externalReferences": {
+                          "connection": "c443cedf-3748-491a-9b83-f9c686e9a243"
+                        },
+                        "annotations": []
+                      }
+                    },
+                    "annotations": []
+                  }
+                },
+                "translator": {
+                  "type": "TabularTranslator",
+                  "mappings": [
+                    {
+                      "source": {
+                        "name": "@odata.context",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "@@odata.context",
+                        "physicalType": "string"
+                      }
+                    },
+                    {
+                      "source": {
+                        "name": "value.@odata.etag",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "value.@odata.etag",
+                        "physicalType": "string"
+                      }
+                    },
+                    {
+                      "source": {
+                        "name": "value.id",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "value.id",
+                        "physicalType": "string"
+                      }
+                    },
+                    {
+                      "source": {
+                        "name": "value.lastModifiedDateTime",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "value.lastModifiedDateTime",
+                        "physicalType": "string"
+                      }
+                    },
+                    {
+                      "source": {
+                        "name": "@odata.nextLink",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "@@odata.nextLink",
+                        "physicalType": "string"
+                      }
+                    },
+                    {
+                      "source": {
+                        "name": "_crda_BronzeLoadDateTime",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "_crda_BronzeLoadDateTime",
+                        "physicalType": "string"
+                      }
+                    },
+                    {
+                      "source": {
+                        "name": "_crda_SourceExecutionId",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "_crda_SourceExecutionId",
+                        "physicalType": "string"
+                      }
+                    },
+                    {
+                      "source": {
+                        "name": "BcCompanyName",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "BcCompanyName",
+                        "physicalType": "string"
+                      }
+                    },
+                    {
+                      "source": {
+                        "name": "BcCompanyId",
+                        "type": "String"
+                      },
+                      "sink": {
+                        "name": "BcCompanyId",
+                        "physicalType": "string"
+                      }
+                    }
+                  ],
+                  "typeConversion": true,
+                  "typeConversionSettings": {
+                    "allowDataTruncation": false,
+                    "treatBooleanAsNumber": false
+                  },
+                  "columnFlattenSettings": {
+                    "treatArrayAsString": false,
+                    "treatStructAsString": false,
+                    "flattenColumnDelimiter": "."
+                  }
+                },
+                "enableStaging": false
+              },
+              "policy": {
+                "timeout": "0.01:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": true,
+                "secureOutput": false
+              },
+              "name": "IngestBc365IdsOnly_copy1",
+              "state": "Inactive",
+              "onInactiveMarkAs": "Succeeded",
+              "dependsOn": []
             }
           ],
           "ifFalseActivities": [
@@ -1020,7 +1245,7 @@
       },
       "StagingProjection": {
         "type": "string",
-        "defaultValue": "BC_CrederaLtd_bankAccounts"
+        "defaultValue": "BC_CrederaLtd_custLedgerEntries"
       },
       "ParentPipelineName": {
         "type": "string",
@@ -1031,7 +1256,8 @@
         "defaultValue": "CrederaLtd"
       },
       "oauthToken": {
-        "type": "string"
+        "type": "string",
+        "defaultValue": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImFGa21LVkZjLTRXVjZzWENCdk5aa1hJNTA1WSIsImtpZCI6ImFGa21LVkZjLTRXVjZzWENCdk5aa1hJNTA1WSJ9.eyJhdWQiOiJodHRwczovL2FwaS5idXNpbmVzc2NlbnRyYWwuZHluYW1pY3MuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvNjJkZGJmNjEtYWQ4Mi00Yjc5LTk4NTUtY2MyYTVmZGI2ODRjLyIsImlhdCI6MTc4NDIwMjc4OCwibmJmIjoxNzg0MjAyNzg4LCJleHAiOjE3ODQyMDY2ODgsImFpbyI6IkFTUUEyLzhjQUFBQVVDR0pZYlR0U3RxNVdyZDNuV09rUDlzTGJGbmlWcVhMNFRhNDdIUE1HWE09IiwiYXBwaWQiOiJmYTNjN2M1OS0wMTdiLTRjMTEtYTkwZi1iZjE4NzNkZmZlYmQiLCJhcHBpZGFjciI6IjEiLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC82MmRkYmY2MS1hZDgyLTRiNzktOTg1NS1jYzJhNWZkYjY4NGMvIiwiaWR0eXAiOiJhcHAiLCJvaWQiOiIyOGE1OTNhNi02MDYxLTRjZDgtYTYyNS1jOTY4NTlkODc4NjgiLCJyaCI6IjEuQVlFQVliX2RZb0t0ZVV1WVZjd3FYOXRvVEQzdmJabHNzMU5CaGdlbV9Ud0J1SjhBQUFDQkFBLiIsInJvbGVzIjpbIkF1dG9tYXRpb24uUmVhZFdyaXRlLkFsbCIsImFwcF9hY2Nlc3MiLCJBUEkuUmVhZFdyaXRlLkFsbCJdLCJzdWIiOiIyOGE1OTNhNi02MDYxLTRjZDgtYTYyNS1jOTY4NTlkODc4NjgiLCJ0aWQiOiI2MmRkYmY2MS1hZDgyLTRiNzktOTg1NS1jYzJhNWZkYjY4NGMiLCJ1dGkiOiItaUN1aGJ5N0pVS2NkYTNIZjFFVUFBIiwidmVyIjoiMS4wIiwieG1zX2FjdF9mY3QiOiIzIDkiLCJ4bXNfZnRkIjoiSzNqUnI3UnlGTnUzekV2UUJjRnI4SG1MTkctV0lEVkE0cHh4cEFJTlR4MEJaWFZ5YjNCbGQyVnpkQzFrYzIxeiIsInhtc19pZHJlbCI6IjggNyIsInhtc19yZCI6IjAuQVVvQXRmOEtCZ2dDRWdLQkFSSVVDQWtTRUlWemwtbWZBcFpMb2ttWDV3STRFNWtTRkFnSUVoQTk3MjJaYkxOVFFZWUhwdjA4QWJpZkVoUUlDeElRN3ZEYnVPVmN5VUlOTHhEcU9Lby1SdyIsInhtc19zdWJfZmN0IjoiMyA5In0.eyniiI_LBdpaCVBybTvzur-E9YDQ9bxCmhTPmWUI2H7b12xF9jLqVTV1ftEHox56QgfNbvVjHGeqouCWVnLU0zkcRyfDEWNLyHstk0f2dBTwSXldbVFHP84iOfDnxF50gCwd_6r-XgimNgJ0D72LjPy6acpFuZE7bmPxCUpfmGOAEIrak54k4JA7EtX9srKMCwGk4ytlAMTixcQwfvgqvjDwaZn7heAbU0Stg15ptKmb8zTVIscAUch_85H-yOlmehEm4mQd-Y-TevkCjULWpeMMCp4x7V9jzPe1FVPuTVElcgKML5GDzqopEYN5uuvqs3CcIb7i0onT56OFgT-8yw"
       }
     },
     "libraryVariables": {
