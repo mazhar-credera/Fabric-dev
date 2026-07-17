@@ -13,7 +13,6 @@ CREATE TABLE [Meta].[Process] (
     [BronzeDataLoadWatermarkColumn]   VARCHAR (255)  NULL,
     [PrimaryKeys]                     VARCHAR (255)  NULL,
     [IsActive]                        BIT            CONSTRAINT [df__Meta_Process__IsActive] DEFAULT ((1)) NOT NULL,
-    [IngestFirstTime]                 BIT            NULL,
     CONSTRAINT [PK__Meta_Process] PRIMARY KEY CLUSTERED ([StagingProjection] ASC, [TableSchema] ASC, [TableNameRoot] ASC),
     CONSTRAINT [UQ__Meta_Process_StagingProjection] UNIQUE NONCLUSTERED ([StagingProjection] ASC)
 );

@@ -4,7 +4,7 @@
       {
         "type": "TridentNotebook",
         "typeProperties": {
-          "notebookId": "bf761730-b30f-86ea-4261-7e8ff45bcfa7",
+          "notebookId": "307d0c2a-b3ec-a4ee-41f2-b6e362ba6ee0",
           "workspaceId": "00000000-0000-0000-0000-000000000000",
           "parameters": {
             "pTargetSchema": {
@@ -48,6 +48,34 @@
                 "type": "Expression"
               },
               "type": "string"
+            },
+            "pBcCompanyName": {
+              "value": {
+                "value": "@pipeline().parameters.BcCompanyName",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pBcCompanyId": {
+              "value": {
+                "value": "@pipeline().parameters.BcCompanyId",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pBronzeLoadDateTime": {
+              "value": {
+                "value": "@pipeline().parameters._crda_BronzeLoadDateTime",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pSourceExecutionId": {
+              "value": {
+                "value": "@pipeline().parameters._crda_SourceExecutionId",
+                "type": "Expression"
+              },
+              "type": "string"
             }
           },
           "sessionTag": {
@@ -56,20 +84,20 @@
           }
         },
         "policy": {
-          "timeout": "0.00:30:00",
+          "timeout": "0.02:00:00",
           "retry": 0,
           "retryIntervalInSeconds": 30,
           "secureInput": false,
           "secureOutput": false
         },
-        "name": "nb_BronzeKantataDeltaAppend",
+        "name": "nb_BronzeBcDeltaAppend",
         "dependsOn": []
       },
       {
         "type": "IfCondition",
         "typeProperties": {
           "expression": {
-            "value": "@not(\n    startswith(\n        activity('nb_BronzeKantataDeltaAppend').output.result.exitValue,\n    'FAILURE')\n)\n",
+            "value": "@not(\n    startswith(\n        activity('nb_BronzeBcDeltaAppend').output.result.exitValue,\n    'FAILURE')\n)\n",
             "type": "Expression"
           },
           "ifTrueActivities": [
@@ -103,7 +131,7 @@
                     },
                     "UpdatedWatermark": {
                       "value": {
-                        "value": "@formatDateTime(activity('nb_BronzeKantataDeltaAppend').output.result.exitValue, 'yyyy-MM-dd HH:mm:ss')",
+                        "value": "@formatDateTime(activity('nb_BronzeBcDeltaAppend').output.result.exitValue, 'yyyy-MM-dd HH:mm:ss')",
                         "type": "Expression"
                       },
                       "type": "String"
@@ -148,6 +176,55 @@
               },
               "name": "usp_UpdateExecutionLog_Success",
               "dependsOn": []
+            },
+            {
+              "type": "Lookup",
+              "typeProperties": {
+                "source": {
+                  "type": "FabricSqlDatabaseSource",
+                  "sqlReaderQuery": {
+                    "value": "UPDATE  ETL.ProcessMap \nSET     IngestFirstTime = 1 \nWHERE   StagingProjection = '@{pipeline().parameters.StagingProjection}'\nAND     GroupId = 1\nAND     IngestFirstTime = 0;\n\nSELECT Retval = @@ROWCOUNT, StagingProjection = '@{pipeline().parameters.StagingProjection}';",
+                    "type": "Expression"
+                  },
+                  "partitionOption": "None",
+                  "queryTimeout": "02:00:00"
+                },
+                "datasetSettings": {
+                  "type": "FabricSqlDatabaseTable",
+                  "schema": [],
+                  "connectionSettings": {
+                    "name": "ed40e362_520d_4b3c_9f01_2801a19ed10b",
+                    "properties": {
+                      "type": "FabricSqlDatabase",
+                      "typeProperties": {
+                        "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                        "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                      },
+                      "externalReferences": {
+                        "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                      },
+                      "annotations": []
+                    }
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.00:10:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "Upd  IngestFirstTime",
+              "dependsOn": [
+                {
+                  "activity": "usp_UpdateExecutionLog_Success",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ]
             }
           ],
           "ifFalseActivities": [
@@ -167,7 +244,7 @@
                     },
                     "ErrorMessage": {
                       "value": {
-                        "value": "nb_BronzeKantataDeltaAppend: @{activity('nb_BronzeKantataDeltaAppend').output.result.exitValue}",
+                        "value": "nb_BronzeKantataDeltaAppend: @{activity('nb_BronzeBcDeltaAppend').output.result.exitValue}",
                         "type": "Expression"
                       },
                       "type": "String"
@@ -237,7 +314,7 @@
         "name": "If Success",
         "dependsOn": [
           {
-            "activity": "nb_BronzeKantataDeltaAppend",
+            "activity": "nb_BronzeBcDeltaAppend",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -275,6 +352,18 @@
         "type": "string"
       },
       "pBronzeWatermarkValue": {
+        "type": "string"
+      },
+      "_crda_BronzeLoadDateTime": {
+        "type": "string"
+      },
+      "_crda_SourceExecutionId": {
+        "type": "string"
+      },
+      "BcCompanyName": {
+        "type": "string"
+      },
+      "BcCompanyId": {
         "type": "string"
       }
     },
