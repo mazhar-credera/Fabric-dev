@@ -76,6 +76,20 @@
                 "type": "Expression"
               },
               "type": "string"
+            },
+            "pSourceActiveIdsParquetFile": {
+              "value": {
+                "value": "@pipeline().parameters.pSourceActiveIdsParquetFile",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pKeyColumns": {
+              "value": {
+                "value": "@pipeline().parameters.pKeyColumns",
+                "type": "Expression"
+              },
+              "type": "string"
             }
           },
           "sessionTag": {
@@ -325,7 +339,7 @@
     "parameters": {
       "StagingProjection": {
         "type": "string",
-        "defaultValue": "Kantata_ActivityAssignment"
+        "defaultValue": "BC_BrightGen_custLedgerEntries"
       },
       "ExecutionId": {
         "type": "int"
@@ -364,6 +378,12 @@
         "type": "string"
       },
       "BcCompanyId": {
+        "type": "string"
+      },
+      "pSourceActiveIdsParquetFile": {
+        "type": "string"
+      },
+      "pKeyColumns": {
         "type": "string"
       }
     },

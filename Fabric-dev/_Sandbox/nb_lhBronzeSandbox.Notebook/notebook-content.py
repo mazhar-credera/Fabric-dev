@@ -54,7 +54,8 @@
 
 #spark.catalog.listTables("BC")
 
-tables = spark.sql("SHOW TABLES IN BC").collect()
+#tables = spark.sql("SHOW TABLES IN BC").collect()
+tables = spark.sql("SHOW TABLES IN BC LIKE '*_Id'").collect()
 
 for row in tables:
     table_name = row.tableName
@@ -74,7 +75,7 @@ for row in tables:
 
 # CELL ********************
 
-parquet_path = "Files/raw/bronze/Bc"
+parquet_path = "Files/tmp/Bc"
 
 # 1. Check if the folder exists before interacting with it
 if notebookutils.fs.exists(parquet_path):
