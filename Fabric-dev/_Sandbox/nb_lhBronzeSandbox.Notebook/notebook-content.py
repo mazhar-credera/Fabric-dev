@@ -54,8 +54,8 @@
 
 #spark.catalog.listTables("BC")
 
-#tables = spark.sql("SHOW TABLES IN BC").collect()
-tables = spark.sql("SHOW TABLES IN BC LIKE '*_Id'").collect()
+tables = spark.sql("SHOW TABLES IN BC").collect()
+#tables = spark.sql("SHOW TABLES IN BC LIKE '*_Id'").collect()
 
 for row in tables:
     table_name = row.tableName

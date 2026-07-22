@@ -4,7 +4,8 @@
       {
         "type": "ForEach",
         "typeProperties": {
-          "batchCount": 25,
+          "isSequential": false,
+          "batchCount": 10,
           "items": {
             "value": "@activity('Get ApiEndPoints').output.value",
             "type": "Expression"
