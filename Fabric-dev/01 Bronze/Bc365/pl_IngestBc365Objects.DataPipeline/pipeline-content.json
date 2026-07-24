@@ -869,126 +869,6 @@
                   ]
                 }
               ]
-            },
-            {
-              "type": "Copy",
-              "typeProperties": {
-                "source": {
-                  "type": "RestSource",
-                  "requestMethod": "GET",
-                  "additionalHeaders": {
-                    "Authorization": {
-                      "value": "Bearer @{pipeline().parameters.oauthToken}",
-                      "type": "Expression"
-                    },
-                    "Prefer": {
-                      "value": "odata.maxpagesize=500",
-                      "type": "Expression"
-                    }
-                  },
-                  "paginationRules": {
-                    "AbsoluteUrl": "$['@odata.nextLink']"
-                  },
-                  "httpRequestTimeout": "00:01:40",
-                  "requestInterval": "00.00:00:00.010",
-                  "additionalColumns": [
-                    {
-                      "name": "_crda_BronzeLoadDateTime",
-                      "value": {
-                        "value": "@formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')",
-                        "type": "Expression"
-                      }
-                    },
-                    {
-                      "name": "_crda_SourceExecutionId",
-                      "value": {
-                        "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
-                        "type": "Expression"
-                      }
-                    },
-                    {
-                      "name": "BcCompanyName",
-                      "value": {
-                        "value": "@pipeline().parameters.CompanyName",
-                        "type": "Expression"
-                      }
-                    },
-                    {
-                      "name": "BcCompanyId",
-                      "value": {
-                        "value": "@pipeline().parameters.CompanyId",
-                        "type": "Expression"
-                      }
-                    }
-                  ],
-                  "datasetSettings": {
-                    "type": "RestResource",
-                    "typeProperties": {
-                      "relativeUrl": {
-                        "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiPublisher,'/',\n    variables('ApiGroup'),'/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiVersion,'/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    variables('ApiEndPoint'),\n    '?$select=id,lastModifiedDateTime'\n)",
-                        "type": "Expression"
-                      }
-                    },
-                    "schema": [],
-                    "externalReferences": {
-                      "connection": "36368ccb-9289-4dcb-90d6-73f2a278976a"
-                    },
-                    "annotations": []
-                  }
-                },
-                "sink": {
-                  "type": "LakehouseTableSink",
-                  "tableActionOption": "OverwriteSchema",
-                  "applyVOrder": false,
-                  "partitionOption": "None",
-                  "datasetSettings": {
-                    "type": "LakehouseTable",
-                    "typeProperties": {
-                      "schema": {
-                        "value": "@activity('FN_GetProcessMetadata').output.firstRow.TableSchema",
-                        "type": "Expression"
-                      },
-                      "table": {
-                        "value": "@activity('FN_GetProcessMetadata').output.firstRow.BronzeBc365IdTableName",
-                        "type": "Expression"
-                      }
-                    },
-                    "schema": [],
-                    "connectionSettings": {
-                      "name": "lh_BronzeLayer",
-                      "properties": {
-                        "type": "Lakehouse",
-                        "typeProperties": {
-                          "artifactId": "c6eb7c0f-f0ac-4fc4-87c1-13b09e22841c",
-                          "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419",
-                          "rootFolder": "Tables"
-                        },
-                        "externalReferences": {
-                          "connection": "c443cedf-3748-491a-9b83-f9c686e9a243"
-                        },
-                        "annotations": []
-                      }
-                    },
-                    "annotations": []
-                  }
-                },
-                "translator": {
-                  "value": "@json(string(activity('FN_GetProcessMetadata').output.firstRow.Bc365Ingest_IdsOnly_ColumnMapping))",
-                  "type": "Expression"
-                },
-                "enableStaging": false
-              },
-              "policy": {
-                "timeout": "0.01:00:00",
-                "retry": 0,
-                "retryIntervalInSeconds": 30,
-                "secureInput": true,
-                "secureOutput": false
-              },
-              "name": "IngestBc365IdsOnly_copy1",
-              "state": "Inactive",
-              "onInactiveMarkAs": "Succeeded",
-              "dependsOn": []
             }
           ],
           "ifFalseActivities": [
@@ -1194,8 +1074,7 @@
         "defaultValue": "CrederaLtd"
       },
       "oauthToken": {
-        "type": "string",
-        "defaultValue": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6ImFGa21LVkZjLTRXVjZzWENCdk5aa1hJNTA1WSIsImtpZCI6ImFGa21LVkZjLTRXVjZzWENCdk5aa1hJNTA1WSJ9.eyJhdWQiOiJodHRwczovL2FwaS5idXNpbmVzc2NlbnRyYWwuZHluYW1pY3MuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvNjJkZGJmNjEtYWQ4Mi00Yjc5LTk4NTUtY2MyYTVmZGI2ODRjLyIsImlhdCI6MTc4NDU1MzQ5MiwibmJmIjoxNzg0NTUzNDkyLCJleHAiOjE3ODQ1NTczOTIsImFpbyI6ImsyRmdZSGk0dDdkZncwcWFKVzZHb1dHMHpxVzZtTFhmK1k1OXIzR3phajlXa3B6dE1oMEEiLCJhcHBpZCI6ImZhM2M3YzU5LTAxN2ItNGMxMS1hOTBmLWJmMTg3M2RmZmViZCIsImFwcGlkYWNyIjoiMSIsImlkcCI6Imh0dHBzOi8vc3RzLndpbmRvd3MubmV0LzYyZGRiZjYxLWFkODItNGI3OS05ODU1LWNjMmE1ZmRiNjg0Yy8iLCJpZHR5cCI6ImFwcCIsIm9pZCI6IjI4YTU5M2E2LTYwNjEtNGNkOC1hNjI1LWM5Njg1OWQ4Nzg2OCIsInJoIjoiMS5BWUVBWWJfZFlvS3RlVXVZVmN3cVg5dG9URDN2Ylpsc3MxTkJoZ2VtX1R3QnVKOEFBQUNCQUEuIiwicm9sZXMiOlsiQXV0b21hdGlvbi5SZWFkV3JpdGUuQWxsIiwiYXBwX2FjY2VzcyIsIkFQSS5SZWFkV3JpdGUuQWxsIl0sInN1YiI6IjI4YTU5M2E2LTYwNjEtNGNkOC1hNjI1LWM5Njg1OWQ4Nzg2OCIsInRpZCI6IjYyZGRiZjYxLWFkODItNGI3OS05ODU1LWNjMmE1ZmRiNjg0YyIsInV0aSI6InpreGV4cUYzekVXakp5YThWcFF0QUEiLCJ2ZXIiOiIxLjAiLCJ4bXNfYWN0X2ZjdCI6IjkgMyIsInhtc19mdGQiOiJ3ajJNNGNkUTdrZFNzUldDb0t5d0poX0dOTC1rLUdhbXk0T1dSRHMtQUJNQlpYVnliM0JsYm05eWRHZ3RaSE50Y3ciLCJ4bXNfaWRyZWwiOiIyNCA3IiwieG1zX3JkIjoiMC5BVW9BdGY4S0JnZ0NFZ0tCQVJJVUNBa1NFSVZ6bC1tZkFwWkxva21YNXdJNEU1a1NGQWdJRWhBOTcyMlpiTE5UUVlZSHB2MDhBYmlmRWhRSUN4SVE3WlBuTVh0by0tZm1ndHRMYVJtd2RnIiwieG1zX3N1Yl9mY3QiOiIzIDkifQ.Dzda5n7KrWqDjnJvCylEs8xxoWGYEHQVU07YGytlHn8W73P6O8-mzpCfS_O0IiI8P_uIdsnAlQY5qPy7iumWDw7OteJR5mvJ5-hR1gsRZ0xopjlp4OMywy71V5qK3M0tmAkxNz7Rjvnisho1OAgwU_c966idSYVjO0WFNOgMxtMZS3vhvLKPN6NLpMTtr6eAD65ZkkmTgokEs557Qqiy8fL2BIjAne4kNR563rZuiRfx61BR2h5gKvKuunb-YEk1277x1jK-ZNsvYplWBq_ytnsA6Ngx_hXvRkFbqHhCr4Lk483TQ8Smy-FUDC_EXXPqwjfWMKdwv65ZLCP9Veo4hQ"
+        "type": "string"
       }
     },
     "libraryVariables": {
