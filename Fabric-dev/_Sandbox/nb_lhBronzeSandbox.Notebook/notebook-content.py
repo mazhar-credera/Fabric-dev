@@ -75,8 +75,8 @@ for row in tables:
 
 # CELL ********************
 
-parquet_path = "Files/tmp/bronze/Bc"
-#parquet_path = "Files/raw/bronze/Bc"
+#parquet_path = "Files/tmp/bronze/Bc"
+parquet_path = "Files/raw/bronze/Bc"
 
 # 1. Check if the folder exists before interacting with it
 if notebookutils.fs.exists(parquet_path):

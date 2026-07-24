@@ -77,6 +77,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lit
 from delta.tables import DeltaTable
 from notebookutils import mssparkutils
+from pyspark.sql.types import LongType, IntegerType, DoubleType
 
 # Handle Parquet Rebase Settings
 spark.conf.set("spark.sql.parquet.int96RebaseModeInRead", "CORRECTED")
@@ -89,22 +90,21 @@ spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
 # ============================================================
 
 # Environment & API Parameters
-Bc365TenantId = {pBc365TenantId}
-Bc365UkEnv = {pBc365UkEnv}
-Oauth2Token = {pOauth2Token}
+Bc365TenantId = pBc365TenantId
+Bc365UkEnv = pBc365UkEnv
+Oauth2Token = pOauth2Token
 
 # Company Parameters
-BcCompanyName = {pBcCompanyName}
-BcCompanyId = {pBcCompanyId}
-ParentPipelineName = {pParentPipelineName}
-CleanedCompanyName = {pCleanedCompanyName}
+BcCompanyName = pBcCompanyName
+BcCompanyId = pBcCompanyId
+ParentPipelineName = pParentPipelineName
+CleanedCompanyName = pCleanedCompanyName
 
 # Fabric SQL Endpoint Parameters (No passwords required)
-SqlServer = {pSqlServer}  # "your-fabric-server.database.windows.net"  # E.g., SQL Connection String endpoint
-SqlDatabase = {pSqlDatabase}  # "your_fabric_database_name"
+SqlServer = pSqlServer  # "your-fabric-server.database.windows.net"
+SqlDatabase = pSqlDatabase  # "your_fabric_database_name"
 
 # System Execution Variables
-# Get the id of this notebooks workspace
 WORKSPACE_ID = fabric.get_notebook_workspace_id()
 PIPELINE_RUN_ID = mssparkutils.env.getJobId()
 
@@ -129,21 +129,17 @@ RETRYABLE_ERRORS = [
 ]
 
 # ============================================================
-# 2. HELPER: ENTRA ID (OPTION 1) SQL CONNECTION
+# 2. HELPER: ENTRA ID SQL CONNECTION
 # ============================================================
 def get_db_connection():
     """
     Connects to Fabric SQL Database using Microsoft Entra ID Access Token
     retrieved from the current Fabric session identity via mssparkutils.
     """
-    # 1. Fetch OAuth token for Azure SQL / Fabric SQL Endpoint
     raw_token = mssparkutils.credentials.getToken("https://database.windows.net/")
-
-    # 2. Convert token string to UTF-16LE binary bytes and pack into C-struct
     token_bytes = raw_token.encode("utf-16-le")
     token_struct = struct.pack(f"<I{len(token_bytes)}s", len(token_bytes), token_bytes)
 
-    # 3. Connection string (NO UID/PWD needed)
     conn_str = (
         "Driver={ODBC Driver 18 for SQL Server};"
         f"Server={SqlServer},1433;"
@@ -152,41 +148,46 @@ def get_db_connection():
         "TrustServerCertificate=no;"
         "Connection Timeout=30;"
     )
-    print(f"SQL conn_str : {conn_str}.")
-    # 4. 1256 is the ODBC driver constant ID for SQL_COPT_SS_ACCESS_TOKEN
     SQL_COPT_SS_ACCESS_TOKEN = 1256
+    conn = pyodbc.connect(conn_str, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
+    conn.autocommit = True 
+    return conn
 
-    return pyodbc.connect(
-        conn_str, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct}
-    )
 
-
+# ============================================================
+# 2. HELPER: function to execute queries/SPs using Entra ID token auth
+# ============================================================
 def execute_sql(query, params=(), fetch=False):
-    """Wrapper function to execute queries/SPs safely using Entra ID token auth."""
+    """
+	Wrapper function to execute queries/SPs safely using Entra ID token auth.
+	"""
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
         cursor.execute(query, params)
+        results = None
+        
         if fetch:
             columns = [column[0] for column in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-            return results
-        conn.commit()
+        
+        if not conn.autocommit:
+            conn.commit()
+            
+        return results
     finally:
         cursor.close()
         conn.close()
 
-
 # ============================================================
 # 3. HELPER: API INGESTION
 # ============================================================
-
-
 def ingest_bc_data(url, token, max_pagesize=500):
     """Pulls data from Business Central API, handling @odata.nextLink pagination."""
     headers = {
         "Authorization": f"Bearer {token}",
         "Prefer": f"odata.maxpagesize={max_pagesize}",
+        "Accept": f"application/json"
     }
 
     all_data = []
@@ -207,18 +208,39 @@ def ingest_bc_data(url, token, max_pagesize=500):
 
 
 # ============================================================
-# HELPER: 4 clean Business Central column names
+# HELPER: Pre-sanitize Python Dicts before PySpark DataFrame creation
 # ============================================================
+def cast_ints_to_floats_in_dict(data):
+    """
+    Recursively converts Python int values (excluding booleans) to float in raw dict lists
+    to prevent PySpark [CANNOT_MERGE_TYPE] LongType and DoubleType errors during schema inference.
+    """
+    if isinstance(data, list):
+        return [cast_ints_to_floats_in_dict(item) for item in data]
+    elif isinstance(data, dict):
+        new_dict = {}
+        for k, v in data.items():
+            if isinstance(v, bool):
+                new_dict[k] = v
+            elif isinstance(v, int):
+                new_dict[k] = float(v)
+            elif isinstance(v, dict):
+                new_dict[k] = cast_ints_to_floats_in_dict(v)
+            elif isinstance(v, list):
+                new_dict[k] = [cast_ints_to_floats_in_dict(i) for i in v]
+            else:
+                new_dict[k] = v
+        return new_dict
+    return data
 
 
+# ============================================================
+# HELPER: Clean Business Central column names
+# ============================================================
 def clean_bc_columns(df):
     """
     Removes leading 'value.' prefix from columns and drops OData metadata columns.
-    This is done in memory only. The raw Parquet file is left unchanged.
     """
-    print("  Start clean_bc_columns")
-    print(df.columns)
-
     renamed_cols = []
     for c in df.columns:
         new_name = c
@@ -241,18 +263,22 @@ def clean_bc_columns(df):
     if cols_to_drop:
         df = df.drop(*cols_to_drop)
 
-    print("  End clean_bc_columns")
     return df
 
 
 # ============================================================
-# HELPER: 4 align incoming columns to existing Delta target
+# HELPER: Align incoming columns to existing Delta target
 # ============================================================
 def align_to_existing_delta(df_new, tgt_delta_path):
     """
     Aligns incoming DataFrame to the existing Delta table schema.
+    If the table does not exist yet, returns df_new as-is.
     """
-    existing_schema = spark.read.format("delta").load(tgt_delta_path).schema
+    try:
+        existing_schema = spark.read.format("delta").load(tgt_delta_path).schema
+    except Exception:
+        print(f"\n[SCHEMA CHECK] Target Delta table at '{tgt_delta_path}' does not exist yet. Creating new schema.")
+        return df_new
 
     target_cols = existing_schema.fieldNames()
     source_cols = df_new.schema.fieldNames()
@@ -265,19 +291,14 @@ def align_to_existing_delta(df_new, tgt_delta_path):
 
     print("\n[SCHEMA CHECK]")
     print(f"  New columns in source               : {new_cols if new_cols else 'None'}")
-    print(
-        f"  Target columns missing from source  : {missing_in_source if missing_in_source else 'None'}"
-    )
+    print(f"  Target columns missing from source  : {missing_in_source if missing_in_source else 'None'}")
 
     if missing_in_source:
         for field in existing_schema.fields:
             if field.name not in source_set:
-                print(
-                    f"  [COL REMOVED] Column '{field.name}' missing from source - writing nulls"
-                )
+                print(f"  [COL REMOVED] Column '{field.name}' missing from source - writing nulls")
                 df_new = df_new.withColumn(field.name, lit(None).cast(field.dataType))
 
-    # Cast matching columns to existing Delta types
     for field in existing_schema.fields:
         if field.name in source_set:
             incoming_type = df_new.schema[field.name].dataType
@@ -285,7 +306,7 @@ def align_to_existing_delta(df_new, tgt_delta_path):
             if incoming_type != field.dataType:
                 print(
                     f"  [TYPE DRIFT] Column '{field.name}': "
-                    f"{incoming_type} -> casting to {field.dataType}"
+                    f"{incoming_type} -> casting to target type {field.dataType}"
                 )
                 df_new = df_new.withColumn(
                     field.name, col(field.name).cast(field.dataType)
@@ -298,15 +319,32 @@ def align_to_existing_delta(df_new, tgt_delta_path):
 
 
 # ============================================================
+# HELPER: Promotes Integer/Long columns to DoubleType
+# ============================================================
+def promote_integers_to_doubles(df, exclude_cols=["_crda_SourceExecutionId"]):
+    """
+    Promotes Integer/Long columns to DoubleType to prevent JSON schema drift
+    mismatches between whole numbers and floating-point decimals.
+    """
+    for field in df.schema.fields:
+        if isinstance(field.dataType, (LongType, IntegerType)) and field.name not in exclude_cols:
+            df = df.withColumn(field.name, col(field.name).cast(DoubleType()))
+    return df
+
+
+# ============================================================
 # 5. MAIN EXECUTION (Company Processing Loop)
 # ============================================================
+failed_entities = []
 
 try:
     print("=" * 80)
     print(f"Starting Consolidated Pipeline for Company: {BcCompanyName}")
     print("=" * 80)
 
-    # 1. Fetch metadata configurations using Entra ID SQL Auth
+    max_retries= 15
+
+    # 1. Fetch metadata configurations
     config_query = """
         SELECT B.CompanyName, B.ApiGroup, B.ApiEntitySetName
         FROM ETL.BcSourceConfig B
@@ -315,7 +353,6 @@ try:
     source_configs = execute_sql(config_query, (BcCompanyName,), fetch=True)
 
     print(f"Found {len(source_configs)} entities to process for {BcCompanyName}.")
-    failed_entities = []
 
     # 2. Iterate through each API Entity
     for config in source_configs:
@@ -344,6 +381,13 @@ try:
         api_version = props.get("Bc365_ApiVersion")
         process_id = metadata["ProcessId"]
         pKey_Cols = metadata["PrimaryKeysJson"]
+        target_schema = metadata["TableSchema"]
+        target_table = metadata["BronzeTableName"]
+
+        print(f"api_publisher : {api_publisher}.")
+        print(f"api_version : {api_version}.")
+        print(f"process_id : {process_id}.")
+        print(f"pKey_Cols : {pKey_Cols}.")
 
         # 4. Insert Execution Log
         exec_log_query = """
@@ -364,12 +408,13 @@ try:
             fetch=True,
         )
         execution_id = execution_id_row[0]["ExecutionId"] if execution_id_row else None
+        print(f"execution_id : {execution_id}.", flush=True)
 
         try:
             # 5. Build Paths and Timestamps
             utc_now = datetime.now(timezone.utc)
             year_month = utc_now.strftime("%Y/%m")
-            timestamp_str = utc_now.strftime("%H-%M-%S")
+            timestamp_str = utc_now.strftime("%d-%H%M%S")
 
             delta_lake_bronze_folder = (
                 f"{metadata['DeltaLakeBronzeFolder']}/{year_month}"
@@ -379,14 +424,12 @@ try:
             api_group = metadata["ApiEndPoint"].split("/")[1]
             api_endpoint_str = metadata["ApiEndPoint"].split("/")[2]
 
-            target_schema = metadata.get("TargetSchema", "bronze")
-            target_table = metadata.get("TargetTable", api_entity)
             tgt_bc_path = f"Tables/{target_schema}/{target_table}"
             tgt_active_ids_path = f"Tables/{target_schema}/{target_table}_Id"
             watermark_col = metadata.get("WatermarkColumnName", "lastModifiedDateTime")
 
             # 6. Build API Watermark Filter
-            if metadata.get("IngestFirstTime") == 1:
+            if metadata.get("IngestFirstTime") == 0:
                 watermark_val = (
                     metadata["BronzeWatermarkValue"].strftime("%Y-%m-%dT%H:%M:%SZ")
                     if isinstance(metadata["BronzeWatermarkValue"], datetime)
@@ -399,7 +442,7 @@ try:
                 api_filter = f"?$filter={watermark_col} le {current_time_str}"
 
             # 7. Ingest Main Data
-            print(f"[{api_entity}] Ingesting Main Data...")
+            print(f"[{api_entity}] Ingesting Main Data...", flush=True)
             main_url = f"https://api.businesscentral.dynamics.com/v2.0/{Bc365TenantId}/{Bc365UkEnv}/api/{api_publisher}/{api_group}/{api_version}/companies({BcCompanyId})/{api_endpoint_str}{api_filter}"
 
             try:
@@ -414,9 +457,10 @@ try:
                     ),
                 )
                 raise Exception(f"Main API Ingestion Failed: {str(e)}")
+            print(f"[{api_entity}] Ingesting Main Data... SUCCESS", flush=True)
 
             # 8. Ingest Active IDs
-            print(f"[{api_entity}] Ingesting Active IDs...")
+            print(f"[{api_entity}] Ingesting Active IDs...", flush=True)
             ids_url = f"https://api.businesscentral.dynamics.com/v2.0/{Bc365TenantId}/{Bc365UkEnv}/api/{api_publisher}/{api_group}/{api_version}/companies({BcCompanyId})/{api_endpoint_str}?$select=id,lastModifiedDateTime"
 
             try:
@@ -431,12 +475,16 @@ try:
                     ),
                 )
                 raise Exception(f"Active IDs API Ingestion Failed: {str(e)}")
+            print(f"[{api_entity}] Retreived Active IDs... SUCCESS", flush=True)
 
             # 9. Process DataFrames & Delta Appends
             load_dt = utc_now.strftime("%Y-%m-%d %H:%M:%S")
 
             if main_data:
-                df_main_raw = spark.createDataFrame(main_data)
+                # Pre-sanitize Python dictionary numbers before passing to PySpark
+                sanitized_main_data = cast_ints_to_floats_in_dict(main_data)
+                df_main_raw = spark.createDataFrame(sanitized_main_data)
+                
                 df_main = (
                     df_main_raw.withColumn(
                         "_crda_BronzeLoadDateTime", lit(load_dt).cast("timestamp")
@@ -451,14 +499,18 @@ try:
                         lit(f"{delta_lake_bronze_folder}/{parquet_filename}"),
                     )
                 )
+                print(f"[{api_entity}] Metadata columns added to df_main... SUCCESS", flush=True)
                 df_main = clean_bc_columns(df_main)
+                df_main = promote_integers_to_doubles(df_main)
+                
                 df_main.write.mode("overwrite").parquet(
                     f"Files/{delta_lake_bronze_folder}/{parquet_filename}"
                 )
+                print(f"[{api_entity}] Main data to Files... SUCCESS", flush=True)
 
                 spark.sql(f"CREATE SCHEMA IF NOT EXISTS `{target_schema}`")
-                if DeltaTable.isDeltaTable(spark, tgt_bc_path):
-                    df_main = align_to_existing_delta(df_main, tgt_bc_path)
+                
+                df_main = align_to_existing_delta(df_main, tgt_bc_path)
 
                 max_retries, base_delay_seconds = 5, 3
                 for attempt in range(1, max_retries + 1):
@@ -486,13 +538,16 @@ try:
                             )
                         else:
                             raise append_err
+                print(f"[{api_entity}] Main data to DeltaTable... SUCCESS", flush=True)
 
                 spark.sql(
                     f"CREATE TABLE IF NOT EXISTS `{target_schema}`.`{target_table}` USING DELTA LOCATION '{tgt_bc_path}'"
                 )
 
             if ids_data:
-                df_active_raw = spark.createDataFrame(ids_data)
+                sanitized_ids_data = cast_ints_to_floats_in_dict(ids_data)
+                df_active_raw = spark.createDataFrame(sanitized_ids_data)
+                
                 df_active = (
                     df_active_raw.withColumn(
                         "_crda_BronzeLoadDateTime", lit(load_dt).cast("timestamp")
@@ -507,17 +562,25 @@ try:
                         lit(f"{CleanedCompanyName}ActiveIds.parquet"),
                     )
                 )
+                print(f"[{api_entity}] Metadata columns added to df_active... SUCCESS", flush=True)
                 df_active = clean_bc_columns(df_active)
 
                 active_ids_folder = metadata.get("BcTmpFolderForIds", "TmpIds")
                 df_active.write.mode("overwrite").parquet(
                     f"Files/{active_ids_folder}/{CleanedCompanyName}ActiveIds.parquet"
                 )
+                print(f"[{api_entity}] ActiveIds data to Files... SUCCESS", flush=True)
 
-                if DeltaTable.isDeltaTable(spark, tgt_active_ids_path):
+                table_exists = False
+                try:
+                    target_active_delta = DeltaTable.forPath(spark, tgt_active_ids_path)
+                    table_exists = True
+                except Exception:
+                    table_exists = False
+
+                if table_exists:
                     df_active = align_to_existing_delta(df_active, tgt_active_ids_path)
 
-                    # Parse key columns e.g. ["BcCompanyId,id"]
                     raw_keys = (
                         json.loads(pKey_Cols)
                         if isinstance(pKey_Cols, str) and pKey_Cols.startswith("[")
@@ -536,9 +599,6 @@ try:
 
                     for attempt in range(1, max_retries + 1):
                         try:
-                            target_active_delta = DeltaTable.forPath(
-                                spark, tgt_active_ids_path
-                            )
                             (
                                 target_active_delta.alias("target")
                                 .merge(df_active.alias("source"), merge_condition)
@@ -564,6 +624,7 @@ try:
                                 )
                             else:
                                 raise merge_err
+                    print(f"[{api_entity}] ActiveIds data to DeltaTable... SUCCESS", flush=True)
                 else:
                     df_active.write.format("delta").partitionBy("BcCompanyId").mode(
                         "append"
@@ -575,13 +636,16 @@ try:
 
             # 10. Watermark Calculations
             new_watermark_val = str(metadata["BronzeWatermarkValue"])
-            if DeltaTable.isDeltaTable(spark, tgt_bc_path):
+            try:
                 watermark_df = spark.sql(
                     f"SELECT COALESCE(MAX(`{watermark_col}`), '{new_watermark_val}') AS BronzeWatermarkValue FROM `{target_schema}`.`{target_table}`"
                 )
                 new_watermark_val = str(watermark_df.collect()[0][0])
+                print(f"[{api_entity}] Got latest Watermark... SUCCESS", flush=True)
+            except Exception as wm_err:
+                print(f"[{api_entity}] Could not fetch watermark from table, using default: {wm_err}", flush=True)
 
-            # 11. Log Success & Update First Time Flag via SQL
+            # 11. Log Success & Update First Time Flag
             execute_sql(
                 "EXEC [ETL].[usp_UpdateExecutionLog_Success] @ExecutionId=?, @Status=?, @InitialWatermark=?, @UpdatedWatermark=?, @ProcessId=?",
                 (
@@ -595,8 +659,8 @@ try:
 
             update_flag_query = """
                 UPDATE ETL.ProcessMap 
-                SET IngestFirstTime = 1 
-                WHERE StagingProjection = ? AND GroupId = 1 AND IngestFirstTime = 0;
+                SET IngestFirstTime = 0 
+                WHERE StagingProjection = ? AND GroupId = 1 AND IngestFirstTime = 1;
             """
             execute_sql(update_flag_query, (staging_projection,))
 
@@ -618,23 +682,25 @@ try:
                 pass
             continue
 
-    # Final Status Check
-    if failed_entities:
-        error_msg = f"Completed with failures in entities: {', '.join(failed_entities)}"
-        print(f"\nFAILURE: {error_msg}")
-        mssparkutils.notebook.exit(error_msg)
-    else:
-        print(f"\nSUCCESS: All entities processed for {BcCompanyName}.")
-        mssparkutils.notebook.exit("SUCCESS")
-
-except Exception as e:
-    error_msg = f"FAILURE: {str(e)}"
+except Exception as outer_e:
+    # Catches unexpected top-level failures (e.g. database connection down)
+    error_msg = f"FAILURE: Critical script error - {str(outer_e)}"
     print("\n" + "=" * 60)
     print("Notebook failed critically.")
     print(error_msg)
     print("=" * 60)
     mssparkutils.notebook.exit(error_msg)
 
+# ============================================================
+# FINAL STATUS EXIT (Outside of outer try-except)
+# ============================================================
+if failed_entities:
+    error_msg = f"FAILURE: Completed with failures in entities: {', '.join(failed_entities)}"
+    print(f"\n{error_msg}")
+    mssparkutils.notebook.exit(error_msg)
+else:
+    print(f"\nSUCCESS: All entities processed successfully for {BcCompanyName}.")
+    mssparkutils.notebook.exit("SUCCESS")
 
 # METADATA ********************
 

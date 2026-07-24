@@ -33,8 +33,6 @@
       {
         "name": "Get Bc365",
         "type": "WebActivity",
-        "state": "Inactive",
-        "onInactiveMarkAs": "Succeeded",
         "dependsOn": [
           {
             "activity": "Get Bc365 Token",
@@ -398,17 +396,22 @@
         }
       },
       {
-        "name": "Set variable1",
+        "name": "Set Url",
         "type": "SetVariable",
-        "state": "Inactive",
-        "onInactiveMarkAs": "Succeeded",
-        "dependsOn": [],
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
         "policy": {
           "secureOutput": false,
           "secureInput": false
         },
         "typeProperties": {
-          "variableName": "lastModifiedDateTime",
+          "variableName": "Url",
           "value": {
             "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    pipeline().parameters.ApiPublisher,'/',\n    pipeline().parameters.ApiGroup,'/','v2.0','/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    pipeline().parameters.ApiEntitySetName,\n    '?$filter=lastModifiedDateTime gt ',\n    formatDateTime(pipeline().parameters.lastModifiedDateTime, 'yyyy-MM-ddTHH:mm:ssZ'), ' and lastModifiedDateTime le ', formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')\n)\n",
             "type": "Expression"
@@ -419,11 +422,11 @@
     "parameters": {
       "ApiEntitySetName": {
         "type": "string",
-        "defaultValue": "custLedgerEntries"
+        "defaultValue": "chartOfAccounts"
       },
       "ApiGroup": {
         "type": "string",
-        "defaultValue": "Customer"
+        "defaultValue": "GL"
       },
       "ApiPublisher": {
         "type": "string",
@@ -431,11 +434,11 @@
       },
       "CompanyId": {
         "type": "string",
-        "defaultValue": "3abc695f-7d28-ec11-8f45-0022481b4f2e"
+        "defaultValue": "2946198d-7d28-ec11-8f45-0022481b4f2e"
       },
       "CompanyName": {
         "type": "string",
-        "defaultValue": "Credera Ltd"
+        "defaultValue": "Omnicom"
       },
       "lastModifiedDateTime": {
         "type": "string",
@@ -462,6 +465,9 @@
         "type": "String"
       },
       "lastModifiedDateTime": {
+        "type": "String"
+      },
+      "Url": {
         "type": "String"
       }
     },

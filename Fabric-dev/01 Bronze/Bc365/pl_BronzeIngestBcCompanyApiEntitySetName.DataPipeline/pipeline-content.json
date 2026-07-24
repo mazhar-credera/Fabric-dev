@@ -127,7 +127,7 @@
         "typeProperties": {
           "method": "GET",
           "relativeUrl": {
-            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox}/api/v2.0/companies?$filter=@{activity('Get CompanyNames').output.firstRow.CompanyName}",
+            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox}/api/v2.0/companies?$filter=name eq '@{pipeline().parameters.CompanyName}'",
             "type": "Expression"
           },
           "headers": {
@@ -151,62 +151,20 @@
         "name": "Get Companies",
         "dependsOn": [
           {
-            "activity": "Get CompanyNames",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
-          },
-          {
             "activity": "Get Bc365 Token",
             "dependencyConditions": [
               "Succeeded"
             ]
           }
         ]
-      },
-      {
-        "type": "Lookup",
-        "typeProperties": {
-          "source": {
-            "type": "FabricSqlDatabaseSource",
-            "sqlReaderQuery": {
-              "value": "SELECT\n\tCompanyName = STRING_AGG(CONCAT('name eq ', CHAR(39), CompanyName, CHAR(39)),\n\t\t\t\t\t' or ')\nFROM\tETL.BcCompanyName \nWHERE\tIsEnabled = 1\n--/*\nAND \tCompanyName IN\n\t(\t--'The DMW Group Holdings Ltd.'\n\t\t--'BrightGen'\n\t\t'Omnicom'\n\t\t--, 'Credera Ltd'\n\t\t--,'The DMW Group Management Ltd.'\n\t); \n--*/\n",
-              "type": "Expression"
-            },
-            "partitionOption": "None",
-            "queryTimeout": "02:00:00"
-          },
-          "datasetSettings": {
-            "type": "FabricSqlDatabaseTable",
-            "schema": [],
-            "connectionSettings": {
-              "name": "4d22d9c9_3601_4e62_93a5_fc093584d025",
-              "properties": {
-                "type": "FabricSqlDatabase",
-                "typeProperties": {
-                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
-                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
-                },
-                "externalReferences": {
-                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
-                },
-                "annotations": []
-              }
-            },
-            "annotations": []
-          }
-        },
-        "policy": {
-          "timeout": "0.00:10:00",
-          "retry": 0,
-          "retryIntervalInSeconds": 30,
-          "secureInput": false,
-          "secureOutput": false
-        },
-        "name": "Get CompanyNames",
-        "dependsOn": []
       }
     ],
+    "parameters": {
+      "CompanyName": {
+        "type": "string",
+        "defaultValue": "Omnicom"
+      }
+    },
     "libraryVariables": {
       "vl_Bc365_Bc365TokenUri": {
         "type": "String",

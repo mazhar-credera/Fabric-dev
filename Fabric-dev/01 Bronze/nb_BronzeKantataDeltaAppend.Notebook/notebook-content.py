@@ -85,51 +85,6 @@ PARQUET_PATH = f"Files/{pDeltaLakeFolder}/{pParquetFile}"
 TARGET_PATH  = f"Tables/{pTargetSchema}/{pTargetTable}"
 
 # ============================================================
-# HELPER: clean Business Central column names
-# ============================================================
-
-def clean_bc_columns(df):
-    """
-    Removes leading 'value.' prefix from columns and drops OData metadata columns.
-    This is done in memory only. The raw Parquet file is left unchanged.
-    """
-
-    print("  Start clean_bc_columns")
-
-    print(df_new.columns)
-
-    renamed_cols = []
-
-    for c in df.columns:
-
-        new_name = c
-
-        if c.startswith("value."):
-            new_name = c[6:]
-
-        renamed_cols.append(
-            col(f"`{c}`").alias(new_name)
-        )
-
-    df = df.select(*renamed_cols)
-
-    unwanted_cols = [
-        "@odata.context",
-        "@odata.etag",
-        "@odata.nextLink",
-        "odata.context",
-        "odata.etag"
-    ]
-
-    cols_to_drop = [c for c in unwanted_cols if c in df.columns]
-
-    if cols_to_drop:
-        df = df.drop(*cols_to_drop)
-
-    print("  End clean_bc_columns")
-    return df
-
-# ============================================================
 # HELPER: align incoming columns to existing Delta target
 # ============================================================
 
@@ -212,13 +167,6 @@ try:
     # 2. Clean BC source columns
     # ------------------------------------------------------------
 
-    print("\n[2/6] Cleaning source columns...")
-
-    if pTargetSchema == "BC":
-        df_new = clean_bc_columns(df_new)
-    else:
-        print("  Non-BC schema detected. Skipping BC-specific column cleanup.")
-
     print(f"  Rows after cleaning     : {df_new.count()}")
     print(f"  Columns after cleaning  : {df_new.schema.fieldNames()}")
 
@@ -230,7 +178,7 @@ try:
     display(df_new.limit(13))
 
     # ------------------------------------------------------------
-    # 3. Check for empty source
+    # 2. Check for empty source
     # ------------------------------------------------------------
 
     if df_new.isEmpty():
@@ -239,37 +187,15 @@ try:
 
     else:
         # ------------------------------------------------------------
-        # 4. Ensure schema exists
+        # 3. Ensure schema exists
         # ------------------------------------------------------------
-
-        #spark.sql(f"DROP TABLE IF EXISTS `{pTargetSchema}`.`{pTargetTable}`")
-
-        #mssparkutils.fs.rm(TARGET_PATH, recurse=True)
-
-        #spark.sql(f"CREATE SCHEMA IF NOT EXISTS `{pTargetSchema}`")
-
-        #(
-        #    df_new.write
-        #    .format("delta")
-        #    .mode("overwrite")
-        #    .option("overwriteSchema", "true")
-        #    .save(TARGET_PATH)
-        #)
-
-        #spark.sql(f"""
-        #CREATE TABLE `{pTargetSchema}`.`{pTargetTable}`
-        #USING DELTA
-        #LOCATION '{TARGET_PATH}'
-        #""")
-
-        #spark.sql(f"REFRESH TABLE `{pTargetSchema}`.`{pTargetTable}`")
 
         print("\n[3/6] Ensuring target schema exists...")
 
         spark.sql(f"CREATE SCHEMA IF NOT EXISTS `{pTargetSchema}`")
 
         # ------------------------------------------------------------
-        # 5. Check existing Delta table and align schema
+        # 4. Check existing Delta table and align schema
         # ------------------------------------------------------------
 
         print("\n[4/6] Checking target Delta table...")
@@ -286,7 +212,7 @@ try:
             print("  Target table does NOT exist - will be created from incoming schema.")
 
         # ------------------------------------------------------------
-        # 6. Append to Delta
+        # 5. Append to Delta
         # ------------------------------------------------------------
 
         print("\n[5/6] Appending to Delta table...")
@@ -316,7 +242,7 @@ try:
         print("=" * 60)
 
         # ------------------------------------------------------------
-        # 7. Calculate watermark
+        # 6. Calculate watermark
         # ------------------------------------------------------------
 
         print("\n[6/6] Calculating watermark for pipeline...")
