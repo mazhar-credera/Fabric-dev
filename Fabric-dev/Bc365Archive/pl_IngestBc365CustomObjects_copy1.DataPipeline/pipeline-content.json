@@ -65,7 +65,7 @@
             }
           },
           "relativeUrl": {
-            "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    pipeline().parameters.ApiPublisher,'/',\n    pipeline().parameters.ApiGroup,'/',\n    'v2.0','/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    pipeline().parameters.ApiEntitySetName,\n    '?$filter=lastModifiedDateTime le ', formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ'),\n    ' and maxPaymentTolerance gt 0',\n    '&$select=maxPaymentTolerance&$top=10'\n)\n",
+            "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    pipeline().parameters.ApiPublisher,'/',\n    pipeline().parameters.ApiGroup,'/',\n    'v2.0','/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    pipeline().parameters.ApiEntitySetName,\n    '?$filter=lastModifiedDateTime le ', formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ'),\n    '&$select=id&$top=10'\n)\n",
             "type": "Expression"
           }
         },

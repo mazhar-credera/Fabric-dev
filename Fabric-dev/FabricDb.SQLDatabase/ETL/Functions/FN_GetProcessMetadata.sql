@@ -3,19 +3,27 @@ CREATE
 (@stagingProjection VARCHAR (512), @ProcessPath VARCHAR (512) /*
 SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Resource', 'pl_IngestSalesforce')
 SELECT * FROM ETL.FN_GetProcessMetadata('BC_BrightGen_custLedgerEntries', 'pl_IngestBc365')
+SELECT * FROM ETL.FN_GetProcessMetadata('BC_BrightGen_custLedgerEntries', 'pl_LoadSilverFromBronze')
 SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Resource', 'pl_LoadSilverFromBronze')
 SELECT * FROM ETL.FN_GetProcessMetadata('Internal_DimDate', '[Internal].[usp_Update_DimDate]')
 */)
 RETURNS TABLE 
 AS
 RETURN 
-    SELECT PM.ProcessId,
+    SELECT DISTINCT 
+            PM.ProcessId,
            P.StagingProjection,
            IngestFirstTime  = COALESCE(PM.IngestFirstTime, 0) ,
            PM.ProcessPath,
            P.IngestPattern,
            P.PrimaryKeys,
-           PrimaryKeysJson      = CONCAT('["', P.PrimaryKeys, '"]') ,
+/*           PrimaryKeysJson      = CONCAT('["', P.PrimaryKeys, '"]') ,*/
+           PrimaryKeysJson      = (SELECT CONCAT(
+                                            '["',
+                                            REPLACE(P.PrimaryKeys, ',', '","'),
+                                            '"]'
+                                        ) AS JsonArray) ,
+
            BcTmpFolderForIds    = CONCAT('tmp/bronze/Bc/', P.TableNameRoot) , 
            P.DeltaLakeSourceFolder,
            DeltaLakeBronzeFolder = P.DeltaLakeSourceFolder ,
@@ -229,8 +237,11 @@ RETURN
            SharePointOnlineListName = IIF (P.TableSchema = 'SharePoint', SP.SharePointOnlineListName, NULL) 
 
     FROM   Meta.Process         P 
-    LEFT JOIN   ETL.ProcessMap  PM  ON  PM.StagingProjection = P.StagingProjection
-                                    AND PM.ProcessPath = @ProcessPath
+    LEFT JOIN   ETL.ProcessMap  PM  ON  PM.ProcessPath = @ProcessPath
+                                    AND P.StagingProjection =    CASE 
+                                                                        WHEN P.TableSchema <> 'BC' THEN @stagingProjection
+                                                                        ELSE CONCAT(P.TableSchema, '_', P.TableNameRoot)
+                                                                 END 
     LEFT JOIN   ETL.SilverTransformations ST    ON  ST.StagingProjection = P.StagingProjection 
     CROSS APPLY (
                 SELECT P.TableNameRoot AS BronzeTableName,
@@ -255,7 +266,10 @@ RETURN
                        MAX(IIF (D.ordinal = 3, D.[value], NULL)) AS SharePointOnlineListName
                 FROM   string_split (P.ApiEndPoint, '\', 1) AS D) AS SP
 
-    WHERE  P.StagingProjection = @stagingProjection
+    WHERE  P.StagingProjection =    CASE 
+                                        WHEN P.TableSchema <> 'BC' THEN @stagingProjection
+                                        ELSE CONCAT(P.TableSchema, '_', P.TableNameRoot)
+                                    END 
            AND P.IsActive = 1
     UNION ALL
     SELECT PM.ProcessId,

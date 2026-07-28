@@ -25,7 +25,7 @@
           "retry": 0,
           "retryIntervalInSeconds": 30,
           "secureInput": true,
-          "secureOutput": false
+          "secureOutput": true
         },
         "name": "Get Bc365 Token",
         "dependsOn": []

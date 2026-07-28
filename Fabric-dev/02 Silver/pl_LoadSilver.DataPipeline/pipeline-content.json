@@ -6,7 +6,7 @@
         "typeProperties": {
           "batchCount": 25,
           "items": {
-            "value": "@activity('GetStagingProjections').output.value",
+            "value": "@activity('GetStagingProjections_BC').output.value",
             "type": "Expression"
           },
           "activities": [
@@ -29,7 +29,7 @@
               },
               "policy": {
                 "timeout": "0.01:30:00",
-                "retry": 1,
+                "retry": 0,
                 "retryIntervalInSeconds": 30,
                 "secureInput": false,
                 "secureOutput": false
@@ -46,6 +46,12 @@
             "dependencyConditions": [
               "Succeeded"
             ]
+          },
+          {
+            "activity": "GetStagingProjections_BC",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
           }
         ]
       },
@@ -55,7 +61,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT\tSourceSystem, ProcessId, StagingProjection \nFROM\tETL.ProcessMap P \nWHERE\tIsActive = 1 AND GroupId = 2 \n/*\nAND\t\tStagingProjection IN ('Kantata_Resource', 'Kantata_Account', 'Kantata_ActivityAssignment'\n    ,'Kantata_DeliveryElement') \n*/",
+              "value": "SELECT\tSourceSystem, ProcessId, StagingProjection \nFROM\tETL.ProcessMap P \nWHERE\tIsActive = 1 AND GroupId = 2 \nAND\t\tStagingProjection IN ('Kantata_Resource', 'BC_Omnicom_chartOfAccounts') \n/*\nAND\t\tStagingProjection IN ('Kantata_Resource', 'Kantata_Account', 'Kantata_ActivityAssignment'\n    ,'Kantata_DeliveryElement') \n*/",
               "type": "Expression"
             },
             "partitionOption": "None",
@@ -90,6 +96,51 @@
           "secureOutput": false
         },
         "name": "GetStagingProjections",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": []
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "SELECT\tSourceSystem, ProcessId, StagingProjection \nFROM\tETL.ProcessMap P \nWHERE\tIsActive = 1 AND GroupId = 2 \nAND\t\tSourceSystem = 'BC'",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "f2770db7_5a30_4785_9a01_92712720442d",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": false
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "GetStagingProjections_BC",
         "dependsOn": []
       }
     ],

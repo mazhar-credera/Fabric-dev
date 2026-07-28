@@ -22,36 +22,6 @@
 
 # CELL ********************
 
-# MAGIC %%sql
-# MAGIC /*drop table if exists Kantata.ActivityAssignment
-# MAGIC drop table if exists Kantata.ResourcedActivity 
-# MAGIC drop table if exists Kantata.ActivityAssignmentDemand */
-# MAGIC /*drop table if exists Kantata.Resource*/
-# MAGIC /*
-# MAGIC SELECT CONCAT(
-# MAGIC     'DROP TABLE IF EXISTS ',
-# MAGIC     table_schema,
-# MAGIC     '.',
-# MAGIC     table_name,
-# MAGIC     ';'
-# MAGIC ) AS drop_statement
-# MAGIC FROM information_schema.tables
-# MAGIC WHERE table_schema = 'BC';
-# MAGIC */
-# MAGIC 
-
-
-# METADATA ********************
-
-# META {
-# META   "language": "sparksql",
-# META   "language_group": "synapse_pyspark",
-# META   "frozen": true,
-# META   "editable": false
-# META }
-
-# CELL ********************
-
 #spark.catalog.listTables("BC")
 
 tables = spark.sql("SHOW TABLES IN BC").collect()
@@ -69,8 +39,8 @@ for row in tables:
 # META {
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark",
-# META   "frozen": false,
-# META   "editable": true
+# META   "frozen": true,
+# META   "editable": false
 # META }
 
 # CELL ********************

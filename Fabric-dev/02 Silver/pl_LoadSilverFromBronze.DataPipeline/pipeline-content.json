@@ -65,7 +65,7 @@
             },
             "pHashColumnsJson": {
               "value": {
-                "value": "@activity('FN_GetProcessMetadata').output.firstRow.KantataHashColumnsJson",
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.HashColumnsJson\n\n",
                 "type": "Expression"
               },
               "type": "string"
@@ -120,7 +120,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT * FROM ETL.FN_GetProcessMetadata('@{pipeline().parameters.StagingProjection}', '@{pipeline().PipelineName}')",
+              "value": "SELECT F.* ,\nHashColumnsJson = \n    CASE \n        WHEN F.TableSchema = 'Kantata' THEN F.KantataHashColumnsJson\n        WHEN F.TableSchema = 'BC' THEN F.Bc365HashColumnsJson\n        ELSE F.KantataHashColumnsJson\n    END \nFROM ETL.FN_GetProcessMetadata('@{pipeline().parameters.StagingProjection}', '@{pipeline().PipelineName}') F",
               "type": "Expression"
             },
             "partitionOption": "None",

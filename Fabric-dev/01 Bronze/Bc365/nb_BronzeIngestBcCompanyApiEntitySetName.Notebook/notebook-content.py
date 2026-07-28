@@ -22,8 +22,17 @@
 
 # PARAMETERS CELL ********************
 
-# Parameters 
-# Type here in the cell editor to add code!
+# ============================================================
+# Schema-Drift-Safe Pipeline + API Ingestion: Loop by Company
+# Bronze Lakehouse | Fabric Entra ID Authentication
+# ============================================================
+
+# =============================================================================
+# SECTION 1 – PARAMETERS
+# All values are injected by the orchestrator (e.g. Data Factory / Fabric
+# Pipeline). This cell must be tagged as a "parameter cell" in Fabric.
+# Defaults below are illustrative only and should not be relied upon in production.
+# =============================================================================
 pBc365TenantId = "62ddbf61-ad82-4b79-9855-cc2a5fdb684c"
 pBc365UkEnv = "Sandbox"
 pOauth2Token = "pOauth2Token"
@@ -44,26 +53,9 @@ pSqlDatabase= "FabricDb"
 
 # CELL ********************
 
-# Force a Metadata Refresh / force the SQL endpoint to sync the specific table
-#sandbox cell
-#query = f"REFRESH TABLE `{pTargetSchema}`.`{pTargetTable}`"
-#spark.sql(query)
-
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark",
-# META   "frozen": true,
-# META   "editable": false
-# META }
-
-# CELL ********************
-
-# ============================================================
-# Schema-Drift-Safe Pipeline + API Ingestion: Loop by Company
-# Bronze Lakehouse | Fabric Entra ID Authentication
-# ============================================================
+# =============================================================================
+# SECTION 1 – IMPORTS
+# =============================================================================
 
 import json
 import time
@@ -85,8 +77,19 @@ spark.conf.set("spark.sql.parquet.datetimeRebaseModeInRead", "CORRECTED")
 spark.conf.set("spark.sql.parquet.int96RebaseModeInWrite", "CORRECTED")
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
 
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark",
+# META   "frozen": false,
+# META   "editable": true
+# META }
+
+# CELL ********************
+
 # ============================================================
-# 1. PARAMETERS (Configured via Fabric Pipeline)
+# SECTION 2 – CONSTANTS & CONFIGURATION
 # ============================================================
 
 # Environment & API Parameters
@@ -128,8 +131,18 @@ RETRYABLE_ERRORS = [
     "DELTA_CONCURRENT_MODIFICATION",
 ]
 
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # ============================================================
-# 2. HELPER: ENTRA ID SQL CONNECTION
+# 3. HELPER: ENTRA ID SQL CONNECTION
 # ============================================================
 def get_db_connection():
     """
@@ -179,6 +192,17 @@ def execute_sql(query, params=(), fetch=False):
         cursor.close()
         conn.close()
 
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # ============================================================
 # 3. HELPER: API INGESTION
 # ============================================================
@@ -192,6 +216,7 @@ def ingest_bc_data(url, token, max_pagesize=500):
 
     all_data = []
     current_url = url
+    print(f"current_url : {current_url}.")
 
     while current_url:
         response = requests.get(current_url, headers=headers, timeout=100)
@@ -319,7 +344,7 @@ def align_to_existing_delta(df_new, tgt_delta_path):
 
 
 # ============================================================
-# HELPER: Promotes Integer/Long columns to DoubleType
+# 4 HELPER: Promotes Integer/Long columns to DoubleType
 # ============================================================
 def promote_integers_to_doubles(df, exclude_cols=["_crda_SourceExecutionId"]):
     """
@@ -330,6 +355,45 @@ def promote_integers_to_doubles(df, exclude_cols=["_crda_SourceExecutionId"]):
         if isinstance(field.dataType, (LongType, IntegerType)) and field.name not in exclude_cols:
             df = df.withColumn(field.name, col(field.name).cast(DoubleType()))
     return df
+
+# ============================================================
+# HELPER: Output a single physical .parquet file
+# ============================================================
+def save_df_as_single_parquet(df, target_file_path):
+    """
+    Forces PySpark to output a single physical .parquet file instead of a folder 
+    containing multiple partition files.
+    """
+    temp_dir = f"{target_file_path}_tmp"
+
+    # 1. Write single partition to a temporary folder
+    df.coalesce(1).write.mode("overwrite").parquet(temp_dir)
+
+    # 2. Find the generated part file inside the temp folder
+    files = mssparkutils.fs.ls(temp_dir)
+    part_file = next(f.path for f in files if f.name.startswith("part-") and f.name.endswith(".parquet"))
+
+    # 3. Delete existing file/folder at the target path if present
+    if mssparkutils.fs.exists(target_file_path):
+        mssparkutils.fs.rm(target_file_path, recurse=True)
+
+    # 4. Move the single parquet file to the exact target path
+    mssparkutils.fs.mv(part_file, target_file_path)
+
+    # 5. Clean up temporary staging directory
+    mssparkutils.fs.rm(temp_dir, recurse=True)
+
+
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
 
 
 # ============================================================
@@ -430,11 +494,10 @@ try:
 
             # 6. Build API Watermark Filter
             if metadata.get("IngestFirstTime") == 0:
-                watermark_val = (
-                    metadata["BronzeWatermarkValue"].strftime("%Y-%m-%dT%H:%M:%SZ")
-                    if isinstance(metadata["BronzeWatermarkValue"], datetime)
-                    else metadata["BronzeWatermarkValue"]
-                )
+                # Convert DB string to valid ISO-8601 DateTimeOffset
+                dt = datetime.fromisoformat(str(metadata["BronzeWatermarkValue"]).replace(" ", "T").rstrip("Z"))
+                watermark_val = dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+                
                 current_time_str = utc_now.strftime("%Y-%m-%dT%H:%M:%SZ")
                 api_filter = f"?$filter={watermark_col} gt {watermark_val} and {watermark_col} le {current_time_str}"
             else:
@@ -547,6 +610,9 @@ try:
             if ids_data:
                 sanitized_ids_data = cast_ints_to_floats_in_dict(ids_data)
                 df_active_raw = spark.createDataFrame(sanitized_ids_data)
+
+                active_ids_folder = metadata.get("BcTmpFolderForIds", "TmpIds")
+                target_active_file_path = f"Files/{active_ids_folder}/{CleanedCompanyName}ActiveIds.parquet"
                 
                 df_active = (
                     df_active_raw.withColumn(
@@ -562,15 +628,13 @@ try:
                         lit(f"{CleanedCompanyName}ActiveIds.parquet"),
                     )
                 )
-                print(f"[{api_entity}] Metadata columns added to df_active... SUCCESS", flush=True)
+                print(f"[{api_entity}] ActiveIds metadata columns added... SUCCESS", flush=True)
                 df_active = clean_bc_columns(df_active)
 
-                active_ids_folder = metadata.get("BcTmpFolderForIds", "TmpIds")
-                df_active.write.mode("overwrite").parquet(
-                    f"Files/{active_ids_folder}/{CleanedCompanyName}ActiveIds.parquet"
-                )
-                print(f"[{api_entity}] ActiveIds data to Files... SUCCESS", flush=True)
-
+                # Save as a single physical .parquet file (overwrites existing file)
+                save_df_as_single_parquet(df_active, target_active_file_path)
+                print(f"[{api_entity}] ActiveIds single file saved to Files... SUCCESS", flush=True)
+                
                 table_exists = False
                 try:
                     target_active_delta = DeltaTable.forPath(spark, tgt_active_ids_path)
