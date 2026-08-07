@@ -162,7 +162,7 @@
     "parameters": {
       "CompanyName": {
         "type": "string",
-        "defaultValue": "Omnicom"
+        "defaultValue": "Credera Ltd"
       }
     },
     "libraryVariables": {

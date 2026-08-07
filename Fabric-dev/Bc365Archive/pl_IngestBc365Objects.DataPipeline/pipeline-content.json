@@ -274,7 +274,7 @@
           }
         },
         "externalReferences": {
-          "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+          "connection": "5191e616-5fcc-4582-b732-28e370f0f4a0"
         },
         "policy": {
           "timeout": "0.00:10:00",
@@ -400,7 +400,7 @@
                     },
                     "schema": [],
                     "externalReferences": {
-                      "connection": "36368ccb-9289-4dcb-90d6-73f2a278976a"
+                      "connection": "c9de70b1-816f-41f4-91ce-00be6766e3f8"
                     },
                     "annotations": []
                   }
@@ -686,7 +686,7 @@
                     },
                     "schema": [],
                     "externalReferences": {
-                      "connection": "36368ccb-9289-4dcb-90d6-73f2a278976a"
+                      "connection": "c9de70b1-816f-41f4-91ce-00be6766e3f8"
                     },
                     "annotations": []
                   }

@@ -45,6 +45,18 @@ for row in tables:
 
 # CELL ********************
 
+# MAGIC %%sql
+# MAGIC DROP TABLE IF EXISTS Kantata.BusinessUnit
+
+# METADATA ********************
+
+# META {
+# META   "language": "sparksql",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 #parquet_path = "Files/tmp/bronze/Bc"
 parquet_path = "Files/raw/bronze/Bc"
 
@@ -74,8 +86,8 @@ else:
 # META {
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark",
-# META   "frozen": false,
-# META   "editable": true
+# META   "frozen": true,
+# META   "editable": false
 # META }
 
 # CELL ********************

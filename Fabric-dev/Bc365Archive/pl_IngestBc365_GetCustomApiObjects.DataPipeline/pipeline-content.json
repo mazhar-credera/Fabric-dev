@@ -82,7 +82,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT\tB.CompanyName, B.ApiGroup, B.ApiEntitySetName ,\n\t\tCleanedCompanyName = REPLACE(REPLACE(B.CompanyName, ' ', ''), '.', '')\nFROM\tETL.BcSourceConfig B\nWHERE\tB.IsEnabled = 1 \nAND \tB.CompanyName = '@{pipeline().parameters.CompanyName}'",
+              "value": "SELECT\tTOP 1\n\t\tB.CompanyName, B.ApiGroup, B.ApiEntitySetName ,\n\t\tCleanedCompanyName = REPLACE(REPLACE(B.CompanyName, ' ', ''), '.', '')\nFROM\tETL.BcSourceConfig B\nWHERE\tB.IsEnabled = 1 \nAND \tB.CompanyName = '@{pipeline().parameters.CompanyName}'",
               "type": "Expression"
             },
             "partitionOption": "None",
