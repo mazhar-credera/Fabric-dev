@@ -1,23 +1,22 @@
 CREATE   
     FUNCTION ETL.FN_GetProcessMetadata
-(@stagingProjection VARCHAR (512), @ProcessPath VARCHAR (512) /*
+        (   @stagingProjection VARCHAR (512), @ProcessPath VARCHAR (512) ) 
+/*
 SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Resource', 'pl_IngestSalesforce')
 SELECT * FROM ETL.FN_GetProcessMetadata('BC_BrightGen_custLedgerEntries', 'pl_IngestBc365')
 SELECT * FROM ETL.FN_GetProcessMetadata('BC_BrightGen_custLedgerEntries', 'pl_LoadSilverFromBronze')
 SELECT * FROM ETL.FN_GetProcessMetadata('Kantata_Resource', 'pl_LoadSilverFromBronze')
 SELECT * FROM ETL.FN_GetProcessMetadata('Internal_DimDate', '[Internal].[usp_Update_DimDate]')
-*/)
+*/
 RETURNS TABLE 
 AS
 RETURN 
-    SELECT DISTINCT 
-            PM.ProcessId,
+    SELECT PM.ProcessId,
            P.StagingProjection,
            IngestFirstTime  = COALESCE(PM.IngestFirstTime, 0) ,
            PM.ProcessPath,
            P.IngestPattern,
            P.PrimaryKeys,
-/*           PrimaryKeysJson      = CONCAT('["', P.PrimaryKeys, '"]') ,*/
            PrimaryKeysJson      = (SELECT CONCAT(
                                             '["',
                                             REPLACE(P.PrimaryKeys, ',', '","'),
@@ -45,14 +44,14 @@ RETURN
            fqObjNames.BronzeKantataIdTableFqName 
            /*Bc365*/,
            objNames.BronzeBc365IdTableName,
-           fqObjNames.BronzeBc365IdTableFqName 
+           fqObjNames.BronzeBc365IdTableFqName,
            /*Bronze*/ 
-           /*Silver*/,
+           /*Silver*/
            objNames.SilverTableName,
            PM.SilverWatermarkValue,
            SilverTablePath          = REPLACE(objNames.SilverTableName, '.', '/') ,
-           fqObjNames.SilverTableFqName 
-           /*Silver*/,
+           fqObjNames.SilverTableFqName , 
+           /*Silver*/
            P.ModificationTimeStampExpression,
            TransformationsJson      = ISNULL(ST.TransformationsJson, '{}') ,
            KantataSelectColumns = 
@@ -237,11 +236,8 @@ RETURN
            SharePointOnlineListName = IIF (P.TableSchema = 'SharePoint', SP.SharePointOnlineListName, NULL) 
 
     FROM   Meta.Process         P 
-    LEFT JOIN   ETL.ProcessMap  PM  ON  PM.ProcessPath = @ProcessPath
-                                    AND P.StagingProjection =    CASE 
-                                                                        WHEN P.TableSchema <> 'BC' THEN @stagingProjection
-                                                                        ELSE CONCAT(P.TableSchema, '_', P.TableNameRoot)
-                                                                 END 
+    LEFT JOIN   ETL.ProcessMap  PM  ON  PM.StagingProjection = P.StagingProjection
+                                    AND PM.ProcessPath = @ProcessPath
     LEFT JOIN   ETL.SilverTransformations ST    ON  ST.StagingProjection = P.StagingProjection 
     CROSS APPLY (
                 SELECT P.TableNameRoot AS BronzeTableName,
@@ -266,10 +262,7 @@ RETURN
                        MAX(IIF (D.ordinal = 3, D.[value], NULL)) AS SharePointOnlineListName
                 FROM   string_split (P.ApiEndPoint, '\', 1) AS D) AS SP
 
-    WHERE  P.StagingProjection =    CASE 
-                                        WHEN P.TableSchema <> 'BC' THEN @stagingProjection
-                                        ELSE CONCAT(P.TableSchema, '_', P.TableNameRoot)
-                                    END 
+    WHERE  P.StagingProjection = @stagingProjection
            AND P.IsActive = 1
     UNION ALL
     SELECT PM.ProcessId,

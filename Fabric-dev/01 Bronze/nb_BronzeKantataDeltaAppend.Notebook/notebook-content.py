@@ -61,41 +61,31 @@ pBronzeWatermarkValue= "2000-01-01"
 # Bronze Lakehouse | Parameterised
 # ============================================================
 
-from pyspark.sql.functions import col, lit
+from pyspark.sql.functions import col, lit, max as spark_max
 from delta.tables import DeltaTable
 
-# Handle Reading
+# ============================================================
+# PARQUET DATE/TIME COMPATIBILITY
+# ============================================================
+
 spark.conf.set("spark.sql.parquet.int96RebaseModeInRead", "CORRECTED")
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInRead", "CORRECTED")
 
-# Handle Writing
 spark.conf.set("spark.sql.parquet.int96RebaseModeInWrite", "CORRECTED")
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
 
 # ============================================================
 # DERIVED PATHS
-# Notebook is attached to the Bronze lakehouse so we use
-# the default lakehouse path via the well-known OneLake URI.
 # ============================================================
 
-# Build the full parquet source path
 PARQUET_PATH = f"Files/{pDeltaLakeFolder}/{pParquetFile}"
-
-# Build the target delta table path (Tables/ is the managed Delta area)
-TARGET_PATH  = f"Tables/{pTargetSchema}/{pTargetTable}"
+TARGET_PATH = f"Tables/{pTargetSchema}/{pTargetTable}"
 
 # ============================================================
-# HELPER: align incoming columns to existing Delta target
+# HELPER: ALIGN TO EXISTING DELTA SCHEMA
 # ============================================================
 
-def align_to_existing_delta(df_new, target_path):
-    """
-    Aligns incoming DataFrame to the existing Delta table schema.
-    Fails fast if target columns are missing from source, because otherwise
-    the notebook would write NULLs for those columns.
-    """
-
-    existing_schema = spark.read.format("delta").load(target_path).schema
+def align_to_existing_delta(df_new, existing_schema):
 
     target_cols = existing_schema.fieldNames()
     source_cols = df_new.schema.fieldNames()
@@ -107,37 +97,76 @@ def align_to_existing_delta(df_new, target_path):
     missing_in_source = sorted(target_set - source_set)
 
     print("\n[SCHEMA CHECK]")
-    print(f"  New columns in source               : {new_cols if new_cols else 'None'}")
-    print(f"  Target columns missing from source  : {missing_in_source if missing_in_source else 'None'}")
+    print(f"  New columns in source              : {new_cols if new_cols else 'None'}")
+    print(f"  Missing from source                : {missing_in_source if missing_in_source else 'None'}")
 
-    if missing_in_source:
-        for field in existing_schema.fields:
-            if field.name not in source_set:
-                print(f"  [COL REMOVED] Column '{field.name}' missing from source - writing nulls")
-                df_new = df_new.withColumn(field.name, lit(None).cast(field.dataType))
+    # --------------------------------------------------------
+    # Add missing columns as NULL
+    # --------------------------------------------------------
 
-    # Cast matching columns to existing Delta types
     for field in existing_schema.fields:
+
+        if field.name not in source_set:
+
+            print(
+                f"  [COL REMOVED] '{field.name}' "
+                f"missing from source - adding NULL column"
+            )
+
+            df_new = df_new.withColumn(
+                field.name,
+                lit(None).cast(field.dataType)
+            )
+
+    # --------------------------------------------------------
+    # Type drift handling
+    # --------------------------------------------------------
+
+    for field in existing_schema.fields:
+
         if field.name in source_set:
+
             incoming_type = df_new.schema[field.name].dataType
 
             if incoming_type != field.dataType:
+
                 print(
-                    f"  [TYPE DRIFT] Column '{field.name}': "
-                    f"{incoming_type} -> casting to {field.dataType}"
+                    f"  [TYPE DRIFT] "
+                    f"{field.name}: "
+                    f"{incoming_type} -> {field.dataType}"
                 )
+
+                failed_casts = (
+                    df_new
+                    .filter(
+                        col(field.name).isNotNull() &
+                        col(field.name).cast(field.dataType).isNull()
+                    )
+                    .count()
+                )
+
+                if failed_casts > 0:
+
+                    print(
+                        f"  [WARNING] {failed_casts} values "
+                        f"will become NULL during cast of "
+                        f"{field.name}"
+                    )
 
                 df_new = df_new.withColumn(
                     field.name,
                     col(field.name).cast(field.dataType)
                 )
 
-    # Keep target column order first, then append genuinely new columns
-    ordered_cols = target_cols + [c for c in source_cols if c not in target_set]
+    ordered_cols = target_cols + [
+        c for c in source_cols
+        if c not in target_set
+    ]
 
     df_new = df_new.select(*ordered_cols)
 
     return df_new
+
 
 # ============================================================
 # MAIN
@@ -146,76 +175,113 @@ def align_to_existing_delta(df_new, target_path):
 final_output = None
 
 try:
-    print("=" * 60)
-    print("Schema-drift-safe delta append")
-    print(f"  Source : {PARQUET_PATH}")
-    print(f"  Target : {pTargetSchema}.{pTargetTable}")
-    print("=" * 60)
 
-    # ------------------------------------------------------------
-    # 1. Read incoming Parquet
-    # ------------------------------------------------------------
+    print("=" * 80)
+    print("SCHEMA-DRIFT-SAFE DELTA APPEND")
+    print("=" * 80)
 
-    print("\n[1/6] Reading source parquet...")
+    print(f"Source parquet : {PARQUET_PATH}")
+    print(f"Target table   : {pTargetSchema}.{pTargetTable}")
+    print(f"Target path    : {TARGET_PATH}")
 
-    df_new = spark.read.parquet(PARQUET_PATH)
+    # --------------------------------------------------------
+    # 1. Read Source
+    # --------------------------------------------------------
 
-    print(f"  Rows before cleaning    : {df_new.count()}")
-    print(f"  Columns before cleaning : {df_new.schema.fieldNames()}")
+    print("\n[1/6] Reading source parquet")
 
-    # ------------------------------------------------------------
-    # 2. Clean BC source columns
-    # ------------------------------------------------------------
+    df_new = (
+        spark.read
+        .parquet(PARQUET_PATH)
+        .cache()
+    )
 
-    print(f"  Rows after cleaning     : {df_new.count()}")
-    print(f"  Columns after cleaning  : {df_new.schema.fieldNames()}")
+    row_count = df_new.count()
 
-    print("\n  Cleaned source schema:")
+    print(f"  Row count          : {row_count}")
+    print(f"  Column count       : {len(df_new.columns)}")
+    print(f"  Partitions         : {df_new.rdd.getNumPartitions()}")
+
+    print("\n  Column names:")
+    print(df_new.columns)
+
+    print("\n  Source schema:")
     df_new.printSchema()
 
-    # Optional but useful while troubleshooting
-    print("\n  Sample source rows after cleaning:")
-    display(df_new.limit(13))
+    print("\n  Sample rows:")
+    display(df_new.limit(10))
 
-    # ------------------------------------------------------------
-    # 2. Check for empty source
-    # ------------------------------------------------------------
+    # --------------------------------------------------------
+    # 2. Empty Source Check
+    # --------------------------------------------------------
 
-    if df_new.isEmpty():
-        print("\nNo new data found. Returning existing watermark.")
+    if row_count == 0:
+
+        print("\nNo rows found.")
+
         final_output = str(pBronzeWatermarkValue)
 
     else:
-        # ------------------------------------------------------------
-        # 3. Ensure schema exists
-        # ------------------------------------------------------------
 
-        print("\n[3/6] Ensuring target schema exists...")
+        # ----------------------------------------------------
+        # 3. Ensure Schema Exists
+        # ----------------------------------------------------
 
-        spark.sql(f"CREATE SCHEMA IF NOT EXISTS `{pTargetSchema}`")
+        print("\n[3/6] Ensuring target schema exists")
 
-        # ------------------------------------------------------------
-        # 4. Check existing Delta table and align schema
-        # ------------------------------------------------------------
+        spark.sql(
+            f"CREATE SCHEMA IF NOT EXISTS `{pTargetSchema}`"
+        )
 
-        print("\n[4/6] Checking target Delta table...")
+        # ----------------------------------------------------
+        # 4. Delta Table Validation
+        # ----------------------------------------------------
+
+        print("\n[4/6] Validating target Delta table")
 
         if DeltaTable.isDeltaTable(spark, TARGET_PATH):
-            print("  Target table EXISTS - validating and aligning schema...")
+
+            print("  Delta table EXISTS")
+
+            target_df = (
+                spark.read
+                .format("delta")
+                .load(TARGET_PATH)
+            )
+
+            existing_schema = target_df.schema
 
             print("\n  Existing target schema:")
-            spark.read.format("delta").load(TARGET_PATH).printSchema()
+            target_df.printSchema()
 
-            df_new = align_to_existing_delta(df_new, TARGET_PATH)
+            df_new = align_to_existing_delta(
+                df_new,
+                existing_schema
+            )
 
         else:
-            print("  Target table does NOT exist - will be created from incoming schema.")
 
-        # ------------------------------------------------------------
-        # 5. Append to Delta
-        # ------------------------------------------------------------
+            print(
+                "  Delta table DOES NOT EXIST. "
+                "Table will be created from incoming schema."
+            )
 
-        print("\n[5/6] Appending to Delta table...")
+        # ----------------------------------------------------
+        # PRE-WRITE DEBUGGING
+        # ----------------------------------------------------
+
+        print("\n[PRE-WRITE VALIDATION]")
+
+        print(f"  Rows to write      : {row_count}")
+        print(f"  Columns to write   : {len(df_new.columns)}")
+        print(f"  Target path        : {TARGET_PATH}")
+        print(f"  Watermark column   : {pWatermarkColumnName}")
+
+        # ----------------------------------------------------
+        # 5. Append To Delta
+        # ----------------------------------------------------
+
+        print("\n[5/6] Appending to Delta")
 
         (
             df_new.write
@@ -225,51 +291,76 @@ try:
             .save(TARGET_PATH)
         )
 
-        # Register table in Lakehouse metastore if it does not already exist
+        # ----------------------------------------------------
+        # Register Table
+        # ----------------------------------------------------
+
         spark.sql(f"""
             CREATE TABLE IF NOT EXISTS `{pTargetSchema}`.`{pTargetTable}`
             USING DELTA
             LOCATION '{TARGET_PATH}'
         """)
 
-        # Refresh table metadata
-        spark.sql(f"REFRESH TABLE `{pTargetSchema}`.`{pTargetTable}`")
+        spark.sql(
+            f"REFRESH TABLE `{pTargetSchema}`.`{pTargetTable}`"
+        )
 
-        print("\n" + "=" * 60)
-        print("Append complete.")
-        print(f"  Target table : {pTargetSchema}.{pTargetTable}")
-        print(f"  Rows written : {df_new.count()}")
-        print("=" * 60)
+        print("\n" + "=" * 80)
+        print("APPEND COMPLETE")
+        print(f"Target table : {pTargetSchema}.{pTargetTable}")
+        print(f"Rows written : {row_count}")
+        print("=" * 80)
 
-        # ------------------------------------------------------------
-        # 6. Calculate watermark
-        # ------------------------------------------------------------
+        # ----------------------------------------------------
+        # 6. Watermark Calculation
+        # ----------------------------------------------------
 
-        print("\n[6/6] Calculating watermark for pipeline...")
+        print("\n[6/6] Calculating watermark")
 
-        watermark_df = spark.sql(f"""
-            SELECT COALESCE(
-                MAX(`{pWatermarkColumnName}`),
-                '{pBronzeWatermarkValue}'
-            ) AS BronzeWatermarkValue
-            FROM `{pTargetSchema}`.`{pTargetTable}`
-        """)
+        if pWatermarkColumnName in df_new.columns:
 
-        final_output = str(watermark_df.collect()[0][0])
+            batch_watermark = (
+                df_new
+                .agg(
+                    spark_max(
+                        col(pWatermarkColumnName)
+                    ).alias("WatermarkValue")
+                )
+                .first()["WatermarkValue"]
+            )
+
+            if batch_watermark is not None:
+
+                final_output = str(batch_watermark)
+
+            else:
+
+                final_output = str(pBronzeWatermarkValue)
+
+        else:
+
+            print(
+                f"[WARNING] Watermark column "
+                f"'{pWatermarkColumnName}' "
+                f"not present in source dataset."
+            )
+
+            final_output = str(pBronzeWatermarkValue)
 
         print(f"  Watermark identified: {final_output}")
 
 except Exception as e:
-    # ------------------------------------------------------------
-    # Exception handling for Fabric pipeline
-    # ------------------------------------------------------------
+
+    # --------------------------------------------------------
+    # Existing Exception Handling
+    # --------------------------------------------------------
 
     error_msg = f"FAILURE: {str(e)}"
 
-    print("\n" + "=" * 60)
-    print("Notebook failed.")
+    print("\n" + "=" * 80)
+    print("NOTEBOOK FAILED")
     print(error_msg)
-    print("=" * 60)
+    print("=" * 80)
 
     mssparkutils.notebook.exit(error_msg)
 
@@ -278,10 +369,14 @@ except Exception as e:
 # ============================================================
 
 if final_output is not None:
-    mssparkutils.notebook.exit(final_output)
-else:
-    mssparkutils.notebook.exit("FAILURE: Notebook completed without producing a watermark.")
 
+    mssparkutils.notebook.exit(final_output)
+
+else:
+
+    mssparkutils.notebook.exit(
+        "FAILURE: Notebook completed without producing a watermark."
+    )
 
 # METADATA ********************
 

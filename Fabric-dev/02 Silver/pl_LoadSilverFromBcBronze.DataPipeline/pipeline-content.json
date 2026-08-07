@@ -65,7 +65,7 @@
             },
             "pHashColumnsJson": {
               "value": {
-                "value": "@activity('FN_GetProcessMetadata').output.firstRow.HashColumnsJson\n\n",
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.Bc365HashColumnsJson\n\n",
                 "type": "Expression"
               },
               "type": "string"
@@ -120,7 +120,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT  F.* \nFROM    ETL.FN_GetProcessMetadata('@{pipeline().parameters.StagingProjection}', '@{pipeline().PipelineName}') F",
+              "value": "SELECT  F.* \nFROM    ETL.FN_GetProcessMetadataBcOnly(@{pipeline().parameters.ProcesId}) F",
               "type": "Expression"
             },
             "partitionOption": "None",
@@ -194,7 +194,7 @@
                     },
                     "UpdatedWatermark": {
                       "value": {
-                        "value": "@formatDateTime\n(\n    if(\n        greater(json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).recordsAfterDedup, 0),\n        json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).silverWatermark,\n        activity('FN_GetProcessMetadata').output.firstRow.SilverWatermarkValue\n    )   \n    , 'yyyy-MM-dd HH:mm:ss'\n)",
+                        "value": "@formatDateTime(\n    if(\n        greater(json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).recordsAfterDedup, 0),\n        json(activity('nb_LoadSilverDeltaTables').output.result.exitValue).silverWatermark,\n        activity('FN_GetProcessMetadata').output.firstRow.SilverWatermarkValue\n    )\n    , 'yyyy-MM-dd HH:mm:ss'\n)\n",
                         "type": "Expression"
                       },
                       "type": "String"
@@ -232,7 +232,7 @@
               },
               "policy": {
                 "timeout": "0.00:30:00",
-                "retry": 10,
+                "retry": 0,
                 "retryIntervalInSeconds": 30,
                 "secureInput": false,
                 "secureOutput": false
@@ -246,7 +246,7 @@
               "type": "Fail",
               "typeProperties": {
                 "message": {
-                  "value": "Load Silver Failed (@{pipeline().parameters.StagingProjection})",
+                  "value": "Load Silver Failed (@{activity('FN_GetProcessMetadata').output.firstRow.StagingProjection})",
                   "type": "Expression"
                 },
                 "errorCode": "500"
@@ -315,7 +315,7 @@
               },
               "policy": {
                 "timeout": "0.00:30:00",
-                "retry": 10,
+                "retry": 0,
                 "retryIntervalInSeconds": 30,
                 "secureInput": false,
                 "secureOutput": false
@@ -376,7 +376,7 @@
               },
               "LogDescription": {
                 "value": {
-                  "value": "Load Silver for : @{pipeline().parameters.StagingProjection}",
+                  "value": "Load Silver for : @{activity('FN_GetProcessMetadata').output.firstRow.StagingProjection}",
                   "type": "Expression"
                 },
                 "type": "String"
@@ -424,9 +424,9 @@
       }
     ],
     "parameters": {
-      "StagingProjection": {
-        "type": "string",
-        "defaultValue": "Kantata_Proposal"
+      "ProcesId": {
+        "type": "int",
+        "defaultValue": 834
       }
     },
     "libraryVariables": {

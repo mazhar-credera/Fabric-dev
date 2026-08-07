@@ -20,8 +20,8 @@
                   }
                 },
                 "waitOnCompletion": true,
-                "workspaceId": "00000000-0000-0000-0000-000000000000",
-                "pipelineId": "dd5af36d-c28e-9280-4918-0dab82beabfb",
+                "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419",
+                "pipelineId": "82beabfb-0dab-4918-9280-c28edd5af36d",
                 "operationType": "InvokeFabricPipeline"
               },
               "externalReferences": {
@@ -40,15 +40,11 @@
           ]
         },
         "name": "fe_Stage",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
         "dependsOn": [
           {
             "activity": "GetStagingProjections",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
-          },
-          {
-            "activity": "GetStagingProjections_BC",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -61,7 +57,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT\tSourceSystem, ProcessId, StagingProjection \nFROM\tETL.ProcessMap P \nWHERE\tIsActive = 1 AND GroupId = 2 \nAND\t\tStagingProjection IN ('Kantata_Resource', 'BC_Omnicom_chartOfAccounts') \n/*\nAND\t\tStagingProjection IN ('Kantata_Resource', 'Kantata_Account', 'Kantata_ActivityAssignment'\n    ,'Kantata_DeliveryElement') \n*/",
+              "value": "SELECT\tSourceSystem, ProcessId, StagingProjection \nFROM\tETL.ProcessMap P \nWHERE\tIsActive = 1 AND GroupId = 2 \nAND\t    SourceSystem <> 'BC'\nAND\t\tStagingProjection IN ('Kantata_Resource') \n/*\nAND\t\tStagingProjection IN ('Kantata_Resource', 'Kantata_Account', 'Kantata_ActivityAssignment'\n    ,'Kantata_DeliveryElement') \n*/",
               "type": "Expression"
             },
             "partitionOption": "None",
@@ -106,7 +102,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT\tSourceSystem, ProcessId, StagingProjection \nFROM\tETL.ProcessMap P \nWHERE\tIsActive = 1 AND GroupId = 2 \nAND\t\tSourceSystem = 'BC'",
+              "value": "SELECT\n        SourceSystem, ProcessId, StagingProjection \nFROM\tETL.ProcessMap P \nWHERE\tIsActive = 1 AND GroupId = 2 \nAND\tSourceSystem = 'BC'",
               "type": "Expression"
             },
             "partitionOption": "None",
@@ -142,6 +138,54 @@
         },
         "name": "GetStagingProjections_BC",
         "dependsOn": []
+      },
+      {
+        "type": "ForEach",
+        "typeProperties": {
+          "batchCount": 10,
+          "items": {
+            "value": "@activity('GetStagingProjections_BC').output.value",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "type": "InvokePipeline",
+              "typeProperties": {
+                "parameters": {
+                  "ProcesId": {
+                    "value": "@item().ProcessId",
+                    "type": "Expression"
+                  }
+                },
+                "waitOnCompletion": true,
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "pipelineId": "a176c241-7a45-8a14-41c1-1c81e3a26107",
+                "operationType": "InvokeFabricPipeline"
+              },
+              "externalReferences": {
+                "connection": "1a2c4c71-4ef2-4838-bd3a-2f14c381d214"
+              },
+              "policy": {
+                "timeout": "0.01:30:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "LoadSilverFromBcBronze",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "fe_Stage_BC",
+        "dependsOn": [
+          {
+            "activity": "GetStagingProjections_BC",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
       }
     ],
     "libraryVariables": {

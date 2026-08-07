@@ -30,8 +30,8 @@ SET NOCOUNT ON ;
 		UPDATE	b
 		SET		ExecutionEndTime	= GETUTCDATE() , 
 				FinalStatus			= @FinalStatus , 
-				InitialWatermark	= CONVERT(VARCHAR(35),@_InitialWatermark, 121) , 
-				UpdatedWatermark	= CONVERT(VARCHAR(35),@_UpdatedWatermark, 121) 
+				InitialWatermark	= CONVERT(VARCHAR(35), @_InitialWatermark, 121) , 
+				UpdatedWatermark	= CONVERT(VARCHAR(35), @_UpdatedWatermark, 121) 
 		FROM	ETL.ExecutionLog	b
 		WHERE	b.ExecutionId = @_ExecutionId;
 

@@ -60,33 +60,6 @@
         "name": "fe_Stage",
         "dependsOn": [
           {
-            "activity": "nb_SparkPoolWarmUp",
-            "dependencyConditions": [
-              "Succeeded"
-            ]
-          }
-        ]
-      },
-      {
-        "type": "TridentNotebook",
-        "typeProperties": {
-          "notebookId": "21916e28-ac9b-a2ac-423b-bc72b6dde9a9",
-          "workspaceId": "00000000-0000-0000-0000-000000000000",
-          "sessionTag": {
-            "value": "@replace(pipeline().DataFactory,'-', '_')",
-            "type": "Expression"
-          }
-        },
-        "policy": {
-          "timeout": "0.00:10:00",
-          "retry": 0,
-          "retryIntervalInSeconds": 30,
-          "secureInput": false,
-          "secureOutput": false
-        },
-        "name": "nb_SparkPoolWarmUp",
-        "dependsOn": [
-          {
             "activity": "GetStagingProjections",
             "dependencyConditions": [
               "Succeeded"

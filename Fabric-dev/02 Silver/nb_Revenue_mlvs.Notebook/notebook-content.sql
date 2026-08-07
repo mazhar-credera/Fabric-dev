@@ -116,18 +116,18 @@ AS
 			,R.KC_Practice__c									AS ResourcePracticeBk 
 			,PA.KimbleOne__ResourceType__c						AS ResourceTypeBk 
 
-			,CASE WHEN FSE.Id IS NULL THEN FS.Id ELSE FSE.Id END	AS ForecastStatusBk
-			,PP.KimbleOne__Proposition__c							AS PropositionBk	
-			,PA.KimbleOne__DeliveryGroup__c							AS DeliveryGroupBk		
-			,PA.KimbleOne__DeliveryElement__c						AS DeliveryElementBk		
-			,G.Id													AS GradeBk				
-			,GG.Id													AS GradeGroupBk			
-			,PA.KimbleOne__AnalysisDimension__c						AS AnalysisDimensionBk	
-			,PA.KimbleOne__DomainClass__c							AS DomainClassBk			
+			,FS.Id 												AS ForecastStatusBk
+			,PP.KimbleOne__Proposition__c						AS PropositionBk	
+			,PA.KimbleOne__DeliveryGroup__c						AS DeliveryGroupBk		
+			,PA.KimbleOne__DeliveryElement__c					AS DeliveryElementBk		
+			,G.Id												AS GradeBk				
+			,GG.Id												AS GradeGroupBk			
+			,PA.KimbleOne__AnalysisDimension__c					AS AnalysisDimensionBk	
+			,PA.KimbleOne__DomainClass__c						AS DomainClassBk			
 
-			,AC.KimbleOne__BusinessUnit__c							AS AccountBusinessUnitBk
-			,R.KimbleOne__BusinessUnit__c							AS ResourceBusinessUnitBk
-			,PA.KimbleOne__BusinessUnit__c							AS PaBusinessUnitBk	
+			,AC.KimbleOne__BusinessUnit__c						AS AccountBusinessUnitBk
+			,R.KimbleOne__BusinessUnit__c						AS ResourceBusinessUnitBk
+			,PA.KimbleOne__BusinessUnit__c						AS PaBusinessUnitBk	
 
 			,PA.CurrencyIsoCode 
 			,COALESCE(PA.KimbleOne__CorporateCurrencyActualRevenueCalc , 0 )	AS ActualRevenue			
@@ -143,7 +143,7 @@ AS
 			,COALESCE(PA.KimbleOne__CorporateCurrencyP2ForecastRevenueCalc , 0 )	 AS P2ForecastRevenue 
 			,COALESCE(PA.KimbleOne__CorporateCurrencyP3ForecastRevenueCalc , 0 )	 AS P3ForecastRevenue 
 			,COALESCE(	CASE WHEN 
-							PA.KimbleOne__AnalysisDimension__c = 'a0DD000000B4H55MAF'	--Account
+							PA.KimbleOne__AnalysisDimension__c = 'a0DD000000B4H55MAF'	/*Account*/
 								THEN PA.KimbleOne__CorporateCurrencyTarget__c
 								ELSE 0
 						END ,  0 )												AS TargetRevenueForAccount 
