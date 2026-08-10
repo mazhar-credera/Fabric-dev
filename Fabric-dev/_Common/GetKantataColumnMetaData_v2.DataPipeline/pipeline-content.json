@@ -1,0 +1,413 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "LakehouseTableSource",
+            "datasetSettings": {
+              "type": "LakehouseTable",
+              "typeProperties": {
+                "schema": {
+                  "value": "@pipeline().parameters.SchemaName",
+                  "type": "Expression"
+                },
+                "table": {
+                  "value": "@pipeline().parameters.TableName",
+                  "type": "Expression"
+                }
+              },
+              "schema": [],
+              "connectionSettings": {
+                "name": "lh_BronzeLayer",
+                "properties": {
+                  "type": "Lakehouse",
+                  "typeProperties": {
+                    "artifactId": "9e22841c-13b0-87c1-4fc4-f0acc6eb7c0f",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000",
+                    "rootFolder": "Tables"
+                  },
+                  "externalReferences": {
+                    "connection": "c443cedf-3748-491a-9b83-f9c686e9a243"
+                  },
+                  "annotations": []
+                }
+              },
+              "annotations": []
+            }
+          },
+          "sink": {
+            "type": "FabricSqlDatabaseSink",
+            "preCopyScript": "TRUNCATE TABLE ETL.KantataColumnMetaData ; ",
+            "sqlWriterUseTableLock": false,
+            "writeBehavior": "insert",
+            "datasetSettings": {
+              "type": "FabricSqlDatabaseTable",
+              "typeProperties": {
+                "schema": "ETL",
+                "table": "KantataColumnMetaData"
+              },
+              "schema": [],
+              "connectionSettings": {
+                "name": "5b17b122_e79a_4e29_afa2_1d295bf656d4",
+                "properties": {
+                  "type": "FabricSqlDatabase",
+                  "typeProperties": {
+                    "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                    "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                  },
+                  "externalReferences": {
+                    "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                  },
+                  "annotations": []
+                }
+              },
+              "annotations": []
+            }
+          },
+          "translator": {
+            "type": "TabularTranslator",
+            "mappings": [
+              {
+                "source": {
+                  "name": "EntityDefinitionId"
+                },
+                "sink": {
+                  "name": "TableApiName"
+                }
+              },
+              {
+                "source": {
+                  "name": "QualifiedApiName"
+                },
+                "sink": {
+                  "name": "ColumnName"
+                }
+              },
+              {
+                "source": {
+                  "name": "DataType"
+                },
+                "sink": {
+                  "name": "ColumnDataType"
+                }
+              },
+              {
+                "source": {
+                  "name": "DurableId"
+                },
+                "sink": {
+                  "name": "DurableId"
+                }
+              },
+              {
+                "source": {
+                  "name": "IsCaseSensitive"
+                },
+                "sink": {
+                  "name": "IsCaseSensitive"
+                }
+              },
+              {
+                "source": {
+                  "name": "Length"
+                },
+                "sink": {
+                  "name": "Length"
+                }
+              },
+              {
+                "source": {
+                  "name": "Precision"
+                },
+                "sink": {
+                  "name": "Precision"
+                }
+              },
+              {
+                "source": {
+                  "name": "Scale"
+                },
+                "sink": {
+                  "name": "Scale"
+                }
+              },
+              {
+                "source": {
+                  "name": "RelationshipName"
+                },
+                "sink": {
+                  "name": "RelationshipName"
+                }
+              }
+            ],
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            }
+          },
+          "enableStaging": false
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "CD DeltaTable to FabricDb",
+        "dependsOn": [
+          {
+            "activity": "nb_Files2DeltaTable",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "SELECT\t\n        --P.StagingProjection, \n        ApiEndPoint = STRING_AGG(CONVERT (NVARCHAR (MAX), CONCAT(CHAR(39),P.ApiEndPoint,CHAR(39))), ',')\nFROM\tMeta.Process P \nWHERE\tP.IsActive = 1 AND P.TableSchema = 'Kantata';\n",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "61b1f767_45de_48d3_b2f1_feaeae53af39",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": true
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "GetApiEndPoints",
+        "dependsOn": []
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "74292d51-b5d7-40c5-8647-71d79b1411e1",
+          "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419",
+          "parameters": {
+            "pSchemaName": {
+              "value": {
+                "value": "@pipeline().parameters.SchemaName",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pTableName": {
+              "value": {
+                "value": "@pipeline().parameters.TableName",
+                "type": "Expression"
+              },
+              "type": "string"
+            },
+            "pDeltaLakeFolder": {
+              "value": {
+                "value": "@pipeline().parameters.tmpDeltaLakeSourceFolder",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_Files2DeltaTable",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "IngestKantataColumnMetaData",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "SalesforceServiceCloudSource",
+            "query": {
+              "value": "SELECT Name, QualifiedApiName, EntityDefinitionId, DataType, DurableId, ExtraTypeInfo, IsAutoNumber, IsCaseSensitive, IsDependentPicklist, IsCalculated, Label, Length, Digits, Precision, Scale, RelationshipName, ReferenceTargetField, IsCompound\nFROM    EntityParticle \nWHERE EntityDefinitionId IN ('@{activity('GetApiEndPoints').output.firstRow.ApiEndPoint}') \nAND     IsCompound = false",
+              "type": "Expression"
+            },
+            "additionalColumns": [
+              {
+                "name": "_crda_SourceExecutionDateTime",
+                "value": {
+                  "value": "@utcNow()",
+                  "type": "Expression"
+                }
+              }
+            ],
+            "includeDeletedObjects": false,
+            "partitionOption": "None",
+            "preserveScaleFromSchema": false,
+            "datasetSettings": {
+              "type": "SalesforceServiceCloudObject",
+              "schema": [],
+              "externalReferences": {
+                "connection": "@pipeline().libraryVariables.vl_SrcSalesforceKantata_Salesforce_ConnectionId"
+              },
+              "annotations": []
+            }
+          },
+          "sink": {
+            "type": "LakehouseTableSink",
+            "tableActionOption": "OverwriteSchema",
+            "applyVOrder": false,
+            "partitionOption": "None",
+            "datasetSettings": {
+              "type": "LakehouseTable",
+              "typeProperties": {
+                "schema": {
+                  "value": "@pipeline().parameters.SchemaName",
+                  "type": "Expression"
+                },
+                "table": {
+                  "value": "@pipeline().parameters.TableName",
+                  "type": "Expression"
+                }
+              },
+              "schema": [],
+              "linkedService": {
+                "name": "lh_BronzeLayer",
+                "properties": {
+                  "type": "Lakehouse",
+                  "typeProperties": {
+                    "artifactId": "9e22841c-13b0-87c1-4fc4-f0acc6eb7c0f",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000",
+                    "rootFolder": "Tables"
+                  },
+                  "annotations": []
+                }
+              },
+              "annotations": []
+            }
+          },
+          "translator": {
+            "type": "TabularTranslator",
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            }
+          },
+          "enableStaging": false
+        },
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "IngestKantataColumnMetaData",
+        "dependsOn": [
+          {
+            "activity": "GetApiEndPoints",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "SchemaName": {
+        "type": "string",
+        "defaultValue": "Kantata"
+      },
+      "TableName": {
+        "type": "string",
+        "defaultValue": "ColumnMetaData"
+      },
+      "tmpDeltaLakeSourceFolder": {
+        "type": "string",
+        "defaultValue": "tmp/Kantata/_ColumnMetaData"
+      }
+    },
+    "libraryVariables": {
+      "vl_SrcSalesforceKantata_Salesforce_ConnectionId": {
+        "type": "String",
+        "variableName": "Salesforce_ConnectionId",
+        "libraryName": "vl_SrcSalesforceKantata"
+      },
+      "vl_SrcSalesforceKantata_SalesforceOAuthURL": {
+        "type": "String",
+        "variableName": "SalesforceOAuthURL",
+        "libraryName": "vl_SrcSalesforceKantata"
+      },
+      "vl_SrcSalesforceKantata_SalesforceOAuthClientId": {
+        "type": "String",
+        "variableName": "SalesforceOAuthClientId",
+        "libraryName": "vl_SrcSalesforceKantata"
+      },
+      "vl_FabricObjects_FabricDbId": {
+        "type": "String",
+        "variableName": "FabricDbId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_WorkspaceId": {
+        "type": "String",
+        "variableName": "WorkspaceId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_cnFabricDbConnectionId": {
+        "type": "String",
+        "variableName": "cnFabricDbConnectionId",
+        "libraryName": "vl_FabricObjects"
+      }
+    },
+    "variables": {
+      "FileName": {
+        "type": "String"
+      },
+      "FolderPath": {
+        "type": "String"
+      },
+      "TimeNow": {
+        "type": "String"
+      },
+      "FolderPathChangeEvent": {
+        "type": "String"
+      }
+    }
+  }
+}

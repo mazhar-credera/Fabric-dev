@@ -37,10 +37,16 @@ pDeltaLakeFolder = "tmp/Kantata/_ColumnMetaData"
 
 # CELL ********************
 
-# Load all the files into one python data frame - this is ideal as the structure of all the parquet files are the same
+# Load all the files into one python data frame
 combined_df = spark.read.format("parquet").load(f"Files/{pDeltaLakeFolder}")
 
-combined_df.write.format("delta").mode("overwrite").save(f"Tables/{pSchemaName}/{pTableName}")
+(
+    combined_df.write
+    .format("delta")
+    .mode("overwrite")   # safe here — we confirmed table doesn't exist above
+    .option("mergeSchema", "true")
+    .save(f"Tables/{pSchemaName}/{pTableName}")
+)
 
 # METADATA ********************
 
