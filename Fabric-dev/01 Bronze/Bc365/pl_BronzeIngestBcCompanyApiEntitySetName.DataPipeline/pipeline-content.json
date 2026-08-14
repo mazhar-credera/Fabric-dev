@@ -59,21 +59,21 @@
             },
             "pBcCompanyName": {
               "value": {
-                "value": "@activity('Get Companies').output.value[0].name",
+                "value": "@activity('Get CompanyData').output.value[0].name",
                 "type": "Expression"
               },
               "type": "string"
             },
             "pBcCompanyId": {
               "value": {
-                "value": "@activity('Get Companies').output.value[0].id",
+                "value": "@activity('Get CompanyData').output.value[0].id",
                 "type": "Expression"
               },
               "type": "string"
             },
             "pCleanedCompanyName": {
               "value": {
-                "value": "@replace(replace(activity('Get Companies').output.value[0].name, ' ', ''), '.', '')",
+                "value": "@replace(replace(activity('Get CompanyData').output.value[0].name, ' ', ''), '.', '')",
                 "type": "Expression"
               },
               "type": "string"
@@ -87,14 +87,14 @@
             },
             "pSqlServer": {
               "value": {
-                "value": "26wb2mhrmc7ufbgouobam4lram-h4i7qkmqfipebjhx2yjbwsaude.database.fabric.microsoft.com",
+                "value": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbServerName",
                 "type": "Expression"
               },
               "type": "string"
             },
             "pSqlDatabase": {
               "value": {
-                "value": "FabricDb-0840fd25-a6c8-4e3e-9945-7730e8820c1e",
+                "value": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbName",
                 "type": "Expression"
               },
               "type": "string"
@@ -115,7 +115,7 @@
         "name": "nb_BronzeBcDeltaAppend",
         "dependsOn": [
           {
-            "activity": "Get Companies",
+            "activity": "Get CompanyData",
             "dependencyConditions": [
               "Succeeded"
             ]
@@ -142,13 +142,13 @@
           "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
         },
         "policy": {
-          "timeout": "0.00:30:00",
+          "timeout": "0.00:10:00",
           "retry": 0,
           "retryIntervalInSeconds": 30,
           "secureInput": true,
           "secureOutput": false
         },
-        "name": "Get Companies",
+        "name": "Get CompanyData",
         "dependsOn": [
           {
             "activity": "Get Bc365 Token",
@@ -214,6 +214,16 @@
       "vl_FabricObjects_FabricDbId": {
         "type": "String",
         "variableName": "FabricDbId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_FabricDbServerName": {
+        "type": "String",
+        "variableName": "FabricDbServerName",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_FabricDbName": {
+        "type": "String",
+        "variableName": "FabricDbName",
         "libraryName": "vl_FabricObjects"
       }
     },

@@ -33,15 +33,15 @@
 # Pipeline). This cell must be tagged as a "parameter cell" in Fabric.
 # Defaults below are illustrative only and should not be relied upon in production.
 # =============================================================================
-pBc365TenantId = "62ddbf61-ad82-4b79-9855-cc2a5fdb684c"
-pBc365UkEnv = "Sandbox"
-pOauth2Token = "pOauth2Token"
-pBcCompanyName = "Omnicom"
-pBcCompanyId = "2946198d-7d28-ec11-8f45-0022481b4f2e"
+pBc365TenantId  = "pBc365TenantId"
+pBc365UkEnv     = "Sandbox"
+pOauth2Token    = "pOauth2Token"
+pBcCompanyName  = "Omnicom"
+pBcCompanyId    = "pBcCompanyId"
 pCleanedCompanyName= "Omnicom"
 pParentPipelineName= "pl_IngestBc365"
-pSqlServer= "26wb2mhrmc7ufbgouobam4lram-h4i7qkmqfipebjhx2yjbwsaude.database.fabric.microsoft.com"
-pSqlDatabase= "FabricDb"
+pSqlServer      = "pSqlServer"
+pSqlDatabase    = "pSqlDatabase"
 
 
 # METADATA ********************
@@ -76,6 +76,8 @@ spark.conf.set("spark.sql.parquet.int96RebaseModeInRead", "CORRECTED")
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInRead", "CORRECTED")
 spark.conf.set("spark.sql.parquet.int96RebaseModeInWrite", "CORRECTED")
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
+# Increase maximum RPC message size for large driver-to-worker payloads
+# spark.conf.set("spark.rpc.message.maxSize", "512")
 
 # METADATA ********************
 
@@ -123,15 +125,6 @@ print(f"WORKSPACE_ID : {WORKSPACE_ID}.")
 print(f"PIPELINE_RUN_ID : {PIPELINE_RUN_ID}.")
 
 
-RETRYABLE_ERRORS = [
-    "DELTA_CONCURRENT_APPEND",
-    "DELTA_PROTOCOL_CHANGED",
-    "ConcurrentAppendException",
-    "ConcurrentTransactionException",
-    "DELTA_CONCURRENT_MODIFICATION",
-]
-
-
 # METADATA ********************
 
 # META {
@@ -141,58 +134,89 @@ RETRYABLE_ERRORS = [
 
 # CELL ********************
 
-# ============================================================
-# 3. HELPER: ENTRA ID SQL CONNECTION
-# ============================================================
-def get_db_connection():
-    """
-    Connects to Fabric SQL Database using Microsoft Entra ID Access Token
-    retrieved from the current Fabric session identity via mssparkutils.
-    """
-    raw_token = mssparkutils.credentials.getToken("https://database.windows.net/")
-    token_bytes = raw_token.encode("utf-16-le")
-    token_struct = struct.pack(f"<I{len(token_bytes)}s", len(token_bytes), token_bytes)
+# Global list of transient / retryable SQL and Connection errors
+RETRYABLE_ERRORS = (
+    "HYT00",                    # Login timeout expired
+    "08001",                    # Unable to connect to server / server not found
+    "08S01",                    # Communication link failure
+    "40613",                    # Database unavailable / serverless scaling
+    "Login timeout expired",
+    "Communication link failure",
+    "A transport-level error has occurred",
+    "The service is currently busy",
+)
 
+def get_db_connection(max_retries=5, initial_delay=3):
+    """
+    Connects to Fabric SQL Database using Microsoft Entra ID Access Token.
+    Includes exponential retry logic for cold-starts and retryable network errors.
+    """
     conn_str = (
         "Driver={ODBC Driver 18 for SQL Server};"
         f"Server={SqlServer},1433;"
         f"Database={SqlDatabase};"
         "Encrypt=yes;"
         "TrustServerCertificate=no;"
-        "Connection Timeout=30;"
+        "Connection Timeout=60;"  # Extended timeout for serverless cold-starts
     )
     SQL_COPT_SS_ACCESS_TOKEN = 1256
-    conn = pyodbc.connect(conn_str, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
-    conn.autocommit = True 
-    return conn
 
+    for attempt in range(1, max_retries + 1):
+        try:
+            # Fetch fresh token per attempt
+            raw_token = mssparkutils.credentials.getToken("https://database.windows.net/")
+            token_bytes = raw_token.encode("utf-16-le")
+            token_struct = struct.pack(f"<I{len(token_bytes)}s", len(token_bytes), token_bytes)
 
-# ============================================================
-# 2. HELPER: function to execute queries/SPs using Entra ID token auth
-# ============================================================
-def execute_sql(query, params=(), fetch=False):
-    """
-	Wrapper function to execute queries/SPs safely using Entra ID token auth.
-	"""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(query, params)
-        results = None
-        
-        if fetch:
-            columns = [column[0] for column in cursor.description]
-            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        
-        if not conn.autocommit:
-            conn.commit()
+            conn = pyodbc.connect(conn_str, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
+            conn.autocommit = True
+            return conn
+
+        except pyodbc.Error as e:
+            err_str = str(e)
+            is_retryable = any(err in err_str for err in RETRYABLE_ERRORS)
             
-        return results
-    finally:
-        cursor.close()
-        conn.close()
+            if is_retryable and attempt < max_retries:
+                wait_time = round((initial_delay ** attempt) + (attempt * 0.5), 2)
+                print(f"[SQL CONN RETRY] Connection failed (Attempt {attempt}/{max_retries}). Retrying in {wait_time}s...", flush=True)
+                time.sleep(wait_time)
+                continue
+            raise e
 
 
+def execute_sql(query, params=(), fetch=False, max_retries=3):
+    """
+    Wrapper function to execute queries/SPs safely using Entra ID token auth with retry support.
+    """
+    for attempt in range(1, max_retries + 1):
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            try:
+                cursor.execute(query, params)
+                results = None
+                
+                if fetch:
+                    columns = [column[0] for column in cursor.description]
+                    results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+                
+                if not conn.autocommit:
+                    conn.commit()
+                    
+                return results
+            finally:
+                cursor.close()
+                conn.close()
+
+        except pyodbc.Error as e:
+            err_str = str(e)
+            is_retryable = any(err in err_str for err in RETRYABLE_ERRORS)
+            
+            if is_retryable and attempt < max_retries:
+                print(f"[SQL EXEC RETRY] Execution attempt {attempt}/{max_retries} failed. Retrying...", flush=True)
+                time.sleep(2 * attempt)
+                continue
+            raise e
 
 # METADATA ********************
 
@@ -361,26 +385,27 @@ def promote_integers_to_doubles(df, exclude_cols=["_crda_SourceExecutionId"]):
 # ============================================================
 def save_df_as_single_parquet(df, target_file_path):
     """
-    Forces PySpark to output a single physical .parquet file instead of a folder 
-    containing multiple partition files.
+    Forces PySpark to output a single physical .parquet file instead of a folder.
+    Uses repartition(1) to perform a shuffle, avoiding spark.rpc.message.maxSize limits
+    on large driver-created DataFrames.
     """
     temp_dir = f"{target_file_path}_tmp"
 
-    # 1. Write single partition to a temporary folder
-    df.coalesce(1).write.mode("overwrite").parquet(temp_dir)
+    # repartition(1) uses a shuffle phase to keep task payload sizes tiny
+    df.repartition(1).write.mode("overwrite").parquet(temp_dir)
 
-    # 2. Find the generated part file inside the temp folder
+    # Locate the generated single part file inside the temp directory
     files = mssparkutils.fs.ls(temp_dir)
     part_file = next(f.path for f in files if f.name.startswith("part-") and f.name.endswith(".parquet"))
 
-    # 3. Delete existing file/folder at the target path if present
+    # Remove target destination if present
     if mssparkutils.fs.exists(target_file_path):
         mssparkutils.fs.rm(target_file_path, recurse=True)
 
-    # 4. Move the single parquet file to the exact target path
+    # Move the single parquet file to target destination
     mssparkutils.fs.mv(part_file, target_file_path)
 
-    # 5. Clean up temporary staging directory
+    # Clean up temporary staging directory
     mssparkutils.fs.rm(temp_dir, recurse=True)
 
 
@@ -493,16 +518,20 @@ try:
             watermark_col = metadata.get("WatermarkColumnName", "lastModifiedDateTime")
 
             # 6. Build API Watermark Filter
-            if metadata.get("IngestFirstTime") == 0:
-                # Convert DB string to valid ISO-8601 DateTimeOffset
-                dt = datetime.fromisoformat(str(metadata["BronzeWatermarkValue"]).replace(" ", "T").rstrip("Z"))
-                watermark_val = dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-                
-                current_time_str = utc_now.strftime("%Y-%m-%dT%H:%M:%SZ")
-                api_filter = f"?$filter={watermark_col} gt {watermark_val} and {watermark_col} le {current_time_str}"
-            else:
+            if metadata.get("IngestFirstTime") == 1:
                 current_time_str = utc_now.strftime("%Y-%m-%dT%H:%M:%SZ")
                 api_filter = f"?$filter={watermark_col} le {current_time_str}"
+            else:
+                # Convert DB string to valid ISO-8601 DateTimeOffset
+                dt = datetime.fromisoformat(str(metadata["BronzeWatermarkValue"]).replace(" ", "T").rstrip("Z"))
+
+                # Format directly with guaranteed 4-digit year padding (:04d)
+                watermark_val = f"{dt.year:04d}-{dt.month:02d}-{dt.day:02d}T{dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}Z"
+
+                print(f"dt ...[{dt}] : watermark_val ...[{watermark_val}]", flush=True)
+
+                current_time_str = utc_now.strftime("%Y-%m-%dT%H:%M:%SZ")
+                api_filter = f"?$filter={watermark_col} gt {watermark_val} and {watermark_col} le {current_time_str}"
 
             # 7. Ingest Main Data
             print(f"[{api_entity}] Ingesting Main Data...", flush=True)
@@ -548,6 +577,9 @@ try:
                 sanitized_main_data = cast_ints_to_floats_in_dict(main_data)
                 df_main_raw = spark.createDataFrame(sanitized_main_data)
                 
+                # Define full destination file path
+                target_main_file_path = f"Files/{delta_lake_bronze_folder}/{parquet_filename}"
+                
                 df_main = (
                     df_main_raw.withColumn(
                         "_crda_BronzeLoadDateTime", lit(load_dt).cast("timestamp")
@@ -562,14 +594,12 @@ try:
                         lit(f"{delta_lake_bronze_folder}/{parquet_filename}"),
                     )
                 )
-                print(f"[{api_entity}] Metadata columns added to df_main... SUCCESS", flush=True)
                 df_main = clean_bc_columns(df_main)
                 df_main = promote_integers_to_doubles(df_main)
                 
-                df_main.write.mode("overwrite").parquet(
-                    f"Files/{delta_lake_bronze_folder}/{parquet_filename}"
-                )
-                print(f"[{api_entity}] Main data to Files... SUCCESS", flush=True)
+                # Save as a single physical .parquet file (e.g. Files/bronze/gLEntries/2026/08/12-130129.parquet)
+                save_df_as_single_parquet(df_main, target_main_file_path)
+                print(f"[{api_entity}] Main data single file [{target_main_file_path}] saved to Files... SUCCESS", flush=True)
 
                 spark.sql(f"CREATE SCHEMA IF NOT EXISTS `{target_schema}`")
                 
@@ -606,7 +636,6 @@ try:
                 spark.sql(
                     f"CREATE TABLE IF NOT EXISTS `{target_schema}`.`{target_table}` USING DELTA LOCATION '{tgt_bc_path}'"
                 )
-
             if ids_data:
                 sanitized_ids_data = cast_ints_to_floats_in_dict(ids_data)
                 df_active_raw = spark.createDataFrame(sanitized_ids_data)
@@ -633,7 +662,7 @@ try:
 
                 # Save as a single physical .parquet file (overwrites existing file)
                 save_df_as_single_parquet(df_active, target_active_file_path)
-                print(f"[{api_entity}] ActiveIds single file saved to Files... SUCCESS", flush=True)
+                print(f"[{api_entity}] ActiveIds single file [{target_active_file_path}] saved to Files... SUCCESS", flush=True)
                 
                 table_exists = False
                 try:
@@ -705,7 +734,7 @@ try:
                     f"SELECT COALESCE(MAX(`{watermark_col}`), '{new_watermark_val}') AS BronzeWatermarkValue FROM `{target_schema}`.`{target_table}`"
                 )
                 new_watermark_val = str(watermark_df.collect()[0][0])
-                print(f"[{api_entity}] Got latest Watermark... SUCCESS", flush=True)
+                print(f"[{api_entity}] Got latest Watermark [{new_watermark_val}]... SUCCESS", flush=True)
             except Exception as wm_err:
                 print(f"[{api_entity}] Could not fetch watermark from table, using default: {wm_err}", flush=True)
 

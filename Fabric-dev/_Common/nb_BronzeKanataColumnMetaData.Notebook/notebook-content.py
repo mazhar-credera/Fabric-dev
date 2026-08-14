@@ -43,7 +43,7 @@ combined_df = spark.read.format("parquet").load(f"Files/{pDeltaLakeFolder}")
 (
     combined_df.write
     .format("delta")
-    .mode("overwrite")   # safe here — we confirmed table doesn't exist above
+    .mode("overwrite")   
     .option("mergeSchema", "true")
     .save(f"Tables/{pSchemaName}/{pTableName}")
 )

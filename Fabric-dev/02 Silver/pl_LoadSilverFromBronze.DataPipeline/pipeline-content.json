@@ -65,7 +65,7 @@
             },
             "pHashColumnsJson": {
               "value": {
-                "value": "@activity('FN_GetProcessMetadata').output.firstRow.HashColumnsJson\n\n",
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.KantataHashColumnsJson\n\n",
                 "type": "Expression"
               },
               "type": "string"
@@ -90,6 +90,14 @@
                 "type": "Expression"
               },
               "type": "int"
+            },
+            "pRunSoftDelete": {
+              "value": "True",
+              "type": "bool"
+            },
+            "pDebug": {
+              "value": false,
+              "type": "bool"
             }
           },
           "sessionTag": {

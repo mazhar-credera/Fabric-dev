@@ -4,6 +4,7 @@
       {
         "type": "ForEach",
         "typeProperties": {
+          "isSequential": false,
           "items": {
             "value": "@activity('GetApiEndPoints').output.value",
             "type": "Expression"
@@ -15,7 +16,7 @@
                 "source": {
                   "type": "SalesforceServiceCloudSource",
                   "query": {
-                    "value": "SELECT Name, QualifiedApiName, EntityDefinitionId, DataType, DurableId, ExtraTypeInfo, IsAutoNumber, IsCaseSensitive, IsDependentPicklist, IsCalculated, Label, Length, Digits, Precision, Scale, RelationshipName, ReferenceTargetField, IsCompound\nFROM    EntityParticle \nWHERE EntityDefinitionId IN ('@{item().ApiEndPoint}') \nAND     IsCompound = false",
+                    "value": "SELECT Name, EntityDefinitionId, DataType, DurableId, ExtraTypeInfo, IsAutoNumber, IsCaseSensitive, IsDependentPicklist, IsCalculated, Label, Length, Digits, Precision, Scale, RelationshipName, ReferenceTargetField, IsCompound, EntityDefinition.QualifiedApiName\nFROM    EntityParticle \nWHERE EntityDefinitionId IN (@{item().ApiEndPoint}) \nAND     IsCompound = false",
                     "type": "Expression"
                   },
                   "additionalColumns": [
@@ -23,13 +24,6 @@
                       "name": "_crda_SourceExecutionDateTime",
                       "value": {
                         "value": "@utcNow()",
-                        "type": "Expression"
-                      }
-                    },
-                    {
-                      "name": "TableApiName",
-                      "value": {
-                        "value": "@item().ApiEndPoint",
                         "type": "Expression"
                       }
                     }
@@ -90,7 +84,7 @@
                   "type": "TabularTranslator",
                   "typeConversion": true,
                   "typeConversionSettings": {
-                    "allowDataTruncation": true,
+                    "allowDataTruncation": false,
                     "treatBooleanAsNumber": false
                   }
                 },
@@ -188,7 +182,7 @@
             "mappings": [
               {
                 "source": {
-                  "name": "TableApiName"
+                  "name": "EntityDefinition.QualifiedApiName"
                 },
                 "sink": {
                   "name": "TableApiName"
@@ -196,7 +190,7 @@
               },
               {
                 "source": {
-                  "name": "QualifiedApiName"
+                  "name": "Name"
                 },
                 "sink": {
                   "name": "ColumnName"
@@ -261,7 +255,7 @@
             ],
             "typeConversion": true,
             "typeConversionSettings": {
-              "allowDataTruncation": true,
+              "allowDataTruncation": false,
               "treatBooleanAsNumber": false
             }
           },
@@ -346,7 +340,7 @@
           "source": {
             "type": "FabricSqlDatabaseSource",
             "sqlReaderQuery": {
-              "value": "SELECT\t--TOP 3\n        P.StagingProjection, P.ApiEndPoint \nFROM\tMeta.Process P \nWHERE\tP.IsActive = 1 AND P.TableSchema = 'Kantata';\n",
+              "value": "WITH BatchedProcesses AS (\n    SELECT \n        P.ApiEndPoint,\n        /* Assigns a batch ID from 0 to N, grouping every 7 rows together */\n        BatchCount = (ROW_NUMBER() OVER (ORDER BY P.ApiEndPoint) - 1) / 7\n    FROM Meta.Process P \n    WHERE P.IsActive = 1 AND P.TableSchema = 'Kantata'\n)\nSELECT \n    ApiEndPoint = STRING_AGG(CONVERT(NVARCHAR(MAX), CONCAT(CHAR(39), ApiEndPoint, CHAR(39))), ', ')\nFROM BatchedProcesses\nGROUP BY BatchCount\nORDER BY BatchCount;",
               "type": "Expression"
             },
             "partitionOption": "None",

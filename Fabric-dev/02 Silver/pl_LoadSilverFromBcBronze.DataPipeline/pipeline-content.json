@@ -90,6 +90,14 @@
                 "type": "Expression"
               },
               "type": "int"
+            },
+            "pRunSoftDelete": {
+              "value": true,
+              "type": "bool"
+            },
+            "pDebug": {
+              "value": false,
+              "type": "bool"
             }
           },
           "sessionTag": {
