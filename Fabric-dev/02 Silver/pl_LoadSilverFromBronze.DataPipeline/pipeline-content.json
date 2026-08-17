@@ -338,7 +338,7 @@
           {
             "activity": "nb_LoadSilverDeltaTables",
             "dependencyConditions": [
-              "Completed"
+              "Succeeded"
             ]
           }
         ]

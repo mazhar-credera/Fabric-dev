@@ -60,6 +60,18 @@
       "note": "",
       "type": "String",
       "value": "26wb2mhrmc7ufbgouobam4lram-h4i7qkmqfipebjhx2yjbwsaude.datawarehouse.fabric.microsoft.com"
+    },
+    {
+      "name": "FabricDbName",
+      "note": "",
+      "type": "String",
+      "value": "FabricDb-0840fd25-a6c8-4e3e-9945-7730e8820c1e"
+    },
+    {
+      "name": "FabricDbServerName",
+      "note": "",
+      "type": "String",
+      "value": "26wb2mhrmc7ufbgouobam4lram-h4i7qkmqfipebjhx2yjbwsaude.database.fabric.microsoft.com"
     }
   ]
 }
