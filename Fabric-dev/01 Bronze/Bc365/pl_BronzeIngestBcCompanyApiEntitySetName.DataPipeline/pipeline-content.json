@@ -112,7 +112,7 @@
           "secureInput": true,
           "secureOutput": false
         },
-        "name": "nb_BronzeBcDeltaAppend",
+        "name": "nb_BronzeIngestBcCompanyApiEntitySetName",
         "dependsOn": [
           {
             "activity": "Get CompanyData",

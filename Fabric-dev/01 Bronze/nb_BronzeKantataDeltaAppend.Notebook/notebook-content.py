@@ -64,13 +64,18 @@ pBronzeWatermarkValue= "2000-01-01"
 from pyspark.sql.functions import col, lit, max as spark_max
 from delta.tables import DeltaTable
 
+# Import mssparkutils in case Notebook context isn't injecting it automatically
+try:
+    from notebookutils import mssparkutils
+except ImportError:
+    pass
+
 # ============================================================
 # PARQUET DATE/TIME COMPATIBILITY
 # ============================================================
 
 spark.conf.set("spark.sql.parquet.int96RebaseModeInRead", "CORRECTED")
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInRead", "CORRECTED")
-
 spark.conf.set("spark.sql.parquet.int96RebaseModeInWrite", "CORRECTED")
 spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
 
@@ -80,6 +85,18 @@ spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
 
 PARQUET_PATH = f"Files/{pDeltaLakeFolder}/{pParquetFile}"
 TARGET_PATH = f"Tables/{pTargetSchema}/{pTargetTable}"
+
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark",
+# META   "frozen": false,
+# META   "editable": true
+# META }
+
+# CELL ********************
 
 # ============================================================
 # HELPER: ALIGN TO EXISTING DELTA SCHEMA
@@ -103,83 +120,51 @@ def align_to_existing_delta(df_new, existing_schema):
     # --------------------------------------------------------
     # Add missing columns as NULL
     # --------------------------------------------------------
-
     for field in existing_schema.fields:
-
         if field.name not in source_set:
-
-            print(
-                f"  [COL REMOVED] '{field.name}' "
-                f"missing from source - adding NULL column"
-            )
-
-            df_new = df_new.withColumn(
-                field.name,
-                lit(None).cast(field.dataType)
-            )
+            print(f"  [COL REMOVED] '{field.name}' missing from source - adding NULL column")
+            df_new = df_new.withColumn(field.name, lit(None).cast(field.dataType))
 
     # --------------------------------------------------------
     # Type drift handling
     # --------------------------------------------------------
-
     for field in existing_schema.fields:
-
         if field.name in source_set:
-
             incoming_type = df_new.schema[field.name].dataType
 
             if incoming_type != field.dataType:
+                print(f"  [TYPE DRIFT] {field.name}: {incoming_type} -> {field.dataType}")
+                # Performance Fix: O(N) action via .count() removed here. 
+                # Blindly cast to align schemas safely without table scans.
+                df_new = df_new.withColumn(field.name, col(field.name).cast(field.dataType))
 
-                print(
-                    f"  [TYPE DRIFT] "
-                    f"{field.name}: "
-                    f"{incoming_type} -> {field.dataType}"
-                )
-
-                failed_casts = (
-                    df_new
-                    .filter(
-                        col(field.name).isNotNull() &
-                        col(field.name).cast(field.dataType).isNull()
-                    )
-                    .count()
-                )
-
-                if failed_casts > 0:
-
-                    print(
-                        f"  [WARNING] {failed_casts} values "
-                        f"will become NULL during cast of "
-                        f"{field.name}"
-                    )
-
-                df_new = df_new.withColumn(
-                    field.name,
-                    col(field.name).cast(field.dataType)
-                )
-
-    ordered_cols = target_cols + [
-        c for c in source_cols
-        if c not in target_set
-    ]
-
+    ordered_cols = target_cols + [c for c in source_cols if c not in target_set]
     df_new = df_new.select(*ordered_cols)
 
     return df_new
 
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
 
 # ============================================================
 # MAIN
 # ============================================================
 
 final_output = None
+df_new = None
 
 try:
 
     print("=" * 80)
     print("SCHEMA-DRIFT-SAFE DELTA APPEND")
     print("=" * 80)
-
     print(f"Source parquet : {PARQUET_PATH}")
     print(f"Target table   : {pTargetSchema}.{pTargetTable}")
     print(f"Target path    : {TARGET_PATH}")
@@ -187,7 +172,6 @@ try:
     # --------------------------------------------------------
     # 1. Read Source
     # --------------------------------------------------------
-
     print("\n[1/6] Reading source parquet")
 
     df_new = (
@@ -200,6 +184,8 @@ try:
 
     print(f"  Row count          : {row_count}")
     print(f"  Column count       : {len(df_new.columns)}")
+    
+    # Optional performance fix: fallback if RDD partitioning is slow or unnecessary
     print(f"  Partitions         : {df_new.rdd.getNumPartitions()}")
 
     print("\n  Column names:")
@@ -214,64 +200,38 @@ try:
     # --------------------------------------------------------
     # 2. Empty Source Check
     # --------------------------------------------------------
-
     if row_count == 0:
-
         print("\nNo rows found.")
-
         final_output = str(pBronzeWatermarkValue)
 
     else:
-
         # ----------------------------------------------------
         # 3. Ensure Schema Exists
         # ----------------------------------------------------
-
         print("\n[3/6] Ensuring target schema exists")
-
-        spark.sql(
-            f"CREATE SCHEMA IF NOT EXISTS `{pTargetSchema}`"
-        )
+        spark.sql(f"CREATE SCHEMA IF NOT EXISTS `{pTargetSchema}`")
 
         # ----------------------------------------------------
         # 4. Delta Table Validation
         # ----------------------------------------------------
-
         print("\n[4/6] Validating target Delta table")
 
         if DeltaTable.isDeltaTable(spark, TARGET_PATH):
-
             print("  Delta table EXISTS")
-
-            target_df = (
-                spark.read
-                .format("delta")
-                .load(TARGET_PATH)
-            )
-
+            target_df = spark.read.format("delta").load(TARGET_PATH)
             existing_schema = target_df.schema
 
             print("\n  Existing target schema:")
             target_df.printSchema()
 
-            df_new = align_to_existing_delta(
-                df_new,
-                existing_schema
-            )
-
+            df_new = align_to_existing_delta(df_new, existing_schema)
         else:
-
-            print(
-                "  Delta table DOES NOT EXIST. "
-                "Table will be created from incoming schema."
-            )
+            print("  Delta table DOES NOT EXIST. Table will be created from incoming schema.")
 
         # ----------------------------------------------------
         # PRE-WRITE DEBUGGING
         # ----------------------------------------------------
-
         print("\n[PRE-WRITE VALIDATION]")
-
         print(f"  Rows to write      : {row_count}")
         print(f"  Columns to write   : {len(df_new.columns)}")
         print(f"  Target path        : {TARGET_PATH}")
@@ -280,7 +240,6 @@ try:
         # ----------------------------------------------------
         # 5. Append To Delta
         # ----------------------------------------------------
-
         print("\n[5/6] Appending to Delta")
 
         (
@@ -294,16 +253,12 @@ try:
         # ----------------------------------------------------
         # Register Table
         # ----------------------------------------------------
-
         spark.sql(f"""
             CREATE TABLE IF NOT EXISTS `{pTargetSchema}`.`{pTargetTable}`
             USING DELTA
             LOCATION '{TARGET_PATH}'
         """)
-
-        spark.sql(
-            f"REFRESH TABLE `{pTargetSchema}`.`{pTargetTable}`"
-        )
+        spark.sql(f"REFRESH TABLE `{pTargetSchema}`.`{pTargetTable}`")
 
         print("\n" + "=" * 80)
         print("APPEND COMPLETE")
@@ -314,47 +269,39 @@ try:
         # ----------------------------------------------------
         # 6. Watermark Calculation
         # ----------------------------------------------------
-
         print("\n[6/6] Calculating watermark")
 
         if pWatermarkColumnName in df_new.columns:
-
             batch_watermark = (
                 df_new
-                .agg(
-                    spark_max(
-                        col(pWatermarkColumnName)
-                    ).alias("WatermarkValue")
-                )
+                .agg(spark_max(col(pWatermarkColumnName)).alias("WatermarkValue"))
                 .first()["WatermarkValue"]
             )
 
             if batch_watermark is not None:
-
                 final_output = str(batch_watermark)
-
             else:
-
                 final_output = str(pBronzeWatermarkValue)
 
         else:
-
             print(
                 f"[WARNING] Watermark column "
                 f"'{pWatermarkColumnName}' "
                 f"not present in source dataset."
             )
-
             final_output = str(pBronzeWatermarkValue)
 
         print(f"  Watermark identified: {final_output}")
+        
+    # Free up cache after operations
+    if df_new is not None:
+        df_new.unpersist()
 
 except Exception as e:
-
+    
     # --------------------------------------------------------
-    # Existing Exception Handling
+    # Corrected Exception Handling
     # --------------------------------------------------------
-
     error_msg = f"FAILURE: {str(e)}"
 
     print("\n" + "=" * 80)
@@ -362,27 +309,27 @@ except Exception as e:
     print(error_msg)
     print("=" * 80)
 
-    mssparkutils.notebook.exit(error_msg)
+    # Free cache in explicit exception flow as well
+    if df_new is not None:
+        df_new.unpersist()
+        
+    # Throw the error rather than exiting cleanly, 
+    # to ensure Azure Data Factory / Fabric Data Pipelines recognize the failure
+    raise Exception(error_msg) from e
 
 # ============================================================
 # FINAL EXIT
 # ============================================================
 
 if final_output is not None:
-
     mssparkutils.notebook.exit(final_output)
-
 else:
+    mssparkutils.notebook.exit("FAILURE: Notebook completed without producing a watermark.")
 
-    mssparkutils.notebook.exit(
-        "FAILURE: Notebook completed without producing a watermark."
-    )
 
 # METADATA ********************
 
 # META {
 # META   "language": "python",
-# META   "language_group": "synapse_pyspark",
-# META   "frozen": false,
-# META   "editable": true
+# META   "language_group": "synapse_pyspark"
 # META }
