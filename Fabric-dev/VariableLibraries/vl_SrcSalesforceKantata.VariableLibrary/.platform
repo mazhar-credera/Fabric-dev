@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "VariableLibrary",
+    "displayName": "vl_SrcSalesforceKantata"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "f67127b4-e7f6-aac3-49a5-2af6f6c6146b"
+  }
+}

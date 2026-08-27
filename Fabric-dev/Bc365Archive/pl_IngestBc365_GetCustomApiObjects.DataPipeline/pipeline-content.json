@@ -1,0 +1,218 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "ForEach",
+        "typeProperties": {
+          "isSequential": false,
+          "batchCount": 10,
+          "items": {
+            "value": "@activity('Get ApiEndPoints').output.value",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "type": "InvokePipeline",
+              "typeProperties": {
+                "parameters": {
+                  "CompanyId": {
+                    "value": "@pipeline().parameters.CompanyId",
+                    "type": "Expression"
+                  },
+                  "CompanyName": {
+                    "value": "@item().CompanyName",
+                    "type": "Expression"
+                  },
+                  "StagingProjection": {
+                    "value": "@concat(\n\t'BC_',\n\titem().CleanedCompanyName,\n\t'_',\n\titem().ApiEntitySetName\n)",
+                    "type": "Expression"
+                  },
+                  "ParentPipelineName": {
+                    "value": "@pipeline().parameters.ParentPipeline",
+                    "type": "Expression"
+                  },
+                  "CleansedCompanyName": {
+                    "value": "@item().CleanedCompanyName",
+                    "type": "Expression"
+                  },
+                  "oauthToken": {
+                    "value": "@pipeline().parameters.oauthToken",
+                    "type": "Expression"
+                  }
+                },
+                "waitOnCompletion": true,
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "pipelineId": "7641f09a-a8ae-b22b-4bf4-2beeafe441c1",
+                "operationType": "InvokeFabricPipeline"
+              },
+              "externalReferences": {
+                "connection": "1a2c4c71-4ef2-4838-bd3a-2f14c381d214"
+              },
+              "policy": {
+                "timeout": "0.2:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": true,
+                "secureOutput": false
+              },
+              "name": "pl_IngestBc365Objects",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "ForEachApiEndPoint",
+        "dependsOn": [
+          {
+            "activity": "Get ApiEndPoints",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "Set PipelineParams",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "SELECT\tTOP 1\n\t\tB.CompanyName, B.ApiGroup, B.ApiEntitySetName ,\n\t\tCleanedCompanyName = REPLACE(REPLACE(B.CompanyName, ' ', ''), '.', '')\nFROM\tETL.BcSourceConfig B\nWHERE\tB.IsEnabled = 1 \nAND \tB.CompanyName = '@{pipeline().parameters.CompanyName}'",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "4d22d9c9_3601_4e62_93a5_fc093584d025",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": false
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Get ApiEndPoints",
+        "dependsOn": []
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "PipelineParams",
+          "value": {
+            "value": "CompanyId: @{pipeline().parameters.CompanyId}\nCompanyName: @{pipeline().parameters.CompanyName}\nParentPipeline: @{pipeline().parameters.ParentPipeline}",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Set PipelineParams",
+        "description": "Incoming prams are secured so will not show in the monitor, so this variable is for debugging",
+        "dependsOn": []
+      }
+    ],
+    "parameters": {
+      "CompanyName": {
+        "type": "string",
+        "defaultValue": "Credera Ltd"
+      },
+      "ParentPipeline": {
+        "type": "string",
+        "defaultValue": "pl_IngestBc365"
+      },
+      "CompanyId": {
+        "type": "string",
+        "defaultValue": "ccc"
+      },
+      "oauthToken": {
+        "type": "string"
+      }
+    },
+    "libraryVariables": {
+      "vl_Bc365_Bc365TokenUri": {
+        "type": "String",
+        "variableName": "Bc365TenantId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_SrcBc365_Bc365TenantId": {
+        "type": "String",
+        "variableName": "Bc365TenantId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365ClientId": {
+        "type": "String",
+        "variableName": "Bc365ClientId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365UkEnv": {
+        "type": "String",
+        "variableName": "Bc365UkEnv",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_cnBc365CWebConnectionId": {
+        "type": "String",
+        "variableName": "cnBc365CWebConnectionId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365ProdSec": {
+        "type": "String",
+        "variableName": "Bc365ProdSec",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365UkEnvSandbox": {
+        "type": "String",
+        "variableName": "Bc365UkEnvSandbox",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_FabricObjects_cnFabricDbConnectionId": {
+        "type": "String",
+        "variableName": "cnFabricDbConnectionId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_WorkspaceId": {
+        "type": "String",
+        "variableName": "WorkspaceId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_FabricDbId": {
+        "type": "String",
+        "variableName": "FabricDbId",
+        "libraryName": "vl_FabricObjects"
+      }
+    },
+    "variables": {
+      "StagingProjection": {
+        "type": "String"
+      },
+      "PipelineParams": {
+        "type": "String"
+      }
+    }
+  }
+}

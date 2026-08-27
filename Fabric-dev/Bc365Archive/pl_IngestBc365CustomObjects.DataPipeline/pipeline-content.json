@@ -1,0 +1,802 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "Get Bc365 Token",
+        "type": "WebActivity",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "relativeUrl": {
+            "value": "@{pipeline().libraryVariables.vl_Bc365_Bc365TenantId}/oauth2/v2.0/token",
+            "type": "Expression"
+          },
+          "body": {
+            "value": "@concat(\n    'grant_type=client_credentials'\n    ,'&scope=https://api.businesscentral.dynamics.com/.default'\n    ,'&client_id='\n    ,pipeline().libraryVariables.vl_Bc365_Bc365ClientIdSandbox\n    ,'&client_secret='\n    ,encodeUriComponent(pipeline().libraryVariables.vl_Bc365_Bc365SandboxSec)\n)",
+            "type": "Expression"
+          }
+        },
+        "externalReferences": {
+          "connection": "96e1e28e-089c-4fb4-998f-97fdd4f70d53"
+        }
+      },
+      {
+        "name": "Get Bc365",
+        "type": "WebActivity",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": true
+        },
+        "typeProperties": {
+          "method": "GET",
+          "headers": {
+            "Authorization": {
+              "value": "Bearer @{activity('Get Bc365 Token').output.access_token}",
+              "type": "Expression"
+            },
+            "Accept": {
+              "value": "application/json",
+              "type": "Expression"
+            },
+            "Prefer": {
+              "value": "odata.maxpagesize=1000",
+              "type": "Expression"
+            }
+          },
+          "relativeUrl": {
+            "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    pipeline().parameters.ApiPublisher,'/',\n    pipeline().parameters.ApiGroup,'/',\n    'v2.0','/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    pipeline().parameters.ApiEntitySetName,\n    '?$filter=lastModifiedDateTime gt ',\n    formatDateTime(pipeline().parameters.lastModifiedDateTime, 'yyyy-MM-ddTHH:mm:ssZ'),\n    ' and lastModifiedDateTime le ', formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')\n)\n",
+            "type": "Expression"
+          }
+        },
+        "externalReferences": {
+          "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+        }
+      },
+      {
+        "name": "SetFileName",
+        "type": "SetVariable",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "variableName": "FileName",
+          "value": {
+            "value": "@concat(replace(replace(substring(utcnow(),8,11),':',''),'T','-'), '.parquet')",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "SetFolderPath",
+        "type": "SetVariable",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "variableName": "FolderPath",
+          "value": {
+            "value": "@{concat(replace(replace(pipeline().parameters.DeltaLakeSourceFolder,'{CompanyName}', replace(pipeline().parameters.CompanyName, ' ', '')),'{ApiEntitySetName}', pipeline().parameters.ApiEntitySetName),'/',replace(substring(utcNow(),0,7),'-','/'))\n}",
+            "type": "Expression"
+          }
+        }
+      },
+      {
+        "name": "CopyToDeltaLake",
+        "type": "Copy",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "SetFileName",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "SetFolderPath",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": true
+        },
+        "typeProperties": {
+          "source": {
+            "type": "RestSource",
+            "httpRequestTimeout": "00:01:40",
+            "requestInterval": "00.00:00:00.010",
+            "requestMethod": "GET",
+            "additionalHeaders": {
+              "Authorization": {
+                "value": "Bearer @{activity('Get Bc365 Token').output.access_token}",
+                "type": "Expression"
+              },
+              "Prefer": {
+                "value": "odata.maxpagesize=500",
+                "type": "Expression"
+              }
+            },
+            "paginationRules": {
+              "AbsoluteUrl": "$['@odata.nextLink']"
+            },
+            "datasetSettings": {
+              "annotations": [],
+              "type": "RestResource",
+              "typeProperties": {
+                "relativeUrl": {
+                  "value": "@{pipeline().libraryVariables.vl_Bc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox}/api/@{pipeline().parameters.ApiPublisher}/@{pipeline().parameters.ApiGroup}/v2.0/companies(@{pipeline().parameters.CompanyId})/@{pipeline().parameters.ApiEntitySetName}?$filter=lastModifiedDateTime gt @{formatDateTime(pipeline().parameters.lastModifiedDateTime, 'yyyy-MM-ddTHH:mm:ssZ')}",
+                  "type": "Expression"
+                }
+              },
+              "schema": [],
+              "externalReferences": {
+                "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+              }
+            }
+          },
+          "sink": {
+            "type": "ParquetSink",
+            "storeSettings": {
+              "type": "AzureBlobStorageWriteSettings",
+              "copyBehavior": "FlattenHierarchy"
+            },
+            "formatSettings": {
+              "type": "ParquetWriteSettings",
+              "enableVertiParquet": true
+            },
+            "datasetSettings": {
+              "annotations": [],
+              "connectionSettings": {
+                "name": "lh_BronzeLayer",
+                "properties": {
+                  "annotations": [],
+                  "type": "Lakehouse",
+                  "typeProperties": {
+                    "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419",
+                    "artifactId": "c6eb7c0f-f0ac-4fc4-87c1-13b09e22841c",
+                    "rootFolder": "Files"
+                  },
+                  "externalReferences": {
+                    "connection": "c443cedf-3748-491a-9b83-f9c686e9a243"
+                  }
+                }
+              },
+              "type": "Parquet",
+              "typeProperties": {
+                "location": {
+                  "type": "LakehouseLocation",
+                  "fileName": {
+                    "value": "@variables('FileName')",
+                    "type": "Expression"
+                  },
+                  "folderPath": {
+                    "value": "@variables('FolderPath')",
+                    "type": "Expression"
+                  }
+                },
+                "compressionCodec": "snappy"
+              },
+              "schema": []
+            }
+          },
+          "enableStaging": false,
+          "translator": {
+            "type": "TabularTranslator",
+            "mappings": [
+              {
+                "source": {
+                  "path": "$['@odata.context']"
+                },
+                "sink": {
+                  "name": "@@odata.context"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['@odata.etag']"
+                },
+                "sink": {
+                  "name": "@@odata.etag"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['id']"
+                },
+                "sink": {
+                  "name": "id"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['entryNo']"
+                },
+                "sink": {
+                  "name": "entryNo",
+                  "type": "Int32"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['bankAccountNo']"
+                },
+                "sink": {
+                  "name": "bankAccountNo",
+                  "type": "String"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['postingDate']"
+                },
+                "sink": {
+                  "name": "postingDate"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['documentType']"
+                },
+                "sink": {
+                  "name": "documentType"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['documentNo']"
+                },
+                "sink": {
+                  "name": "documentNo",
+                  "type": "Decimal"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['description']"
+                },
+                "sink": {
+                  "name": "description"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['currencyCode']"
+                },
+                "sink": {
+                  "name": "currencyCode"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['amount']"
+                },
+                "sink": {
+                  "name": "amount"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['remainingAmount']"
+                },
+                "sink": {
+                  "name": "remainingAmount"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['amountLCY']"
+                },
+                "sink": {
+                  "name": "amountLCY"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['bankAccPostingGroup']"
+                },
+                "sink": {
+                  "name": "bankAccPostingGroup"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['globalDimension1Code']"
+                },
+                "sink": {
+                  "name": "globalDimension1Code"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['globalDimension2Code']"
+                },
+                "sink": {
+                  "name": "globalDimension2Code"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['ourContactCode']"
+                },
+                "sink": {
+                  "name": "ourContactCode"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['userID']"
+                },
+                "sink": {
+                  "name": "userID"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['sourceCode']"
+                },
+                "sink": {
+                  "name": "sourceCode"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['open']"
+                },
+                "sink": {
+                  "name": "open"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['positive']"
+                },
+                "sink": {
+                  "name": "positive"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['closedbyEntryNo']"
+                },
+                "sink": {
+                  "name": "closedbyEntryNo"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['closedatDate']"
+                },
+                "sink": {
+                  "name": "closedatDate"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['journalBatchName']"
+                },
+                "sink": {
+                  "name": "journalBatchName"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['reasonCode']"
+                },
+                "sink": {
+                  "name": "reasonCode"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['balAccountType']"
+                },
+                "sink": {
+                  "name": "balAccountType"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['balAccountNo']"
+                },
+                "sink": {
+                  "name": "balAccountNo"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['transactionNo']"
+                },
+                "sink": {
+                  "name": "transactionNo"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['statementStatus']"
+                },
+                "sink": {
+                  "name": "statementStatus"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['statementNo']"
+                },
+                "sink": {
+                  "name": "statementNo"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['statementLineNo']"
+                },
+                "sink": {
+                  "name": "statementLineNo"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['debitAmount']"
+                },
+                "sink": {
+                  "name": "debitAmount"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['creditAmount']"
+                },
+                "sink": {
+                  "name": "creditAmount"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['debitAmountLCY']"
+                },
+                "sink": {
+                  "name": "debitAmountLCY"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['creditAmountLCY']"
+                },
+                "sink": {
+                  "name": "creditAmountLCY"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['documentDate']"
+                },
+                "sink": {
+                  "name": "documentDate"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['externalDocumentNo']"
+                },
+                "sink": {
+                  "name": "externalDocumentNo"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['reversed']"
+                },
+                "sink": {
+                  "name": "reversed"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['reversedbyEntryNo']"
+                },
+                "sink": {
+                  "name": "reversedbyEntryNo"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['reversedEntryNo']"
+                },
+                "sink": {
+                  "name": "reversedEntryNo"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['dimensionSetID']"
+                },
+                "sink": {
+                  "name": "dimensionSetID"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['value'][0]['lastModifiedDateTime']"
+                },
+                "sink": {
+                  "name": "lastModifiedDateTime"
+                }
+              },
+              {
+                "source": {
+                  "path": "$['@odata.nextLink']"
+                },
+                "sink": {
+                  "name": "@@odata.nextLink"
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "CopyToDeltaLake_Rest",
+        "type": "Copy",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "SetFolderPath",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "SetFileName",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": true
+        },
+        "typeProperties": {
+          "source": {
+            "type": "RestSource",
+            "additionalColumns": [
+              {
+                "name": "_crda_BronzeLoadDateTime",
+                "value": {
+                  "value": "@utcNow()",
+                  "type": "Expression"
+                }
+              },
+              {
+                "name": "_crda_SourceFileName",
+                "value": {
+                  "value": "@concat(variables('FolderPath'),'/',variables('FileName'))",
+                  "type": "Expression"
+                }
+              },
+              {
+                "name": "_crda_SourceExecutionId",
+                "value": {
+                  "value": "@string(pipeline().parameters._crda_SourceExecutionId)",
+                  "type": "Expression"
+                }
+              },
+              {
+                "name": "BC_CompanyName",
+                "value": {
+                  "value": "@pipeline().parameters.CompanyName",
+                  "type": "Expression"
+                }
+              }
+            ],
+            "httpRequestTimeout": "00:10:00",
+            "requestInterval": "00.00:00:00.500",
+            "requestMethod": "GET",
+            "additionalHeaders": {
+              "Authorization": {
+                "value": "Bearer @{activity('Get Bc365 Token').output.access_token}",
+                "type": "Expression"
+              },
+              "Prefer": {
+                "value": "odata.maxpagesize=1000",
+                "type": "Expression"
+              }
+            },
+            "paginationRules": {
+              "AbsoluteUrl": "$['@odata.nextLink']"
+            },
+            "datasetSettings": {
+              "annotations": [],
+              "type": "RestResource",
+              "typeProperties": {
+                "relativeUrl": {
+                  "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    pipeline().parameters.ApiPublisher,'/',\n    pipeline().parameters.ApiGroup,'/',\n    'v2.0','/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    pipeline().parameters.ApiEntitySetName,\n    '?$filter=lastModifiedDateTime gt ',\n    formatDateTime(pipeline().parameters.lastModifiedDateTime, 'yyyy-MM-ddTHH:mm:ssZ'),\n    ' and lastModifiedDateTime le ', formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')\n)\n",
+                  "type": "Expression"
+                }
+              },
+              "schema": [],
+              "externalReferences": {
+                "connection": "36368ccb-9289-4dcb-90d6-73f2a278976a"
+              }
+            }
+          },
+          "sink": {
+            "type": "ParquetSink",
+            "storeSettings": {
+              "type": "AzureBlobStorageWriteSettings",
+              "copyBehavior": "FlattenHierarchy"
+            },
+            "formatSettings": {
+              "type": "ParquetWriteSettings",
+              "enableVertiParquet": true
+            },
+            "datasetSettings": {
+              "annotations": [],
+              "connectionSettings": {
+                "name": "lh_BronzeLayer",
+                "properties": {
+                  "annotations": [],
+                  "type": "Lakehouse",
+                  "typeProperties": {
+                    "workspaceId": "29f8113f-2a90-401e-a4f7-d6121b481419",
+                    "artifactId": "c6eb7c0f-f0ac-4fc4-87c1-13b09e22841c",
+                    "rootFolder": "Files"
+                  },
+                  "externalReferences": {
+                    "connection": "c443cedf-3748-491a-9b83-f9c686e9a243"
+                  }
+                }
+              },
+              "type": "Parquet",
+              "typeProperties": {
+                "location": {
+                  "type": "LakehouseLocation",
+                  "fileName": {
+                    "value": "@variables('FileName')",
+                    "type": "Expression"
+                  },
+                  "folderPath": {
+                    "value": "@variables('FolderPath')",
+                    "type": "Expression"
+                  }
+                },
+                "compressionCodec": "snappy"
+              },
+              "schema": []
+            }
+          },
+          "enableStaging": false
+        }
+      }
+    ],
+    "parameters": {
+      "ApiEntitySetName": {
+        "type": "string",
+        "defaultValue": "bankAccountLedgerEntries"
+      },
+      "ApiGroup": {
+        "type": "string",
+        "defaultValue": "BankAccount"
+      },
+      "ApiPublisher": {
+        "type": "string",
+        "defaultValue": "CrederaLtd"
+      },
+      "CompanyId": {
+        "type": "string",
+        "defaultValue": "3abc695f-7d28-ec11-8f45-0022481b4f2e"
+      },
+      "CompanyName": {
+        "type": "string",
+        "defaultValue": "Credera Ltd"
+      },
+      "lastModifiedDateTime": {
+        "type": "string",
+        "defaultValue": "2020-01-01T00:00:00Z"
+      },
+      "DeltaLakeSourceFolder": {
+        "type": "string",
+        "defaultValue": "raw/bronze/BC/{CompanyName}/{ApiEntitySetName}"
+      },
+      "_crda_SourceExecutionId": {
+        "type": "int",
+        "defaultValue": -1073
+      },
+      "BcEnvironment": {
+        "type": "string",
+        "defaultValue": "Sandbox"
+      },
+      "Token": {
+        "type": "string"
+      }
+    },
+    "variables": {
+      "FileName": {
+        "type": "String"
+      },
+      "FolderPath": {
+        "type": "String"
+      },
+      "lastModifiedDateTime": {
+        "type": "String"
+      }
+    },
+    "libraryVariables": {
+      "vl_Bc365_Bc365UkEnvSandbox": {
+        "type": "String",
+        "variableName": "Bc365UkEnvSandbox",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365ClientIdSandbox": {
+        "type": "String",
+        "variableName": "Bc365ClientIdSandbox",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365SandboxSec": {
+        "type": "String",
+        "variableName": "Bc365SandboxSec",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365TenantId": {
+        "type": "String",
+        "variableName": "Bc365TenantId",
+        "libraryName": "vl_Bc365"
+      }
+    }
+  }
+}

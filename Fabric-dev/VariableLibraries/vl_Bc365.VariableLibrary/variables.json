@@ -1,0 +1,35 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/variableLibrary/definition/variables/1.0.0/schema.json",
+  "variables": [
+    {
+      "name": "Bc365UkEnv",
+      "note": "",
+      "type": "String",
+      "value": "Prod"
+    },
+    {
+      "name": "Bc365ClientId",
+      "note": "",
+      "type": "String",
+      "value": "5e5b60ca-8dd4-4bee-93a7-46a5d38b1365"
+    },
+    {
+      "name": "Bc365TenantId",
+      "note": "",
+      "type": "String",
+      "value": "62ddbf61-ad82-4b79-9855-cc2a5fdb684c"
+    },
+    {
+      "name": "Bc365TokenUri",
+      "note": "",
+      "type": "String",
+      "value": "<tenantid>/oauth2/v2.0/token?resource=https://api.businesscentral.dynamics.com"
+    },
+    {
+      "name": "cnBc365CWebConnectionId",
+      "note": "",
+      "type": "String",
+      "value": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+    }
+  ]
+}

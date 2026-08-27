@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "DataPipeline",
+    "displayName": "pl_IngestBc365Sandbox"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "b2748802-09c8-ab9d-4d5d-49c5f4c9d3d3"
+  }
+}

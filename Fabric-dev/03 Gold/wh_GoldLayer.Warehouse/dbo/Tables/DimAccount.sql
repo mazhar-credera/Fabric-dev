@@ -1,0 +1,78 @@
+CREATE TABLE [dbo].[DimAccount] (
+
+	[AccountSk] int NOT NULL, 
+	[AccountBk] varchar(18) NOT NULL, 
+	[Name] varchar(80) NOT NULL, 
+	[AccountDisplayName] varchar(80) NOT NULL, 
+	[FriendlyName] varchar(80) NOT NULL, 
+	[AnonymisedAccountName] varchar(80) NOT NULL, 
+	[Description] varchar(max) NOT NULL, 
+	[Type] varchar(255) NOT NULL, 
+	[Status] varchar(255) NOT NULL, 
+	[AccountDirectorSk] int NOT NULL, 
+	[ParentAccountSk] int NOT NULL, 
+	[OwnerSk] int NOT NULL, 
+	[BusinessUnitSk] int NOT NULL, 
+	[TradingEntityBusinessUnitSk] int NULL, 
+	[BillingContactBk] varchar(18) NULL, 
+	[BillingParentAccountSk] int NULL, 
+	[BusinessUnitTradingName] varchar(80) NULL, 
+	[Industry] varchar(80) NOT NULL, 
+	[AnnualRevenue] decimal(18,2) NOT NULL, 
+	[NumberOfEmployees] int NOT NULL, 
+	[SICCode] varchar(4) NOT NULL, 
+	[CurrencyIsoCode] varchar(3) NOT NULL, 
+	[Phone] varchar(255) NOT NULL, 
+	[WebsiteLink] varchar(255) NOT NULL, 
+	[TaxCodeReference] varchar(1024) NOT NULL, 
+	[BillingStreet] varchar(255) NOT NULL, 
+	[BillingCity] varchar(255) NOT NULL, 
+	[BillingState] varchar(255) NOT NULL, 
+	[BillingCountry] varchar(255) NOT NULL, 
+	[BillingPostCode] varchar(255) NOT NULL, 
+	[ShippingStreet] varchar(255) NOT NULL, 
+	[ShippingCity] varchar(255) NOT NULL, 
+	[ShippingState] varchar(255) NOT NULL, 
+	[ShippingCountry] varchar(255) NOT NULL, 
+	[ShippingPostCode] varchar(255) NOT NULL, 
+	[InvoicePaymentTermDays] int NOT NULL, 
+	[InvoiceCurrencyIsoCode] varchar(3) NOT NULL, 
+	[SupplierInvoiceMatchingTolerancePct] decimal(5,2) NOT NULL, 
+	[AutoApproveInvoice] bit NULL, 
+	[IsCustomer] bit NOT NULL, 
+	[IsSupplier] bit NOT NULL, 
+	[OwnerIsCurrentEmployee] bit NOT NULL, 
+	[CredsAvailable] bit NOT NULL, 
+	[NAVVATBusPostGroup] varchar(80) NOT NULL, 
+	[ServiceGroup] varchar(255) NOT NULL, 
+	[ServiceIndustry] varchar(255) NOT NULL, 
+	[SectorName] varchar(255) NOT NULL, 
+	[OmnicomFinanceCode] varchar(255) NOT NULL, 
+	[TotalSalesWon] int NOT NULL, 
+	[ActiveProjects] int NOT NULL, 
+	[UrlToKanataRecord] varchar(255) NOT NULL, 
+	[SectorGroups] varchar(255) NULL, 
+	[MsaExpiryDate] date NULL, 
+	[MsaSigningDate] date NULL, 
+	[ActualHoursBilling] varchar(255) NULL, 
+	[SageAccountReference] varchar(255) NULL, 
+	[_crda_ActiveFromDate] datetime2(6) NOT NULL, 
+	[_crda_ActiveToDate] datetime2(6) NOT NULL, 
+	[_crda_ActiveFromDateSk] int NOT NULL, 
+	[_crda_ActiveToDateSk] int NOT NULL, 
+	[IsCurrent] bit NOT NULL, 
+	[_crda_Hash] varbinary(16) NOT NULL, 
+	[_crda_CreatedExecutionId] int NOT NULL, 
+	[_crda_CreatedDateTime] datetime2(6) NOT NULL, 
+	[_crda_isDeleted] bit NOT NULL
+);
+
+
+GO
+ALTER TABLE [dbo].[DimAccount] ADD CONSTRAINT PK__dbo_DimAccount primary key NONCLUSTERED ([AccountSk]);
+GO
+ALTER TABLE [dbo].[DimAccount] ADD CONSTRAINT UQ__dbo_DimAccount unique NONCLUSTERED ([AccountBk], [_crda_ActiveFromDate]);
+GO
+ALTER TABLE [dbo].[DimAccount] ADD CONSTRAINT FK__dbo_DimAccount__crda_ActiveFromDateSk_dbo_DimDate FOREIGN KEY ([_crda_ActiveFromDateSk]) REFERENCES [dbo].[DimDate]([DateSk]);
+GO
+ALTER TABLE [dbo].[DimAccount] ADD CONSTRAINT FK__dbo_DimAccount__crda_ActiveToDateSk_dbo_DimDate FOREIGN KEY ([_crda_ActiveToDateSk]) REFERENCES [dbo].[DimDate]([DateSk]);

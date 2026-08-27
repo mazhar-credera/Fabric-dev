@@ -1,0 +1,1137 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "FileName",
+          "value": {
+            "value": "@concat(replace(replace(substring(utcnow(),8,11),':',''),'T','-'), '.parquet')",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "SetFileName",
+        "dependsOn": [
+          {
+            "activity": "usp_InsertExecutionLog",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "FolderPath",
+          "value": {
+            "value": "@{concat(activity('FN_GetProcessMetadata').output.firstRow.DeltaLakeBronzeFolder,'/',\n    replace(substring(utcNow(),0,7),'-',\n    '/'))}",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "SetFolderPath",
+        "dependsOn": [
+          {
+            "activity": "usp_InsertExecutionLog",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "SELECT\tAP.*, M.* \nFROM\tETL.FN_GetProcessMetadata('@{pipeline().parameters.StagingProjection}', '@{pipeline().parameters.ParentPipelineName}') M\nCROSS APPLY ( \n\tSELECT\tBc365_ApiPublisher\t= MAX(IIF(P.PropertyName = 'Bc365_ApiPublisher', P.PropertyValue, NULL)) \n\t\t\t,Bc365_ApiVersion\t= MAX(IIF(P.PropertyName = 'Bc365_ApiVersion', P.PropertyValue, NULL)) \n\tFROM\tETL.Property P \n\tWHERE\tP.PropertyName IN ('Bc365_ApiPublisher', 'Bc365_ApiVersion')\n)\tAP ",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "c76b3781_e3aa_4b0b_922b_83ac164388df",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": true
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "FN_GetProcessMetadata",
+        "dependsOn": []
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderStoredProcedureName": "[ETL].[usp_InsertExecutionLog]",
+            "storedProcedureParameters": {
+              "BatchId": {
+                "value": "1",
+                "type": "Int32"
+              },
+              "ProcessId": {
+                "value": {
+                  "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                  "type": "Expression"
+                },
+                "type": "Int32"
+              },
+              "ExternalHandlerId": {
+                "value": {
+                  "value": "@pipeline().Pipeline",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "PipelineName": {
+                "value": {
+                  "value": "@pipeline().PipelineName",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "WorkspaceId": {
+                "value": {
+                  "value": "@pipeline().DataFactory",
+                  "type": "Expression"
+                },
+                "type": "String"
+              },
+              "LogDescription": {
+                "value": {
+                  "value": "Load Bronze for : @{pipeline().parameters.StagingProjection}",
+                  "type": "Expression"
+                },
+                "type": "String"
+              }
+            },
+            "partitionOption": "None",
+            "queryTimeout": "00:10:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "schema": [],
+            "connectionSettings": {
+              "name": "7bedc8e0_64f8_48fc_8965_0d8cecf1a00d",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                  "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                },
+                "externalReferences": {
+                  "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": true
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "usp_InsertExecutionLog",
+        "dependsOn": [
+          {
+            "activity": "FN_GetProcessMetadata",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "Set PipelineParams",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "TimeNow",
+          "value": {
+            "value": "@formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Set TimeNow",
+        "dependsOn": [
+          {
+            "activity": "usp_InsertExecutionLog",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "ApiGroup",
+          "value": {
+            "value": "@split(activity('FN_GetProcessMetadata').output.firstRow.ApiEndPoint, '/')[1]",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Set ApiGroup",
+        "dependsOn": [
+          {
+            "activity": "usp_InsertExecutionLog",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "ApiEndPoint",
+          "value": {
+            "value": "@split(activity('FN_GetProcessMetadata').output.firstRow.ApiEndPoint, '/')[2]",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Set ApiEndPoint",
+        "dependsOn": [
+          {
+            "activity": "usp_InsertExecutionLog",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "WebActivity",
+        "typeProperties": {
+          "method": "GET",
+          "relativeUrl": {
+            "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiPublisher,'/',\n    variables('ApiGroup'),'/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiVersion,'/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    variables('ApiEndPoint'),\n    variables('ApiFilter'),\n    '&$select=id&$top=1'\n)",
+            "type": "Expression"
+          },
+          "headers": {
+            "Authorization": {
+              "value": "Bearer @{pipeline().parameters.oauthToken}",
+              "type": "Expression"
+            },
+            "Prefer": {
+              "value": "odata.maxpagesize=500",
+              "type": "Expression"
+            },
+            "Accept": "application/json"
+          }
+        },
+        "externalReferences": {
+          "connection": "5191e616-5fcc-4582-b732-28e370f0f4a0"
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": true,
+          "secureOutput": false
+        },
+        "name": "wbCountRows",
+        "description": "Copy Activity's strict tabular translator cannot elegantly handle empty JSON arrays when an explicit schema mapping is defined, the best practice is to handle the empty state at the pipeline control-flow level",
+        "dependsOn": [
+          {
+            "activity": "Set ApiEndPoint",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "Set ApiGroup",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "Set TimeNow",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "SetFolderPath",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "SetFileName",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          },
+          {
+            "activity": "Set ApiFilter",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "IfCondition",
+        "typeProperties": {
+          "expression": {
+            "value": "@greater(length(activity('wbCountRows').output.value), 0)",
+            "type": "Expression"
+          },
+          "ifTrueActivities": [
+            {
+              "type": "Copy",
+              "typeProperties": {
+                "source": {
+                  "type": "RestSource",
+                  "requestMethod": "GET",
+                  "additionalHeaders": {
+                    "Authorization": {
+                      "value": "Bearer @{pipeline().parameters.oauthToken}",
+                      "type": "Expression"
+                    },
+                    "Prefer": {
+                      "value": "odata.maxpagesize=500",
+                      "type": "Expression"
+                    }
+                  },
+                  "paginationRules": {
+                    "AbsoluteUrl": "$['@odata.nextLink']"
+                  },
+                  "httpRequestTimeout": "00:01:40",
+                  "requestInterval": "00.00:00:00.010",
+                  "additionalColumns": [
+                    {
+                      "name": "_crda_BronzeLoadDateTime",
+                      "value": {
+                        "value": "@formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')",
+                        "type": "Expression"
+                      }
+                    },
+                    {
+                      "name": "_crda_SourceFileName",
+                      "value": {
+                        "value": "@string(concat(variables('FolderPath'),'/',variables('FileName')))",
+                        "type": "Expression"
+                      }
+                    },
+                    {
+                      "name": "_crda_SourceExecutionId",
+                      "value": {
+                        "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                        "type": "Expression"
+                      }
+                    },
+                    {
+                      "name": "BcCompanyName",
+                      "value": {
+                        "value": "@pipeline().parameters.CompanyName",
+                        "type": "Expression"
+                      }
+                    },
+                    {
+                      "name": "BcCompanyId",
+                      "value": {
+                        "value": "@pipeline().parameters.CompanyId",
+                        "type": "Expression"
+                      }
+                    }
+                  ],
+                  "datasetSettings": {
+                    "type": "RestResource",
+                    "typeProperties": {
+                      "relativeUrl": {
+                        "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiPublisher,'/',\n    variables('ApiGroup'),'/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiVersion,'/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    variables('ApiEndPoint'),\n    variables('ApiFilter')\n)",
+                        "type": "Expression"
+                      }
+                    },
+                    "schema": [],
+                    "externalReferences": {
+                      "connection": "c9de70b1-816f-41f4-91ce-00be6766e3f8"
+                    },
+                    "annotations": []
+                  }
+                },
+                "sink": {
+                  "type": "ParquetSink",
+                  "formatSettings": {
+                    "type": "ParquetWriteSettings",
+                    "enableVertiParquet": true
+                  },
+                  "storeSettings": {
+                    "type": "AzureBlobStorageWriteSettings",
+                    "copyBehavior": "FlattenHierarchy"
+                  },
+                  "datasetSettings": {
+                    "type": "Parquet",
+                    "typeProperties": {
+                      "location": {
+                        "type": "LakehouseLocation",
+                        "folderPath": {
+                          "value": "@variables('FolderPath')",
+                          "type": "Expression"
+                        },
+                        "fileName": {
+                          "value": "@variables('FileName')",
+                          "type": "Expression"
+                        }
+                      },
+                      "compressionCodec": "snappy"
+                    },
+                    "schema": [],
+                    "connectionSettings": {
+                      "name": "lh_BronzeLayer",
+                      "properties": {
+                        "type": "Lakehouse",
+                        "typeProperties": {
+                          "artifactId": "9e22841c-13b0-87c1-4fc4-f0acc6eb7c0f",
+                          "workspaceId": "00000000-0000-0000-0000-000000000000",
+                          "rootFolder": "Files"
+                        },
+                        "externalReferences": {
+                          "connection": "c443cedf-3748-491a-9b83-f9c686e9a243"
+                        },
+                        "annotations": []
+                      }
+                    },
+                    "annotations": []
+                  }
+                },
+                "translator": {
+                  "value": "@json(string(activity('FN_GetProcessMetadata').output.firstRow.Bc365IngestColumnMapping))",
+                  "type": "Expression"
+                },
+                "enableStaging": false
+              },
+              "policy": {
+                "timeout": "0.01:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "IngestBc365CustomObject",
+              "dependsOn": []
+            },
+            {
+              "type": "SqlServerStoredProcedure",
+              "typeProperties": {
+                "storedProcedureName": "[ETL].[usp_UpdateExecutionLog_Failure]",
+                "storedProcedureParameters": {
+                  "ExecutionId": {
+                    "value": {
+                      "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                      "type": "Expression"
+                    },
+                    "type": "Int32"
+                  },
+                  "ProcessId": {
+                    "value": {
+                      "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                      "type": "Expression"
+                    },
+                    "type": "Int32"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "IngestBc365/IngestBc365CustomObject: @{activity('IngestBc365CustomObject').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  }
+                }
+              },
+              "connectionSettings": {
+                "name": "2d5c3f41_5a07_43da_8a59_566db48bcbf0",
+                "properties": {
+                  "type": "FabricSqlDatabase",
+                  "typeProperties": {
+                    "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                    "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                  },
+                  "externalReferences": {
+                    "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.00:10:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "IngestBc365CustomObject Failure",
+              "dependsOn": [
+                {
+                  "activity": "IngestBc365CustomObject",
+                  "dependencyConditions": [
+                    "Failed"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "InvokePipeline",
+              "typeProperties": {
+                "parameters": {
+                  "StagingProjection": {
+                    "value": "@pipeline().parameters.StagingProjection",
+                    "type": "Expression"
+                  },
+                  "ExecutionId": {
+                    "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                    "type": "Expression"
+                  },
+                  "InitialWatermark": {
+                    "value": "@activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue",
+                    "type": "Expression"
+                  },
+                  "ProcessId": {
+                    "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                    "type": "Expression"
+                  },
+                  "pTargetSchema": {
+                    "value": "@activity('FN_GetProcessMetadata').output.firstRow.TableSchema",
+                    "type": "Expression"
+                  },
+                  "pTargetTable": {
+                    "value": "@activity('FN_GetProcessMetadata').output.firstRow.BronzeTableName",
+                    "type": "Expression"
+                  },
+                  "pParquetFile": {
+                    "value": "@variables('FileName')",
+                    "type": "Expression"
+                  },
+                  "pDeltaLakeFolder": {
+                    "value": "@variables('FolderPath')",
+                    "type": "Expression"
+                  },
+                  "pWatermarkColumnName": {
+                    "value": "@activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName",
+                    "type": "Expression"
+                  },
+                  "pBronzeWatermarkValue": {
+                    "value": "@activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue",
+                    "type": "Expression"
+                  },
+                  "_crda_BronzeLoadDateTime": {
+                    "value": "@variables('TimeNow')",
+                    "type": "Expression"
+                  },
+                  "_crda_SourceExecutionId": {
+                    "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                    "type": "Expression"
+                  },
+                  "BcCompanyName": {
+                    "value": "@pipeline().parameters.CompanyName",
+                    "type": "Expression"
+                  },
+                  "BcCompanyId": {
+                    "value": "@pipeline().parameters.CompanyId",
+                    "type": "Expression"
+                  },
+                  "pSourceActiveIdsParquetFile": {
+                    "value": "@concat(activity('FN_GetProcessMetadata').output.firstRow.BcTmpFolderForIds,'/', pipeline().parameters.CleansedCompanyName, 'ActiveIds.parquet')",
+                    "type": "Expression"
+                  },
+                  "pKeyColumns": {
+                    "value": "@activity('FN_GetProcessMetadata').output.firstRow.PrimaryKeysJson",
+                    "type": "Expression"
+                  }
+                },
+                "waitOnCompletion": true,
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "pipelineId": "2bea063d-9a1a-aa6a-4a46-3b478abad20a",
+                "operationType": "InvokeFabricPipeline"
+              },
+              "externalReferences": {
+                "connection": "1a2c4c71-4ef2-4838-bd3a-2f14c381d214"
+              },
+              "policy": {
+                "timeout": "0.1:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "pl_BronzeBcDeltaAppend",
+              "dependsOn": [
+                {
+                  "activity": "IngestBc365CustomObject",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                },
+                {
+                  "activity": "IngestBc365IdsOnly",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Copy",
+              "typeProperties": {
+                "source": {
+                  "type": "RestSource",
+                  "requestMethod": "GET",
+                  "additionalHeaders": {
+                    "Authorization": {
+                      "value": "Bearer @{pipeline().parameters.oauthToken}",
+                      "type": "Expression"
+                    },
+                    "Prefer": {
+                      "value": "odata.maxpagesize=500",
+                      "type": "Expression"
+                    }
+                  },
+                  "paginationRules": {
+                    "AbsoluteUrl": "$['@odata.nextLink']"
+                  },
+                  "httpRequestTimeout": "00:01:40",
+                  "requestInterval": "00.00:00:00.010",
+                  "additionalColumns": [
+                    {
+                      "name": "_crda_BronzeLoadDateTime",
+                      "value": {
+                        "value": "@formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')",
+                        "type": "Expression"
+                      }
+                    },
+                    {
+                      "name": "_crda_SourceExecutionId",
+                      "value": {
+                        "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                        "type": "Expression"
+                      }
+                    },
+                    {
+                      "name": "BcCompanyName",
+                      "value": {
+                        "value": "@pipeline().parameters.CompanyName",
+                        "type": "Expression"
+                      }
+                    },
+                    {
+                      "name": "BcCompanyId",
+                      "value": {
+                        "value": "@pipeline().parameters.CompanyId",
+                        "type": "Expression"
+                      }
+                    }
+                  ],
+                  "datasetSettings": {
+                    "type": "RestResource",
+                    "typeProperties": {
+                      "relativeUrl": {
+                        "value": "@concat(\n    pipeline().libraryVariables.vl_Bc365_Bc365TenantId,'/',\n    pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox,'/',\n    'api','/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiPublisher,'/',\n    variables('ApiGroup'),'/',\n    activity('FN_GetProcessMetadata').output.firstRow.Bc365_ApiVersion,'/',\n    'companies(',pipeline().parameters.CompanyId,')','/',\n    variables('ApiEndPoint'),\n    '?$select=id,lastModifiedDateTime'\n)",
+                        "type": "Expression"
+                      }
+                    },
+                    "schema": [],
+                    "externalReferences": {
+                      "connection": "c9de70b1-816f-41f4-91ce-00be6766e3f8"
+                    },
+                    "annotations": []
+                  }
+                },
+                "sink": {
+                  "type": "ParquetSink",
+                  "formatSettings": {
+                    "type": "ParquetWriteSettings",
+                    "enableVertiParquet": true
+                  },
+                  "storeSettings": {
+                    "type": "AzureBlobStorageWriteSettings",
+                    "copyBehavior": "FlattenHierarchy"
+                  },
+                  "datasetSettings": {
+                    "type": "Parquet",
+                    "typeProperties": {
+                      "location": {
+                        "type": "LakehouseLocation",
+                        "folderPath": {
+                          "value": "@activity('FN_GetProcessMetadata').output.firstRow.BcTmpFolderForIds",
+                          "type": "Expression"
+                        },
+                        "fileName": {
+                          "value": "@concat(pipeline().parameters.CleansedCompanyName, 'ActiveIds.parquet')",
+                          "type": "Expression"
+                        }
+                      },
+                      "compressionCodec": "snappy"
+                    },
+                    "schema": [],
+                    "connectionSettings": {
+                      "name": "lh_BronzeLayer",
+                      "properties": {
+                        "type": "Lakehouse",
+                        "typeProperties": {
+                          "artifactId": "9e22841c-13b0-87c1-4fc4-f0acc6eb7c0f",
+                          "workspaceId": "00000000-0000-0000-0000-000000000000",
+                          "rootFolder": "Files"
+                        },
+                        "externalReferences": {
+                          "connection": "c443cedf-3748-491a-9b83-f9c686e9a243"
+                        },
+                        "annotations": []
+                      }
+                    },
+                    "annotations": []
+                  }
+                },
+                "translator": {
+                  "value": "@json(string(activity('FN_GetProcessMetadata').output.firstRow.Bc365Ingest_IdsOnly_ColumnMapping))",
+                  "type": "Expression"
+                },
+                "enableStaging": false
+              },
+              "policy": {
+                "timeout": "0.01:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": true,
+                "secureOutput": false
+              },
+              "name": "IngestBc365IdsOnly",
+              "dependsOn": []
+            },
+            {
+              "type": "SqlServerStoredProcedure",
+              "typeProperties": {
+                "storedProcedureName": "[ETL].[usp_UpdateExecutionLog_Failure]",
+                "storedProcedureParameters": {
+                  "ExecutionId": {
+                    "value": {
+                      "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                      "type": "Expression"
+                    },
+                    "type": "Int32"
+                  },
+                  "ProcessId": {
+                    "value": {
+                      "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                      "type": "Expression"
+                    },
+                    "type": "Int32"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "IngestBc365/IngestBc365IdsOnly: @{activity('IngestBc365IdsOnly').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  }
+                }
+              },
+              "connectionSettings": {
+                "name": "2d5c3f41_5a07_43da_8a59_566db48bcbf0",
+                "properties": {
+                  "type": "FabricSqlDatabase",
+                  "typeProperties": {
+                    "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                    "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                  },
+                  "externalReferences": {
+                    "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.00:10:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "IngestBc365IdsOnly Failure",
+              "dependsOn": [
+                {
+                  "activity": "IngestBc365IdsOnly",
+                  "dependencyConditions": [
+                    "Failed"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "SqlServerStoredProcedure",
+              "typeProperties": {
+                "storedProcedureName": "[ETL].[usp_UpdateExecutionLog_Failure]",
+                "storedProcedureParameters": {
+                  "ExecutionId": {
+                    "value": {
+                      "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                      "type": "Expression"
+                    },
+                    "type": "Int32"
+                  },
+                  "ProcessId": {
+                    "value": {
+                      "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                      "type": "Expression"
+                    },
+                    "type": "Int32"
+                  },
+                  "ErrorMessage": {
+                    "value": {
+                      "value": "pl_BronzeBcDeltaAppend: @{activity('pl_BronzeBcDeltaAppend').error.message}",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  }
+                }
+              },
+              "connectionSettings": {
+                "name": "2d5c3f41_5a07_43da_8a59_566db48bcbf0",
+                "properties": {
+                  "type": "FabricSqlDatabase",
+                  "typeProperties": {
+                    "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                    "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                  },
+                  "externalReferences": {
+                    "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.00:10:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "pl_BronzeBcDeltaAppend Failure",
+              "dependsOn": [
+                {
+                  "activity": "pl_BronzeBcDeltaAppend",
+                  "dependencyConditions": [
+                    "Failed"
+                  ]
+                }
+              ]
+            }
+          ],
+          "ifFalseActivities": [
+            {
+              "type": "SqlServerStoredProcedure",
+              "typeProperties": {
+                "storedProcedureName": "[ETL].[usp_UpdateExecutionLog_Success]",
+                "storedProcedureParameters": {
+                  "ExecutionId": {
+                    "value": {
+                      "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                      "type": "Expression"
+                    },
+                    "type": "Int32"
+                  },
+                  "InitialWatermark": {
+                    "value": {
+                      "value": "@activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "ProcessId": {
+                    "value": {
+                      "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                      "type": "Expression"
+                    },
+                    "type": "Int32"
+                  },
+                  "Status": {
+                    "value": {
+                      "value": "Done",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  },
+                  "UpdatedWatermark": {
+                    "value": {
+                      "value": "@activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue",
+                      "type": "Expression"
+                    },
+                    "type": "String"
+                  }
+                }
+              },
+              "connectionSettings": {
+                "name": "2d5c3f41_5a07_43da_8a59_566db48bcbf0",
+                "properties": {
+                  "type": "FabricSqlDatabase",
+                  "typeProperties": {
+                    "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+                    "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+                  },
+                  "externalReferences": {
+                    "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.00:10:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "No Rows found Success",
+              "description": "End gracefully.",
+              "dependsOn": []
+            }
+          ]
+        },
+        "name": "If Rows Found",
+        "description": "Copy Activity's strict tabular translator cannot elegantly handle empty JSON arrays when an explicit schema mapping is defined, the best practice is to handle the empty state at the pipeline control-flow level",
+        "dependsOn": [
+          {
+            "activity": "wbCountRows",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "PipelineParams",
+          "value": {
+            "value": "StagingProjection: @{pipeline().parameters.StagingProjection}\nCleansedCompanyName: @{pipeline().parameters.CleansedCompanyName}\nCompanyId: @{pipeline().parameters.CompanyId}\nCompanyName: @{pipeline().parameters.CompanyName}\nParentPipelineName: @{pipeline().parameters.ParentPipelineName}\n",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Set PipelineParams",
+        "description": "Incoming prams are secured so will not show in the monitor, so this variable is for debugging",
+        "dependsOn": []
+      },
+      {
+        "type": "SqlServerStoredProcedure",
+        "typeProperties": {
+          "storedProcedureName": "[ETL].[usp_UpdateExecutionLog_Failure]",
+          "storedProcedureParameters": {
+            "ExecutionId": {
+              "value": {
+                "value": "@activity('usp_InsertExecutionLog').output.firstRow.ExecutionId",
+                "type": "Expression"
+              },
+              "type": "Int32"
+            },
+            "ProcessId": {
+              "value": {
+                "value": "@activity('FN_GetProcessMetadata').output.firstRow.ProcessId",
+                "type": "Expression"
+              },
+              "type": "Int32"
+            },
+            "ErrorMessage": {
+              "value": {
+                "value": "IngestBc365/wbCountRows: @{activity('wbCountRows').error.message}",
+                "type": "Expression"
+              },
+              "type": "String"
+            }
+          }
+        },
+        "connectionSettings": {
+          "name": "2d5c3f41_5a07_43da_8a59_566db48bcbf0",
+          "properties": {
+            "type": "FabricSqlDatabase",
+            "typeProperties": {
+              "artifactId": "@pipeline().libraryVariables.vl_FabricObjects_FabricDbId",
+              "workspaceId": "@pipeline().libraryVariables.vl_FabricObjects_WorkspaceId"
+            },
+            "externalReferences": {
+              "connection": "@pipeline().libraryVariables.vl_FabricObjects_cnFabricDbConnectionId"
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "wbCountRows Failure",
+        "dependsOn": [
+          {
+            "activity": "wbCountRows",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "SetVariable",
+        "typeProperties": {
+          "variableName": "ApiFilter",
+          "value": {
+            "value": "@concat(\n    '?$filter=',\n    if(\n        equals(activity('FN_GetProcessMetadata').output.firstRow.IngestFirstTime, 1),\n        concat(\n            activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName, \n            ' gt ', \n            formatDateTime(activity('FN_GetProcessMetadata').output.firstRow.BronzeWatermarkValue, 'yyyy-MM-ddTHH:mm:ssZ'),\n            ' and ',\n            activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName, \n            ' le ', \n            formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')\n        ),\n        concat(\n            activity('FN_GetProcessMetadata').output.firstRow.WatermarkColumnName, \n            ' le ', \n            formatDateTime(utcNow(), 'yyyy-MM-ddTHH:mm:ssZ')\n        )\n    )\n)",
+            "type": "Expression"
+          }
+        },
+        "policy": {
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Set ApiFilter",
+        "dependsOn": [
+          {
+            "activity": "usp_InsertExecutionLog",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "CompanyId": {
+        "type": "string",
+        "defaultValue": "3abc695f-7d28-ec11-8f45-0022481b4f2e"
+      },
+      "CompanyName": {
+        "type": "string",
+        "defaultValue": "Credera Ltd"
+      },
+      "StagingProjection": {
+        "type": "string",
+        "defaultValue": "BC_CrederaLtd_bankAccounts"
+      },
+      "ParentPipelineName": {
+        "type": "string",
+        "defaultValue": "pl_IngestBc365"
+      },
+      "CleansedCompanyName": {
+        "type": "string",
+        "defaultValue": "CrederaLtd"
+      },
+      "oauthToken": {
+        "type": "string"
+      }
+    },
+    "libraryVariables": {
+      "vl_FabricObjects_cnFabricDbConnectionId": {
+        "type": "String",
+        "variableName": "cnFabricDbConnectionId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_WorkspaceId": {
+        "type": "String",
+        "variableName": "WorkspaceId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_FabricObjects_FabricDbId": {
+        "type": "String",
+        "variableName": "FabricDbId",
+        "libraryName": "vl_FabricObjects"
+      },
+      "vl_Bc365_Bc365TenantId": {
+        "type": "String",
+        "variableName": "Bc365TenantId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365UkEnvSandbox": {
+        "type": "String",
+        "variableName": "Bc365UkEnvSandbox",
+        "libraryName": "vl_Bc365"
+      }
+    },
+    "variables": {
+      "FileName": {
+        "type": "String"
+      },
+      "FolderPath": {
+        "type": "String"
+      },
+      "TimeNow": {
+        "type": "String"
+      },
+      "SplitApiData": {
+        "type": "Array"
+      },
+      "ApiGroup": {
+        "type": "String"
+      },
+      "ApiEndPoint": {
+        "type": "String"
+      },
+      "CountRows": {
+        "type": "Integer"
+      },
+      "PipelineParams": {
+        "type": "String"
+      },
+      "ApiFilter": {
+        "type": "String"
+      }
+    }
+  }
+}

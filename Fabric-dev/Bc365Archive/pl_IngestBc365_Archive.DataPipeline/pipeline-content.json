@@ -1,0 +1,433 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "Get Bc365 Token",
+        "type": "WebActivity",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.00:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": true,
+          "secureInput": true
+        },
+        "typeProperties": {
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "relativeUrl": {
+            "value": "@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/oauth2/v2.0/token",
+            "type": "Expression"
+          },
+          "body": {
+            "value": "@concat(\n    'grant_type=client_credentials'\n    ,'&scope=https://api.businesscentral.dynamics.com/.default'\n    ,'&client_id='\n    ,pipeline().libraryVariables.vl_Bc365_Bc365ClientId\n    ,'&client_secret='\n    ,encodeUriComponent(pipeline().libraryVariables.vl_Bc365_Bc365ProdSec)\n)",
+            "type": "Expression"
+          }
+        },
+        "externalReferences": {
+          "connection": "96e1e28e-089c-4fb4-998f-97fdd4f70d53"
+        }
+      },
+      {
+        "name": "Get Companies",
+        "type": "WebActivity",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": true
+        },
+        "typeProperties": {
+          "method": "GET",
+          "headers": {
+            "Authorization": {
+              "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
+              "type": "Expression"
+            },
+            "Accept": "application/json"
+          },
+          "relativeUrl": {
+            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnvSandbox}/api/v2.0/companies?$filter=name eq 'BrightGen' or name eq 'Consolidation' or name eq 'Credera Ltd' or name eq 'Omnicom' or name eq 'The DMW Group Holdings Ltd.' or name eq 'The DMW Group Management Ltd.'",
+            "type": "Expression"
+          }
+        },
+        "externalReferences": {
+          "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+        }
+      },
+      {
+        "name": "ForEachCompany",
+        "type": "ForEach",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Get Companies",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "typeProperties": {
+          "items": {
+            "value": "@activity('Get Companies').output.value",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "name": "Get Data",
+              "type": "WebActivity",
+              "dependsOn": [],
+              "policy": {
+                "timeout": "0.00:30:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureOutput": false,
+                "secureInput": true
+              },
+              "typeProperties": {
+                "method": "GET",
+                "headers": {
+                  "Authorization": {
+                    "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
+                    "type": "Expression"
+                  },
+                  "Accept": "application/json"
+                },
+                "relativeUrl": {
+                  "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/v2.0/companies(@{item().id})/@{pipeline().parameters.ObjectApiName2}",
+                  "type": "Expression"
+                }
+              },
+              "externalReferences": {
+                "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Get metadata",
+        "type": "WebActivity",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": true
+        },
+        "typeProperties": {
+          "method": "GET",
+          "headers": {
+            "Authorization": {
+              "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
+              "type": "Expression"
+            },
+            "Accept": "application/json"
+          },
+          "relativeUrl": {
+            "value": "/62ddbf61-ad82-4b79-9855-cc2a5fdb684c/Sandbox/api/CrederaLtd/Vendor/v2.0/$metadata",
+            "type": "Expression"
+          }
+        },
+        "externalReferences": {
+          "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+        }
+      },
+      {
+        "name": "Get Custom Namespace",
+        "type": "WebActivity",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": true
+        },
+        "typeProperties": {
+          "method": "GET",
+          "headers": {
+            "Authorization": {
+              "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
+              "type": "Expression"
+            },
+            "Accept": "application/json"
+          },
+          "relativeUrl": {
+            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/",
+            "type": "Expression"
+          }
+        },
+        "externalReferences": {
+          "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+        }
+      },
+      {
+        "name": "Get Custom Extensions",
+        "type": "WebActivity",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": true
+        },
+        "typeProperties": {
+          "method": "GET",
+          "headers": {
+            "Authorization": {
+              "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
+              "type": "Expression"
+            },
+            "Accept": "application/json"
+          },
+          "relativeUrl": {
+            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/microsoft/automation/v2.0/extensions?company=Credera%20Ltd",
+            "type": "Expression"
+          }
+        },
+        "externalReferences": {
+          "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+        }
+      },
+      {
+        "name": "Get Custom Objects",
+        "type": "WebActivity",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": true
+        },
+        "typeProperties": {
+          "method": "GET",
+          "headers": {
+            "Authorization": {
+              "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
+              "type": "Expression"
+            },
+            "Accept": "application/json"
+          },
+          "relativeUrl": {
+            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/api/v2.0/",
+            "type": "Expression"
+          }
+        },
+        "externalReferences": {
+          "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+        }
+      },
+      {
+        "name": "Get Legacy Objects",
+        "type": "WebActivity",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": true
+        },
+        "typeProperties": {
+          "method": "GET",
+          "headers": {
+            "Authorization": {
+              "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
+              "type": "Expression"
+            },
+            "Accept": "application/json"
+          },
+          "relativeUrl": {
+            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/ODataV4/",
+            "type": "Expression"
+          }
+        },
+        "externalReferences": {
+          "connection": "c9d52d7a-b4d6-46bb-8671-ecad64ab916e"
+        }
+      },
+      {
+        "name": "Test ConnectionId",
+        "type": "WebActivity",
+        "state": "Inactive",
+        "onInactiveMarkAs": "Succeeded",
+        "dependsOn": [
+          {
+            "activity": "Get Bc365 Token",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.00:30:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": true
+        },
+        "typeProperties": {
+          "method": "GET",
+          "headers": {
+            "Authorization": {
+              "value": "@concat('Bearer ', activity('Get Bc365 Token').output.access_token)",
+              "type": "Expression"
+            },
+            "Accept": "application/json"
+          },
+          "relativeUrl": {
+            "value": "/@{pipeline().libraryVariables.vl_SrcBc365_Bc365TenantId}/@{pipeline().libraryVariables.vl_Bc365_Bc365UkEnv}/ODataV4/",
+            "type": "Expression"
+          }
+        },
+        "externalReferences": {
+          "connection": "@pipeline().libraryVariables.vl_Bc365_cnBc365CWebConnectionId"
+        }
+      },
+      {
+        "name": "Set FormatDateTime",
+        "type": "SetVariable",
+        "dependsOn": [],
+        "policy": {
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "variableName": "FormatDateTime",
+          "value": {
+            "value": "@formatDateTime('2026-27-04 09:10:59', 'yyyy-MM-ddTHH:mm:ssZ')",
+            "type": "Expression"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "ObjectApiName": {
+        "type": "string",
+        "defaultValue": "Chart_of_Accounts"
+      },
+      "ObjectApiName2": {
+        "type": "string",
+        "defaultValue": "accounts"
+      },
+      "CompanyNameHtml": {
+        "type": "string",
+        "defaultValue": "Credera%20Ltd"
+      },
+      "CompanyName": {
+        "type": "string",
+        "defaultValue": "Credera Ltd"
+      }
+    },
+    "variables": {
+      "FormatDateTime": {
+        "type": "String"
+      },
+      "NextPageUrl": {
+        "type": "String"
+      }
+    },
+    "libraryVariables": {
+      "vl_Bc365_Bc365TokenUri": {
+        "type": "String",
+        "variableName": "Bc365TenantId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_SrcBc365_Bc365TenantId": {
+        "type": "String",
+        "variableName": "Bc365TenantId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365ClientId": {
+        "type": "String",
+        "variableName": "Bc365ClientId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365UkEnv": {
+        "type": "String",
+        "variableName": "Bc365UkEnv",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_cnBc365CWebConnectionId": {
+        "type": "String",
+        "variableName": "cnBc365CWebConnectionId",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365ProdSec": {
+        "type": "String",
+        "variableName": "Bc365ProdSec",
+        "libraryName": "vl_Bc365"
+      },
+      "vl_Bc365_Bc365UkEnvSandbox": {
+        "type": "String",
+        "variableName": "Bc365UkEnvSandbox",
+        "libraryName": "vl_Bc365"
+      }
+    }
+  }
+}
